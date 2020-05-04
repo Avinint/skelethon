@@ -1,0 +1,24 @@
+config:
+    - conf.yml
+    - routing.yml
+    - actions.yml
+    - blocs.yml
+controller:
+    - ModuleAdminAction.class.php
+    - ModulelerAdminHTML.class.php
+JS:
+    - Model.js
+    - ModelMode.js
+models:
+    - Model.class.php
+templates:
+    defaut:
+        themes:
+            defaut:
+                css:
+                    model.css
+vues:
+    accueil_model.html
+    liste_model.html
+    edition_model.html
+    recherche_model.html

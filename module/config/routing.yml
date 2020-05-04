@@ -1,0 +1,61 @@
+html_accueil_model:
+    reecriture: admin/module/model/accueil.html
+    route:
+        zone: admin
+        module: module
+        controller: model
+        mode: accueil_model
+
+json_recherche_model:
+    reecriture: admin/module/model/recherche.json
+    route:
+        zone: admin
+        module: module
+        controller: model
+        action: recherche
+
+html_consultation_model:
+    reecriture: admin/module/model/consultation.html
+    route:
+        zone: admin
+        module: module
+        controller: model
+        mode: consultation_model
+
+json_dynamisation_consultation_model:
+    reecriture: admin/module/model/\d+/dynamisation-consultation.json
+    route:
+        zone: admin
+        module: module
+        controller: model
+        action: dynamisation_consultation
+        variables:
+            - nIdElement
+
+html_edition_model:
+    reecriture: admin/module/model/edition.html
+    route:
+        zone: admin
+        module: module
+        controller: model
+        mode: edition_model
+
+json_dynamisation_edition_model:
+    reecriture: admin/module/model/\d+/edition.json
+    route:
+        zone: admin
+        module: module
+        controller: model
+        action: edition
+        variables:
+            - nIdElement
+
+json_enregistre_edition_model:
+    reecriture: admin/module/model/\d+/enregistre-edition.json
+    route:
+        zone: admin
+        module: module
+        controller: model
+        action: enregistrement
+        variables:
+            - nIdElement
