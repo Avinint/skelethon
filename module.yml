@@ -3,22 +3,23 @@ config:
     - routing.yml
     - actions.yml
     - blocs.yml
-controller:
-    - ModuleAdminAction.class.php
-    - ModulelerAdminHTML.class.php
+controllers:
+    - MODULEAdminAction.class.php
+    - MODULEAdminHTML.class.php
 JS:
-    - Model.js
-    - ModelMode.js
+    - MODEL.js
+    - MODELAdmin.js
 models:
-    - Model.class.php
+    - MODEL.class.php
 templates:
     defaut:
         themes:
             defaut:
                 css:
-                    model.css
+                    TABLE.css
 vues:
-    accueil_model.html
-    liste_model.html
-    edition_model.html
-    recherche_model.html
+    accueil_TABLE.html
+    liste_TABLE.html
+    consultation_TABLE.html
+    edition_TABLE.html
+    recherche_TABLE.html

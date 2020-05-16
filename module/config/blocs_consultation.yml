@@ -1,0 +1,16 @@
+calque_consultation_%2$s:
+    route: html_consultation_%2$s
+    priorite: 1
+    ordre: 1
+    callback: ''
+    module: %1$s
+    zones_affichage:
+        - admin
+    auto_reset: oui
+    module_callback: ''
+    largeur: large
+    cache:
+        html: oui
+        base: oui
+    # multicalques: infinite
+    # check_appels_concurrents: oui

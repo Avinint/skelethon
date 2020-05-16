@@ -1,0 +1,21 @@
+btn_ouverture_edition_%2$s:
+    action:
+        module: %1$s
+        route: json_dynamisation_edition_%2$s
+        type: load_data
+    callback:
+        module: %1$s
+        fonction: vDynamisationEdition%3$sJSON
+        alerte: non
+
+btn_enregistre_edition_%2$s:
+    action:
+        module: %1$s
+        route: json_enregitre_edition_%2$s
+        type: save_data
+        save_formulaire: formulaire_edition_%2$s
+    callback:
+        module: %1$s
+        fonction: vFermeEditionRefreshListe
+        alerte: non
+

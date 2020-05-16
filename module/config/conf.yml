@@ -1,0 +1,40 @@
+aNamespace:
+    HTML:
+        %4$sAdminHTML: APP\Modules\%4$s\Controllers\%4$sAdminHTML
+    data:
+        %3$s: APP\Modules\%4$s\Models\%3$s
+        %4$sAdminAction: APP\Modules\%4$s\Controllers\%4$sAdminAction
+
+aVues:
+    %2$s:
+        admin:
+            simples:
+                accueil_%2$s:
+                    ressources:
+                        CSS:
+                            modules:
+                                - %1$s/templates/defaut/themes/defaut/css/%2$s.css
+                            lib_externe_dist:
+                                - package-plugins-light/JS/Select2/css/select2.min.css
+                        JS:
+                            modules:
+                                - %1$s/JS/%3$sAdmin.js
+                                - %1$s/JS/%3$s.js
+                            lib_externe_dist:
+                                package-plugins-light/JS/jQuery-Mask/jquery.mask.js
+                                package-plugins-light/JS/Select2/select2.min.js
+                consultation_%2$s:
+                    ressources:
+                        CSS: []
+                        JS: []
+
+            formulaires:
+                edition_%2$s:
+                    classe: %3$s
+                    ressources:
+                        CSS: []
+                        JS:
+                            modules:
+                                - %1$s/JS/%3$sAdmin.js
+                                - %1$s/JS/%3$s.js
+            specifiques: []

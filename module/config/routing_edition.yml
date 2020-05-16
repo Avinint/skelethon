@@ -1,0 +1,27 @@
+html_edition_%2$s:
+    reecriture: admin/%1$s/%2$s/edition.html
+    route:
+        zone: admin
+        module: %1$s
+        controller: %2$s
+        mode: edition_%2$s
+
+json_dynamisation_edition_%2$s:
+    reecriture: admin/%1$s/%2$s/(\d+)/edition.json
+    route:
+        zone: admin
+        module: %1$s
+        controller: %2$s
+        action: dynamisation_edition
+        variables:
+            - nIdElement
+
+json_enregistre_edition_%2$s:
+    reecriture: admin/%1$s/%2$s/(\d+)/enregistre-edition.json
+    route:
+        zone: admin
+        module: %1$s
+        controller: %2$s
+        action: enregistrement
+        variables:
+            - nIdElement

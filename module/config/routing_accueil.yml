@@ -1,0 +1,7 @@
+html_accueil_%2$s:
+    reecriture: admin/%1$s/%2$s/accueil.html
+    route:
+        zone: admin
+        module: %1$s
+        controller: %2$s
+        mode: accueil_%2$s
