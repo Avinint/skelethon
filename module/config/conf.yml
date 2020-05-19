@@ -1,40 +1,41 @@
 aNamespace:
     HTML:
-        %4$sAdminHTML: APP\Modules\%4$s\Controllers\%4$sAdminHTML
+        MODULEAdminHTML: APP\Modules\MODULE\Controllers\MODULEAdminHTML
     data:
-        %3$s: APP\Modules\%4$s\Models\%3$s
-        %4$sAdminAction: APP\Modules\%4$s\Controllers\%4$sAdminAction
+        MODEL: APP\Modules\MODULE\Models\MODEL
+        MODULEAdminAction: APP\Modules\MODULE\Controllers\MODULEAdminAction
 
 aVues:
-    %2$s:
+    TABLE:
         admin:
             simples:
-                accueil_%2$s:
+                accueil_TABLE:
                     ressources:
                         CSS:
                             modules:
-                                - %1$s/templates/defaut/themes/defaut/css/%2$s.css
+                                - mODULE/templates/defaut/themes/defaut/css/TABLE.css
                             lib_externe_dist:
                                 - package-plugins-light/JS/Select2/css/select2.min.css
                         JS:
                             modules:
-                                - %1$s/JS/%3$sAdmin.js
-                                - %1$s/JS/%3$s.js
+                                - mODULE/JS/MODELAdmin.js
+                                - mODULE/JS/MODEL.js
                             lib_externe_dist:
                                 package-plugins-light/JS/jQuery-Mask/jquery.mask.js
                                 package-plugins-light/JS/Select2/select2.min.js
-                consultation_%2$s:
+                consultation_TABLE:
                     ressources:
                         CSS: []
                         JS: []
 
             formulaires:
-                edition_%2$s:
-                    classe: %3$s
+                edition_TABLE:
+                    classe: MODEL
                     ressources:
                         CSS: []
                         JS:
                             modules:
-                                - %1$s/JS/%3$sAdmin.js
-                                - %1$s/JS/%3$s.js
+                                - mODULE/JS/MODELAdmin.js
+                                - mODULE/JS/MODEL.js
             specifiques: []
+ENUMS

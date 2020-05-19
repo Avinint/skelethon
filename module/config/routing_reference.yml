@@ -1,71 +1,71 @@
-html_accueil_%2$s:
-    reecriture: admin/%1$s/%2$s/accueil.html
+html_accueil_TABLE:
+    reecriture: admin/mODULE/TABLE/accueil.html
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
-        mode: accueil_%2$s
+        module: mODULE
+        controller: TABLE
+        mode: accueil_TABLE
 
-json_recherche_%2$s:
-    reecriture: admin/%1$s/%2$s/recherche.json
+json_recherche_TABLE:
+    reecriture: admin/mODULE/TABLE/recherche.json
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
+        module: mODULE
+        controller: TABLE
         action: recherche
 
-html_consultation_%2$s:
-    reecriture: admin/%1$s/%2$s/consultation.html
+html_consultation_TABLE:
+    reecriture: admin/mODULE/TABLE/consultation.html
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
-        mode: consultation_%2$s
+        module: mODULE
+        controller: TABLE
+        mode: consultation_TABLE
 
-json_dynamisation_consultation_%2$s:
-    reecriture: admin/%1$s/%2$s/\d+/dynamisation-consultation.json
+json_dynamisation_consultation_TABLE:
+    reecriture: admin/mODULE/TABLE/\d+/dynamisation-consultation.json
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
+        module: mODULE
+        controller: TABLE
         action: dynamisation_consultation
         variables:
             - nIdElement
 
-html_edition_%2$s:
-    reecriture: admin/%1$s/%2$s/edition.html
+html_edition_TABLE:
+    reecriture: admin/mODULE/TABLE/edition.html
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
-        mode: edition_%2$s
+        module: mODULE
+        controller: TABLE
+        mode: edition_TABLE
 
-json_dynamisation_edition_%2$s:
-    reecriture: admin/%1$s/%2$s/\d+/edition.json
+json_dynamisation_edition_TABLE:
+    reecriture: admin/mODULE/TABLE/\d+/edition.json
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
+        module: mODULE
+        controller: TABLE
         action: edition
         variables:
             - nIdElement
 
-json_enregistre_edition_%2$s:
-    reecriture: admin/%1$s/%2$s/\d+/enregistre-edition.json
+json_enregistre_edition_TABLE:
+    reecriture: admin/mODULE/TABLE/\d+/enregistre-edition.json
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
+        module: mODULE
+        controller: TABLE
         action: enregistrement
         variables:
             - nIdElement
 
-json_suppression_%2$s:
-    reecriture: admin/%1$s/%2$s/\d+/suppression.json
+json_suppression_TABLE:
+    reecriture: admin/mODULE/TABLE/\d+/suppression.json
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
+        module: mODULE
+        controller: TABLE
         action: suppression
         variables:
             - nIdElement

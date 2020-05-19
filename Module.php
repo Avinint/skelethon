@@ -165,9 +165,25 @@ class Module extends BaseFactory
                 $text .= file_get_contents($templatePerActionPath).PHP_EOL;
             }
         }
-        $modelName = strpos($templatePath, 'conf.yml') !== false  ? $this->model->getClassName() : '';
 
-        $text = sprintf($text, $this->name, $this->model->getName(), $modelName, $this->namespaceName);
+        $modelName = '';
+        $enums = '';
+        if (strpos($templatePath, 'conf.yml') !== false ) {
+            $modelName = $this->model->getClassName() ;
+            $fields = $this->model->getViewFieldsByType('enum');
+            if (!empty($fields)) {
+                foreach ($fields as $field) {
+                    $enums .= PHP_EOL."aListe-{$this->model->getName()}-{$field['field']}:".PHP_EOL;
+                    foreach ($field['enum'] as $value) {
+                        $enums .= str_repeat("\x20", 4)."$value: {$this->labelize($value)}".PHP_EOL;
+                    }
+                }
+            }
+        }
+
+
+        //$text = sprintf($text, $this->name, $this->model->getName(), $modelName, $this->namespaceName);
+        $text = str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'ENUMS'], [$this->name, $this->model->getName(), $modelName, $this->namespaceName, $enums], $text);
 
         return $text;
     }
@@ -218,7 +234,42 @@ class Module extends BaseFactory
         $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
 
         if (glob($templatePath)) {
-            $methodText = str_replace('MODEL', $this->model->getClassName(), $methodText);
+
+            $default = '';
+            $fields = $this->model->getViewFieldsByType('tinyint');
+            if (!empty($fields)) {
+                $default = ' else {'.PHP_EOL;
+                foreach ($fields as $field) {
+                    $default .=  str_repeat("\x20", 12)."\$aRetour['oElement']->{$field['name']} = '{$field['default']}';".PHP_EOL;
+                }
+                $default .= str_repeat("\x20", 8).'}';
+            }
+
+            $enumText = '';
+            $enumDefault = '';
+            $enums = $this->model->getViewFieldsByType('enum');
+            if (!empty($enums)) {
+                foreach ($enums as $enum) {
+                    $enumText .= str_repeat("\x20", 8)."\$aRetour['aSelects']['{$enum['name']}'] = \$this->aGetValeursListeConf('$this->name', '{$this->model->getName()}', '{$enum['field']}');".PHP_EOL;
+                    if (isset($enum['default'])) {
+//                        $enumDefault .=
+//                            str_repeat("\x20", 8). 'foreach ($aRetour[\'aSelects\'][\'' . $enum['name'] . '\'] as $oInfos) {' .PHP_EOL.
+//                            str_repeat("\x20", 12).'if ($oInfos[\'valeur\'] == \''.$enum['default'].'\') {'.PHP_EOL.
+//                            str_repeat("\x20", 16).'$aRetour[\'oElement\'] = new \\StdClass();'.PHP_EOL.
+//                            str_repeat("\x20", 16).'$aRetour[\'oElement\']->'.$enum['name'].' = $oInfos[\'valeur\'];'.PHP_EOL.
+//                            str_repeat("\x20", 16).'break;'.PHP_EOL.
+//                            str_repeat("\x20", 12).'}'.PHP_EOL.
+//                            str_repeat("\x20", 8).'}'.PHP_EOL.PHP_EOL;
+
+                        $enumDefault .=
+                            str_repeat("\x20", 8).'$aRetour[\'oElement\'] = new \\StdClass();'.PHP_EOL.
+                            str_repeat("\x20", 12).'$aRetour[\'oElement\']->'.$enum['name'].' = \''.$enum['default'].'\';'.PHP_EOL;
+                    }
+                }
+            }
+
+
+            $methodText = str_replace(['MODEL', 'DEFAULT', 'SELECT'], [$this->model->getClassName(), $default, $enumText.$enumDefault], $methodText);
             $text .= file_get_contents($templatePath);
             $text = str_replace(['MODULE', 'MODEL', '//CASE', '//METHOD'], [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $methodText], $text);
         }
@@ -285,7 +336,7 @@ class Module extends BaseFactory
             if (array_contains(['edition_multi', 'consultation_multi'], $this->model->actions, ARRAY_ANY)) {
                 $multiText = " + '_' + nIdElement";
             } else {
-                $multiText = " + '_' + nIdElement";
+                $multiText = '';
             }
 
 
@@ -306,28 +357,6 @@ class Module extends BaseFactory
             [$actionMethodText, $this->model->getClassName(), $multiText, $this->model->getName()], $text);
 
         return $text;
-    }
-
-    private function getModelName()
-    {
-        // TODO regler CAMEL CASE conversions
-        $model = readline($this->msg('Veuillez renseigner le nom du modèle :'.
-            PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module ['.$this->name.']'));
-        if (!$model) {
-            $model = $this->name;
-        }
-
-        return $model;
-    }
-
-    public function getName()
-    {
-        return $this->name;
-    }
-
-    public function getNamespace()
-    {
-        return $this->namespaceName;
     }
 
     /**
@@ -410,8 +439,8 @@ class Module extends BaseFactory
                 $fieldTemplate = file_get_contents(str_replace('.', '_string.', $templatePath));
             }
 
-            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAUT_OUI', 'DEFAUT_NON'],
-                [$field['label'], $field['name'], $field['type'], $field['default_yes'], $field['default_no']], $fieldTemplate);
+            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE'],
+                [$field['label'], $field['name'], $field['type']], $fieldTemplate);
         }
 
         $text = file_get_contents($templatePath);
@@ -448,6 +477,28 @@ class Module extends BaseFactory
         $text = file_get_contents($templatePath);
         $text = str_replace(['TABLE', 'FIELDS'], [$this->model->getName(), implode(PHP_EOL, $fieldText)], $text);
         return $text;
+    }
+
+    private function getModelName()
+    {
+        // TODO regler CAMEL CASE conversions
+        $model = readline($this->msg('Veuillez renseigner le nom du modèle :'.
+            PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module ['.$this->name.']'));
+        if (!$model) {
+            $model = $this->name;
+        }
+
+        return $model;
+    }
+
+    public function getName()
+    {
+        return $this->name;
+    }
+
+    public function getNamespace()
+    {
+        return $this->namespaceName;
     }
 
 }

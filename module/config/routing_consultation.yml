@@ -1,17 +1,17 @@
-html_consultation_%2$s:
-    reecriture: admin/%1$s/%2$s/consultation.html
+html_consultation_TABLE:
+    reecriture: admin/mODULE/TABLE/consultation.html
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
-        mode: consultation_%2$s
+        module: mODULE
+        controller: TABLE
+        mode: consultation_TABLE
 
-json_dynamisation_consultation_%2$s:
-    reecriture: admin/%1$s/%2$s/(\d+)/dynamisation-consultation.json
+json_dynamisation_consultation_TABLE:
+    reecriture: admin/mODULE/TABLE/(\d+)/dynamisation-consultation.json
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
+        module: mODULE
+        controller: TABLE
         action: dynamisation_consultation
         variables:
             - nIdElement

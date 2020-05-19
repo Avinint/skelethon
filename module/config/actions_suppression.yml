@@ -1,9 +1,9 @@
-btn_suppression_%2$s:
+btn_suppression_TABLE:
     action:
-        module: %1$s
-        route: json_suppression_%2$s
+        module: mODULE
+        route: json_suppression_TABLE
         type: save_data
     callback:
-        module: %1$s
+        module: mODULE
         fonction: vRefreshListe
         alerte: non

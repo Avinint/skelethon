@@ -56,7 +56,8 @@ class Model extends BaseFactory
     private function generate()
     {
         $tables = $this->aListeTables();
-        $this->table = $tables[$this->name];;
+        $this->table = $tables[$this->name];
+        var_dump($this->table);
         $this->alias = strtoupper(substr(str_replace('_', '', $this->name), 0, 3));
         if (is_null($this->table)) {
             $this->msg('Erreur: Il faut créer la table \''.$this->name.'\' avant de générer le code', 'error');
@@ -213,6 +214,23 @@ class Model extends BaseFactory
             array_shift($fields);
         }
         return $fields;
+    }
+
+    public function getViewFieldsByType($type)
+    {
+        return array_filter($this->viewFields, function($field) use ($type) {
+            return $field['type'] === $type;
+        });
+    }
+
+    public function getEnumValues($enum)
+    {
+        $sValeurs = str_replace('enum(', '', $enum);
+        $sValeurs = str_replace(')', '', $sValeurs);
+        $sValeurs = str_replace('\'', '', $sValeurs);
+        $aValeurs = explode(',', $sValeurs);
+
+        return $aValeurs;
     }
 
     /**
@@ -411,11 +429,14 @@ class Model extends BaseFactory
     public function addViewField($data)
     {
         $formate = array_contains($data->sType, array('float', 'decimal', 'date', 'datetime', 'tinyint', 'double')) ? 'Formate' : '';
-        $default = $data->Default or '';
-        $defaultYes = $default === '1' ? ' checked="checked"' : '';
-        $defaultNo = $default === '0' ? ' checked="checked"' : '';
+        $result =  ['name' => $data->sChamp.$formate, 'field' => $data->Field, 'label'=> $data->sLabel, 'type'=> $data->sType, 'default' =>  $data->Default ?? ''];
+        if ($data->sType === 'tinyint') {
+            $result['default'] = $data->Default === '1' ? 'oui' : 'non';
+        } elseif ($data->sType === 'enum') {
+            $result['enum'] = $this->getEnumValues($data->Type);
+        }
 
-        return ['name' => $data->sChamp.$formate, 'label'=> $data->sLabel, 'type'=> $data->sType, 'default' => $default, 'default_yes' => $defaultYes, 'default_no' => $defaultNo];
+        return $result;
     }
 
     /**

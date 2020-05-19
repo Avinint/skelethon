@@ -11,9 +11,10 @@
             'oElement' => new \StdClass(),
         );
 
+SELECT
         if ($nIdElement > 0) {
             $aRetour['oElement'] = $this->oNew('MODEL', array($nIdElement));
-        }
+        }DEFAULT
 
         return $aRetour;
     }

@@ -1,9 +1,9 @@
-son_suppression_%2$s:
-    reecriture: admin/%1$s/%2$s/(\d+)/suppression.json
+son_suppression_TABLE:
+    reecriture: admin/mODULE/TABLE/(\d+)/suppression.json
     route:
         zone: admin
-        module: %1$s
-        controller: %2$s
+        module: mODULE
+        controller: TABLE
         action: suppression
         variables:
             - nIdElement

@@ -1,9 +1,9 @@
-btn_ouverture_consultation_%2$s:
+btn_ouverture_consultation_TABLE:
     action:
-        module: %1$s
-        route: json_dynamisation_consultation_%2$s
+        module: mODULE
+        route: json_dynamisation_consultation_TABLE
         type: load_data
     callback:
-        module: %1$s
-        fonction: vDynamisationConsultation%3$sJSON
+        module: mODULE
+        fonction: vDynamisationConsultationMODELJSON
         alerte: non

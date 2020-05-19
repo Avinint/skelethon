@@ -15,10 +15,10 @@
         oParams.szIdCalque = 'modal_calque_edition_TABLE'/*MULTI*/;
         var oModal = new Modal(oParams.szIdCalque, nIdElement, oReponseJSON);
 
-        $('#modal_calque_edition_TABLE .action_module_btn_enregistre_edition_TABLE').addClass('variable_1_'+nIdElement);
+        oModal.find('.action_module_btn_enregistre_edition_TABLE').addClass('variable_1_'+nIdElement);
 
         oParams.oModal = oModal;
-        oParams.szIdFormulaireCharge = 'formulaire_edition_TABLE'/*MULTI*/;
+        oParams.eFormulaire = oModal.eModal.find('form');
         var oCallback = this.oGetFonctionCallback(this, this.vOuvreEdition, oParams);
         this.vChargeFormulaireData(oReponseJSON, oParams, oCallback);
     };

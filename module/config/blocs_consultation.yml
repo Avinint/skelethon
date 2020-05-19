@@ -1,9 +1,9 @@
-calque_consultation_%2$s:
-    route: html_consultation_%2$s
+calque_consultation_TABLE:
+    route: html_consultation_TABLE
     priorite: 1
     ordre: 1
     callback: ''
-    module: %1$s
+    module: mODULE
     zones_affichage:
         - admin
     auto_reset: oui

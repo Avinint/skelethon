@@ -1,40 +1,40 @@
-btn_ouverture_consultation_%2$s:
+btn_ouverture_consultation_TABLE:
     action:
-        module: %1$s
-        route: json_dynamisation_consultation_%2$s
+        module: mODULE
+        route: json_dynamisation_consultation_TABLE
         type: load_data
     callback:
-        module: %1$s
-        fonction: vDynamisationConsultation%3$sJSON
+        module: mODULE
+        fonction: vDynamisationConsultationMODELJSON
         alerte: non
 
-btn_ouverture_edition_%2$s:
+btn_ouverture_edition_TABLE:
     action:
-        module: %1$s
-        route: json_dynamisation_edition_%2$s
+        module: mODULE
+        route: json_dynamisation_edition_TABLE
         type: load_data
     callback:
-        module: %1$s
-        fonction: vDynamisationEdition%3$sJSON
+        module: mODULE
+        fonction: vDynamisationEditionMODELJSON
         alerte: non
 
-btn_enregistre_edition_%2$s:
+btn_enregistre_edition_TABLE:
     action:
-        module: %1$s
-        route: json_enregitre_edition_%2$s
+        module: mODULE
+        route: json_enregitre_edition_TABLE
         type: save_data
-        save_formulaire: formulaire_edition_%2$s
+        save_formulaire: formulaire_edition_TABLE
     callback:
-        module: %1$s
+        module: mODULE
         fonction: vFermeEditionRefreshListe
         alerte: non
 
-btn_suppression_%2$s:
+btn_suppression_TABLE:
     action:
-        module: %1$s
-        route: json_suppression_%2$s
+        module: mODULE
+        route: json_suppression_TABLE
         type: save_data
     callback:
-        module: %1$s
+        module: mODULE
         fonction: vRefreshListe
         alerte: non
