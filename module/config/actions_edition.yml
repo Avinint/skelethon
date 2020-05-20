@@ -11,11 +11,11 @@ btn_ouverture_edition_TABLE:
 btn_enregistre_edition_TABLE:
     action:
         module: mODULE
-        route: json_enregitre_edition_TABLE
+        route: json_enregistre_edition_TABLE
         type: save_data
         save_formulaire: formulaire_edition_TABLE
     callback:
         module: mODULE
-        fonction: vFermeEditionRefreshListe
+        fonction: vFermeEditionEtRefreshListe
         alerte: non
 

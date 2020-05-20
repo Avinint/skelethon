@@ -168,7 +168,7 @@ CHAMPS_SELECT
     $this->IDFIELD = $this->rConnexion->lastInsertId();
     if ($rLien) {
         $bRetour = true;
-        $this->bSetLog('insert_TABLE', $this->IDFIELD);
+        //$this->bSetLog('insert_TABLE', $this->IDFIELD);
     } else {
         $this->sMessagePDO = $this->rConnexion->sMessagePDO;
     }
@@ -198,7 +198,7 @@ CHAMPS_SELECT
         $rLien = $this->rConnexion->query($sRequete);
         if ($rLien) {
             $bRetour = true;
-            $this->bSetLog('update_TABLE', $this->IDFIELD);
+            //$this->bSetLog('update_TABLE', $this->IDFIELD);
         } else {
             $this->sMessagePDO = $this->rConnexion->sMessagePDO;
         }
@@ -227,12 +227,33 @@ CHAMPS_SELECT
 
      	if ($rLien) {
      		$bRetour = true;
-     		$this->bSetLog('delete_chantier', $this->IDFIELD);
+     		//$this->bSetLog('delete_TABLE', $this->IDFIELD);
      	} else {
      		$this->sMessagePDO = $this->rConnexion->sMessagePDO;
      	}
 
      	return $bRetour;
      }
-    
+
+    /**
+     * Retourne la liste des attributs de l'objet
+     *
+     * @return array   Liste attributs
+     */
+    public function aGetChamps()
+    {
+        return $this->aMappingChamps;
+    }
+
+    /**
+     * Retourne la liste des colonnes de la table correspondant à la classe
+     *
+     * @return array   Liste colonnes
+     */
+    public function aGetColonnes()
+    {
+        return array_flip($this->aGetChamps());
+    }
+
+
 }

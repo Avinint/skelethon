@@ -57,7 +57,6 @@ class Model extends BaseFactory
     {
         $tables = $this->aListeTables();
         $this->table = $tables[$this->name];
-        var_dump($this->table);
         $this->alias = strtoupper(substr(str_replace('_', '', $this->name), 0, 3));
         if (is_null($this->table)) {
             $this->msg('Erreur: Il faut créer la table \''.$this->name.'\' avant de générer le code', 'error');
@@ -210,7 +209,7 @@ class Model extends BaseFactory
     public function getViewFields($showIdField = false)
     {
         $fields = $this->viewFields;
-        if (false === $showIdField && $this->idField === $fields[0]['name']) {
+        if (false === $showIdField && $this->idField === $fields[0]['field']) {
             array_shift($fields);
         }
         return $fields;
@@ -219,6 +218,9 @@ class Model extends BaseFactory
     public function getViewFieldsByType($type)
     {
         return array_filter($this->viewFields, function($field) use ($type) {
+            if (is_array($type)) {
+                return array_contains($field['type'], $type);
+            }
             return $field['type'] === $type;
         });
     }
@@ -428,8 +430,9 @@ class Model extends BaseFactory
 
     public function addViewField($data)
     {
-        $formate = array_contains($data->sType, array('float', 'decimal', 'date', 'datetime', 'tinyint', 'double')) ? 'Formate' : '';
-        $result =  ['name' => $data->sChamp.$formate, 'field' => $data->Field, 'label'=> $data->sLabel, 'type'=> $data->sType, 'default' =>  $data->Default ?? ''];
+        $formate = array_contains($data->sType, array('float', 'decimal', 'date', 'datetime', 'double')) ? 'Formate' : '';
+        $result =  ['field' => $data->sChamp.$formate, 'column' => $data->Field, 'label'=> $data->sLabel, 'type'=> $data->sType, 'default' =>  $data->Default ?? '', 'name' => $data->sChamp];
+
         if ($data->sType === 'tinyint') {
             $result['default'] = $data->Default === '1' ? 'oui' : 'non';
         } elseif ($data->sType === 'enum') {

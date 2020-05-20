@@ -173,7 +173,7 @@ class Module extends BaseFactory
             $fields = $this->model->getViewFieldsByType('enum');
             if (!empty($fields)) {
                 foreach ($fields as $field) {
-                    $enums .= PHP_EOL."aListe-{$this->model->getName()}-{$field['field']}:".PHP_EOL;
+                    $enums .= PHP_EOL."aListe-{$this->model->getName()}-{$field['column']}:".PHP_EOL;
                     foreach ($field['enum'] as $value) {
                         $enums .= str_repeat("\x20", 4)."$value: {$this->labelize($value)}".PHP_EOL;
                     }
@@ -234,15 +234,32 @@ class Module extends BaseFactory
         $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
 
         if (glob($templatePath)) {
-
+            $exceptions = [];
             $default = '';
-            $fields = $this->model->getViewFieldsByType('tinyint');
-            if (!empty($fields)) {
+            $boolFields = $this->model->getViewFieldsByType('tinyint');
+            if (!empty($boolFields)) {
                 $default = ' else {'.PHP_EOL;
-                foreach ($fields as $field) {
-                    $default .=  str_repeat("\x20", 12)."\$aRetour['oElement']->{$field['name']} = '{$field['default']}';".PHP_EOL;
+                foreach ($boolFields as $field) {
+                    $exceptions['aBooleens'][] = $field['field'];
+                    $default .=  str_repeat("\x20", 12)."\$aRetour['oElement']->{$field['field']} = '{$field['default']}';".PHP_EOL;
                 }
                 $default .= str_repeat("\x20", 8).'}';
+            }
+
+            $dateFields = $this->model->getViewFieldsByType([ 'date', 'datetime']);
+            if (!empty($dateFields)) {
+                foreach ($dateFields as $field) {
+                    $exceptions['aDates'][] = $field['name'];
+                }
+            }
+
+            if ($exceptions) {
+                $exceptionText = ', [';
+                $exceptionArr = [];
+                foreach ($exceptions as $key => $list) {
+                    $exceptionArr[] = "'$key' => ['".implode('\', \'', $list).'\']';
+                }
+                $exceptionText .= implode(',', $exceptionArr).']';
             }
 
             $enumText = '';
@@ -250,16 +267,8 @@ class Module extends BaseFactory
             $enums = $this->model->getViewFieldsByType('enum');
             if (!empty($enums)) {
                 foreach ($enums as $enum) {
-                    $enumText .= str_repeat("\x20", 8)."\$aRetour['aSelects']['{$enum['name']}'] = \$this->aGetValeursListeConf('$this->name', '{$this->model->getName()}', '{$enum['field']}');".PHP_EOL;
+                    $enumText .= str_repeat("\x20", 8)."\$aRetour['aSelects']['{$enum['name']}'] = \$this->aGetValeursListeConf('$this->name', '{$this->model->getName()}', '{$enum['column']}');".PHP_EOL;
                     if (isset($enum['default'])) {
-//                        $enumDefault .=
-//                            str_repeat("\x20", 8). 'foreach ($aRetour[\'aSelects\'][\'' . $enum['name'] . '\'] as $oInfos) {' .PHP_EOL.
-//                            str_repeat("\x20", 12).'if ($oInfos[\'valeur\'] == \''.$enum['default'].'\') {'.PHP_EOL.
-//                            str_repeat("\x20", 16).'$aRetour[\'oElement\'] = new \\StdClass();'.PHP_EOL.
-//                            str_repeat("\x20", 16).'$aRetour[\'oElement\']->'.$enum['name'].' = $oInfos[\'valeur\'];'.PHP_EOL.
-//                            str_repeat("\x20", 16).'break;'.PHP_EOL.
-//                            str_repeat("\x20", 12).'}'.PHP_EOL.
-//                            str_repeat("\x20", 8).'}'.PHP_EOL.PHP_EOL;
 
                         $enumDefault .=
                             str_repeat("\x20", 8).'$aRetour[\'oElement\'] = new \\StdClass();'.PHP_EOL.
@@ -268,8 +277,7 @@ class Module extends BaseFactory
                 }
             }
 
-
-            $methodText = str_replace(['MODEL', 'DEFAULT', 'SELECT'], [$this->model->getClassName(), $default, $enumText.$enumDefault], $methodText);
+            $methodText = str_replace(['MODEL', 'DEFAULT', 'SELECT', 'EXCEPTIONS'], [$this->model->getClassName(), $default, $enumText.$enumDefault, $exceptionText], $methodText);
             $text .= file_get_contents($templatePath);
             $text = str_replace(['MODULE', 'MODEL', '//CASE', '//METHOD'], [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $methodText], $text);
         }
@@ -410,7 +418,7 @@ class Module extends BaseFactory
         $fieldTemplate = file_get_contents(str_replace('.', '_field.', $templatePath));
         $fieldText = [];
         foreach ($this->model->getViewFields() as $field) {
-            $fieldText[] = str_replace(['LABEL', 'FIELD'], [$field['label'], $field['name']], $fieldTemplate);
+            $fieldText[] = str_replace(['LABEL', 'FIELD'], [$field['label'], $field['field']], $fieldTemplate);
         }
         $text = file_get_contents($templatePath);
         $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->name, implode(PHP_EOL, $fieldText)], $text);
@@ -439,8 +447,8 @@ class Module extends BaseFactory
                 $fieldTemplate = file_get_contents(str_replace('.', '_string.', $templatePath));
             }
 
-            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE'],
-                [$field['label'], $field['name'], $field['type']], $fieldTemplate);
+            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME'],
+                [$field['label'], $field['field'], $field['type'], $field['name']], $fieldTemplate);
         }
 
         $text = file_get_contents($templatePath);
@@ -471,7 +479,7 @@ class Module extends BaseFactory
             }
 
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'DEFAUT_OUI', 'DEFAUT_NON'],
-                [$field['label'], $field['name'], $field['type'], $field['default'], $field['default_yes'], $field['default_no']], $fieldTemplate);
+                [$field['label'], $field['field'], $field['type'], $field['default'], $field['default_yes'], $field['default_no']], $fieldTemplate);
         }
 
         $text = file_get_contents($templatePath);

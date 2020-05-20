@@ -15,7 +15,7 @@
         oParams.szIdCalque = 'modal_calque_edition_TABLE'/*MULTI*/;
         var oModal = new Modal(oParams.szIdCalque, nIdElement, oReponseJSON);
 
-        oModal.find('.action_module_btn_enregistre_edition_TABLE').addClass('variable_1_'+nIdElement);
+        oModal.find('.action_mODULE_btn_enregistre_edition_TABLE').addClass('variable_1_'+nIdElement);
 
         oParams.oModal = oModal;
         oParams.eFormulaire = oModal.eModal.find('form');

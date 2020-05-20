@@ -22,6 +22,6 @@ json_enregistre_edition_TABLE:
         zone: admin
         module: mODULE
         controller: TABLE
-        action: enregistrement
+        action: enregistre_edition
         variables:
             - nIdElement
