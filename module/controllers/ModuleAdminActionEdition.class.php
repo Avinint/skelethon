@@ -11,10 +11,12 @@
             'oElement' => new \StdClass(),
         );
 
-SELECT
+//EDITSELECT
         if ($nIdElement > 0) {
             $aRetour['oElement'] = $this->oNew('MODEL', array($nIdElement));
-        }DEFAULT
+        }
+
+//DEFAULT
 
         return $aRetour;
     }

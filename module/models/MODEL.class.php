@@ -8,7 +8,7 @@ class MODEL extends Bdd
 {
     protected function sGetNomChampId()
     {
-        return $this->IDFIELD;
+        return 'IDFIELD';
     }
     /**
      *  Constructeur de la classe
@@ -135,7 +135,6 @@ CHAMPS_SELECT
      */
     public function aGetCriteres($szNomChamp = '', $szType = 'tableau')
     {
-        $aConfig = [];
 //VALIDATION
         if ($szType == 'tableau') {
             return $aConfig[$szNomChamp];

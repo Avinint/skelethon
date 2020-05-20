@@ -20,10 +20,7 @@ function MODEL()
     this.vInit = function()
     {
         if (szZoneCourante == 'admin') {
-            // this.vChargeEvenementsBoutons();
-
-            oMODELAdmin = new MODELAdmin();
-            oMODELAdmin.vInit();
+            this.vChargementPage();
         }
     };
 };

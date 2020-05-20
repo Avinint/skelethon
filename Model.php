@@ -168,7 +168,7 @@ class Model extends BaseFactory
      */
     public function getSearchCriteria(): string
     {
-        return implode('', $this->searchCriteria);
+        return implode(PHP_EOL, $this->searchCriteria);
     }
 
     /**
@@ -176,7 +176,12 @@ class Model extends BaseFactory
      */
     public function getValidationCriteria(): string
     {
-        return implode('', $this->validationCriteria);
+        if (empty($this->validationCriteria)) {
+            return str_repeat("\x20", 8).'$aConfig = []'.PHP_EOL;
+        }
+
+        return implode(PHP_EOL, $this->validationCriteria);
+
     }
 
     /**
@@ -326,7 +331,7 @@ class Model extends BaseFactory
 
             $aCriteresRecherche[] = $this->addStringCriterion($data->sChamp, $whereIEquals);
             $whereLike = $fieldName.' LIKE \'%".addslashes($aRecherche[\''.$data->sChamp.'\'])."%\'';
-            $aCriteresRecherche[] = $this->addStringCriterion($data->sChamp, $whereLike);
+            $aCriteresRecherche[] = $this->addStringCriterion($data->sChamp.'Partiel', $whereLike);
             }
 
         return $aCriteresRecherche;
@@ -343,51 +348,51 @@ class Model extends BaseFactory
 
     private function addNumberCriterion($field, $whereClause)
     {
-        return  "\t\t" . 'if (isset($aRecherche[\''.$field .'\']) && $aRecherche[\''. $field .'\'] > 0) {'.PHP_EOL.
+        return  str_repeat("\x20", 8) . 'if (isset($aRecherche[\''.$field .'\']) && $aRecherche[\''. $field .'\'] > 0) {'.PHP_EOL.
             $this->addQuery($whereClause);
     }
 
     private function addBooleanCriterion($field, $whereClause)
     {
-        return "\t\t".'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'nc\') {'.PHP_EOL.
-        "\t\t\t".'if ($aRecherche[\''.$field.'\'] === \'oui\') {'.PHP_EOL.
-        "\t\t\t\t".'$aRecherche[\''.$field."'] = 1;".PHP_EOL.
-        "\t\t\t} else {".PHP_EOL.
-        "\t\t\t\t".'$aRecherche[\''.$field.'\'] = 0;'.PHP_EOL.
-        "\t\t\t}".PHP_EOL.
+        return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'nc\') {'.PHP_EOL.
+        str_repeat("\x20", 12).'if ($aRecherche[\''.$field.'\'] === \'oui\') {'.PHP_EOL.
+        str_repeat("\x20", 16).'$aRecherche[\''.$field."'] = 1;".PHP_EOL.
+        str_repeat("\x20", 12)."} else {".PHP_EOL.
+        str_repeat("\x20", 16).'$aRecherche[\''.$field.'\'] = 0;'.PHP_EOL.
+        str_repeat("\x20", 12)."}".PHP_EOL.
         $this->addQuery($whereClause);
     }
 
     private function addDateCriterion($field, $whereClause, $suffixe)
     {
-        return "\t\t" . "if (isset(\$aRecherche['" . $field . '\']) === true && $aRecherche[\'' . $field . '\'] !== \'\') {' . PHP_EOL .
-            "\t\t\t" . 'if (!preg_match(\'/:/\', $aRecherche[\'' . $field . '\']) && !preg_match(\'/h/\', $aRecherche[\'' . $field . "'])) {" . PHP_EOL .
-            "\t\t\t\t" . '$aRecherche[\'' . $field . '\']'.($suffixe ? ' .= \'' . $suffixe . '\'' : $suffixe).';' . PHP_EOL .
-            "\t\t\t}" . PHP_EOL .
+        return str_repeat("\x20", 8) . "if (isset(\$aRecherche['" . $field . '\']) === true && $aRecherche[\'' . $field . '\'] !== \'\') {' . PHP_EOL .
+            str_repeat("\x20", 12) . 'if (!preg_match(\'/:/\', $aRecherche[\'' . $field . '\']) && !preg_match(\'/h/\', $aRecherche[\'' . $field . "'])) {" . PHP_EOL .
+            str_repeat("\x20", 16) . '$aRecherche[\'' . $field . '\']'.($suffixe ? ' .= \'' . $suffixe . '\'' : $suffixe).';' . PHP_EOL .
+            str_repeat("\x20", 12)."}" . PHP_EOL .
             $this->addQuery($whereClause);
     }
 
     private function addStringCriterion($field, $whereClause)
     {
-        return "\t\t".'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'\') {'.PHP_EOL.
+        return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'\') {'.PHP_EOL.
         $this->addQuery($whereClause);
     }
 
     private function addQuery($whereClause)
     {
-        return "\t\t\t".'$sRequete .= "'.PHP_EOL.
-        "\t\t\t\t" . $whereClause . PHP_EOL.
-        "\t\t\t\";".PHP_EOL.
-        "\t\t}".PHP_EOL;
+        return str_repeat("\x20", 12).'$sRequete .= "'.PHP_EOL.
+        str_repeat("\x20", 16) . $whereClause . PHP_EOL.
+        str_repeat("\x20", 12).'";'.PHP_EOL.
+            str_repeat("\x20", 8).'}'.PHP_EOL;
     }
 
     private function addValidationCriterion($data)
     {
-        $sCritere = "\t\t"."\$aConfig['".$data->sChamp.'\'] = array(' . PHP_EOL;
+        $sCritere = str_repeat("\x20", 8)."\$aConfig['".$data->sChamp.'\'] = array(' . PHP_EOL;
         if ($data->Null == 'NO') {
             $sCritere .=
-                "\t\t\t'required' => '1',".PHP_EOL.
-                "\t\t\t'minlength' => '1',".PHP_EOL;
+                str_repeat("\x20", 12).'\'required\' => \'1\','.PHP_EOL.
+                str_repeat("\x20", 12).'\'minlength\' => \'1\','.PHP_EOL;
         }
 
         if (isset($data->nMaxLength)) {
@@ -399,10 +404,10 @@ class Model extends BaseFactory
                 $nMaxLength += (int)$aLength[1];
             }
 
-            $sCritere .= "\t\t\t'maxlength' => '$nMaxLength'," . PHP_EOL;
+            $sCritere .= str_repeat("\x20", 12)."'maxlength' => '$nMaxLength'," . PHP_EOL;
         }
 
-        return "$sCritere\t\t);" . PHP_EOL;
+        return $sCritere.str_repeat("\x20",8).');' . PHP_EOL;
     }
 
     /**
@@ -434,7 +439,7 @@ class Model extends BaseFactory
         $result =  ['field' => $data->sChamp.$formate, 'column' => $data->Field, 'label'=> $data->sLabel, 'type'=> $data->sType, 'default' =>  $data->Default ?? '', 'name' => $data->sChamp];
 
         if ($data->sType === 'tinyint') {
-            $result['default'] = $data->Default === '1' ? 'oui' : 'non';
+            $result['default'] = $data->Default;
         } elseif ($data->sType === 'enum') {
             $result['enum'] = $this->getEnumValues($data->Type);
         }

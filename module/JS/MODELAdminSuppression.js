@@ -7,7 +7,7 @@
      *
      * @return void
      */
-    this.vRefreshListe = function(oReponseJSON, oParams) {
-        oParams.sClasseListe = 'TABLE';
-        this.vRefreshListeEtFermeCalque(oParams);
+    this.vFermeConsultationEtRefreshListe = function(oReponseJSON, oParams) {
+        this.vChargeListe('', $('.liste_TABLE'));
+        vFermeCalque('calque_consultation_TABLE'/*MULTI*/);
     };

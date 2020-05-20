@@ -1,3 +1,13 @@
+btn_dynamisation_recherche_TABLE:
+    action:
+        module: mODULE
+        route: json_dynamisation_recherche_TABLE
+        type: load_data
+    callback:
+        module: mODULE
+        fonction: vDynamisationFormulaireRechercheMODEL
+        alerte: non
+
 btn_ouverture_consultation_TABLE:
     action:
         module: mODULE

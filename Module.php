@@ -152,19 +152,21 @@ class Module extends BaseFactory
         }
     }
 
-    function generateConfigFiles(string $templatePath) : string
+    private function generateConfigFiles(string $templatePath) : string
     {
-        $text = '';
+        $texts = [];
         if (glob($templatePath)) {
-            $text = file_get_contents($templatePath);
+            $texts[] = file_get_contents($templatePath);
         }
 
         foreach ($this->model->actions as $action) {
             $templatePerActionPath = str_replace('.', '_'.$action.'.', $templatePath);
             if (glob($templatePerActionPath)) {
-                $text .= file_get_contents($templatePerActionPath).PHP_EOL;
+                $texts[] = file_get_contents($templatePerActionPath);
             }
         }
+
+        $text = implode(PHP_EOL, $texts);
 
         $modelName = '';
         $enums = '';
@@ -220,30 +222,43 @@ class Module extends BaseFactory
         $text = '';
         $methodText = '';
         $switchCaseList = [];
-
+        $noRecherche = true;
         foreach ($this->model->actions as $action) {
             $schemaMethodsPerActionPath = str_replace(['MODULE', 'Action.'], ['Module', 'Action' . $this->conversionPascalCase($action) . '.'], $templatePath);
             if (glob($schemaMethodsPerActionPath)) {
                 $methodText .= file_get_contents($schemaMethodsPerActionPath) . PHP_EOL;
             }
+
             if ($action !== 'accueil') {
                 $switchCaseList[] = '                ' . $switchCases[$action];
             }
+
+            if ($action === 'recherche') {
+                $noRecherche = false;
+            }
         }
+
+        $rechercheActionInitPathHandle = $noRecherche ? 'SansFormulaireRecherche' : 'AvecFormulaireRecherche';
+        $rechercheActionInitText = file_get_contents(str_replace(['MODULE', 'Action.'], ['Module', 'Action' .  $rechercheActionInitPathHandle  . '.'], $templatePath));
 
         $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
 
         if (glob($templatePath)) {
             $exceptions = [];
-            $default = '';
             $boolFields = $this->model->getViewFieldsByType('tinyint');
+            $default = '';
             if (!empty($boolFields)) {
-                $default = ' else {'.PHP_EOL;
+                $defaults = [];
                 foreach ($boolFields as $field) {
                     $exceptions['aBooleens'][] = $field['field'];
-                    $default .=  str_repeat("\x20", 12)."\$aRetour['oElement']->{$field['field']} = '{$field['default']}';".PHP_EOL;
+                    if (isset($field['default'])) {
+                        $defaultValue = $field['default'];
+                    } else {
+                        $defaultValue  =  'nc';
+                    }
+                    $defaults[] = str_repeat("\x20", 8)."\$aRetour['aRadios']['{$field['name']}'] = '$defaultValue';";
                 }
-                $default .= str_repeat("\x20", 8).'}';
+                $default = implode(PHP_EOL, $defaults);
             }
 
             $dateFields = $this->model->getViewFieldsByType([ 'date', 'datetime']);
@@ -262,24 +277,33 @@ class Module extends BaseFactory
                 $exceptionText .= implode(',', $exceptionArr).']';
             }
 
-            $enumText = '';
-            $enumDefault = '';
+            $enumEditionText = '';
             $enums = $this->model->getViewFieldsByType('enum');
             if (!empty($enums)) {
                 foreach ($enums as $enum) {
-                    $enumText .= str_repeat("\x20", 8)."\$aRetour['aSelects']['{$enum['name']}'] = \$this->aGetValeursListeConf('$this->name', '{$this->model->getName()}', '{$enum['column']}');".PHP_EOL;
-                    if (isset($enum['default'])) {
 
-                        $enumDefault .=
-                            str_repeat("\x20", 8).'$aRetour[\'oElement\'] = new \\StdClass();'.PHP_EOL.
-                            str_repeat("\x20", 12).'$aRetour[\'oElement\']->'.$enum['name'].' = \''.$enum['default'].'\';'.PHP_EOL;
+                    $enumPath = str_replace(['MODULE', 'Action.'], ['Module', 'ActionEnum.'], $templatePath);
+                    $enumEditionLines = $enumSearchLines = file($enumPath);
+                    unset($enumEditionLines[1]);
+                    if ($enum['default'] === null) {
+                        unset($enumEditionLines[2]);
+                        unset($enumSearchLines[1]);
+                        unset($enumSearchLines[2]);
+
                     }
+                    $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
+                    $replacements = [$enum['name'], $this->name, $this->model->getName(), $enum['column'], $enum['default']];
+                    
+                    $enumEditText = str_replace($searches, $replacements , implode('', $enumEditionLines));
+                    $enumSearchText = str_replace($searches, $replacements , implode('', $enumSearchLines));
                 }
             }
 
-            $methodText = str_replace(['MODEL', 'DEFAULT', 'SELECT', 'EXCEPTIONS'], [$this->model->getClassName(), $default, $enumText.$enumDefault, $exceptionText], $methodText);
+            $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT'],
+                [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, $default], $methodText);
             $text .= file_get_contents($templatePath);
-            $text = str_replace(['MODULE', 'MODEL', '//CASE', '//METHOD'], [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $methodText], $text);
+            $text = str_replace(['MODULE', 'MODEL', '//CASE', 'INIT;', '//METHOD'],
+                [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $rechercheActionInitText, $methodText], $text);
         }
         return $text;
     }
@@ -346,23 +370,27 @@ class Module extends BaseFactory
             } else {
                 $multiText = '';
             }
-
-
-            $templateSpecialPath = str_replace('.', 'Special.', $templatePath);
-            if (glob($templateSpecialPath)) {
-                $actionMethodText .= file_get_contents($templateSpecialPath);
-            }
         }
 
+        $noRecherche = true;
         foreach ($this->model->actions as $action) {
             $templatePerActionPath = str_replace('.', $this->conversionPascalCase($action) . '.', $templatePath);
             if (glob($templatePerActionPath)) {
                 $actionMethodText .= file_get_contents($templatePerActionPath);
             }
+
+            if ($action === 'recherche') {
+                $noRecherche = false;
+            }
         }
 
-        $text = str_replace(['//ACTION', 'MODEL', '/*MULTI*/', 'TABLE'],
-            [$actionMethodText, $this->model->getClassName(), $multiText, $this->model->getName()], $text);
+        if ($noRecherche) {
+            $noRechecheText = file_get_contents(str_replace('.', 'NoRecherche.', $templatePath));
+            $actionMethodText = $noRechecheText.$actionMethodText;
+        }
+
+        $text = str_replace(['/*ACTION*/', 'mODULE', 'MODEL', '/*MULTI*/', 'TABLE'],
+            [$actionMethodText, $this->name, $this->model->getClassName(), $multiText, $this->model->getName()], $text);
 
         return $text;
     }
@@ -478,8 +506,10 @@ class Module extends BaseFactory
                 $fieldTemplate = file_get_contents(str_replace('.', '_string.', $templatePath));
             }
 
+            $defautOui = $field['default'] === '1' ? ' checked' : '';
+            $defautNon = $field['default'] === '0' ? ' checked' : '';
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'DEFAUT_OUI', 'DEFAUT_NON'],
-                [$field['label'], $field['field'], $field['type'], $field['default'], $field['default_yes'], $field['default_no']], $fieldTemplate);
+                [$field['label'], $field['field'], $field['type'], $field['default'], $defautOui, $defautNon], $fieldTemplate);
         }
 
         $text = file_get_contents($templatePath);

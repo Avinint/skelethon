@@ -1,7 +1,7 @@
-json_recherche_TABLE:
-    reecriture: admin/mODULE/TABLE/recherche.json
+json_dynamisation_recherche_TABLE:
+    reecriture:     admin/mODULE/TABLE/dynamisation-recherche.json
     route:
-        zone: admin
-        module: mODULE
+        zone:       admin
+        module:     mODULE
         controller: TABLE
-        action: recherche
+        action:     dynamisation_recherche

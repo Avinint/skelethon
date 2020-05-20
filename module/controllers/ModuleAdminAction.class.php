@@ -54,9 +54,7 @@ class MODELAdminAction extends UndeadBrain
      */
     private function aRechercheElements()
     {
-        $aRetour = array(
-            'aElements' => array(),
-        );
+        $aRetour = INIT;
 
         $aRecherche = array();
         foreach ($_REQUEST as $sCle => $sValeur) {

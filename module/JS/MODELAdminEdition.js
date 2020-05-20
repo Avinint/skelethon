@@ -15,8 +15,7 @@
         oParams.szIdCalque = 'modal_calque_edition_TABLE'/*MULTI*/;
         var oModal = new Modal(oParams.szIdCalque, nIdElement, oReponseJSON);
 
-        oModal.find('.action_mODULE_btn_enregistre_edition_TABLE').addClass('variable_1_'+nIdElement);
-
+        oModal.eModal.find('.action_mODULE_btn_enregistre_edition_TABLE').addClass('variable_1_' + nIdElement);
         oParams.oModal = oModal;
         oParams.eFormulaire = oModal.eModal.find('form');
         var oCallback = this.oGetFonctionCallback(this, this.vOuvreEdition, oParams);
@@ -56,4 +55,17 @@
         $('.btn_form_consultation.variable_1_' + nIdElement).trigger('click');
         this.vRefreshListe({}, {});
         vFermeCalque('modal_calque_edition_TABLE');
+    };
+
+    /**
+     * Rafraichissement de la liste.
+     *
+     * @param object oReponseJSON   Infos JSON récupérées lors de l'appel Ajax.
+     * @param object oParams        Paramètres passés avant l'appel Ajax.
+     *
+     * @return void
+     */
+    this.vRefreshListe = function(oReponseJSON, oParams) {
+        oParams.sClasseListe = 'TABLE';
+        this.vRefreshListeEtFermeCalque(oParams);
     };

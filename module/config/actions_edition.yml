@@ -18,4 +18,3 @@ btn_enregistre_edition_TABLE:
         module: mODULE
         fonction: vFermeEditionEtRefreshListe
         alerte: non
-

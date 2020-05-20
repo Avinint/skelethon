@@ -4,53 +4,28 @@ function MODELAdmin()
 
     var oThis = this;
 
-    this.vInit = function() {
-        this.vAfficheFilAriane('<h1>Les MODELs</h1>');
-    }
-
+/*ACTION*/
     /**
-     * Callback exécutée à la suite de la dynamisation de la liste.
+     * Callback appelée pour charger les boutons de chaque ligne de la liste.
      *
-     * @param object oReponseJSON   Infos JSON récupérées lors de l'appel Ajax.
-     * @param object oParams        Paramètres passés avant l'appel Ajax.
+     * @param  {object} oElement Infos de la ligne.
+     * @param  {object} oLigne   Ligne du tableau (DOM).
      *
-     * @return void
+     * @return {void}
      */
-    this.vCallbackListeElement = function(oReponseJSON, oParams)
-    {
-        oParams.bSansVidage = true;
-        var oInfos = {
-            aSelects: oReponseJSON.aSelects
-        };
-        var oCallback = this.oGetFonctionCallback(this, this.vCallbackDynamisationFormulaireRecherche, oParams);
-        this.vChargeFormulaireData(oInfos, oParams, oCallback);
+    this.vCallbackLigneListe = function (oReponseJSON, oLigne, szClasse) {
+        var nIdElement = 0;
+        if (typeof oReponseJSON.id_element != 'undefined') {
+            nIdElement = oReponseJSON.id_element;
+        }
+
+        if (typeof oReponseJSON.nIdElement != 'undefined') {
+            nIdElement = oReponseJSON.nIdElement;
+        }
+
+        $('.btn_form_consultation', oLigne).attr('id', 'btn_edition_' + nIdElement);
+        $('.btn_form_consultation', oLigne).addClass('variable_1_' + nIdElement);
+
+        return oLigne;
     };
-
-    /**
-     *Callback exécutée à la suite de la dynamisation du formulaire de recherche.
-     *
-     *@param object oReponseJSON   Infos JSON récupérées lors de l'appel Ajax.
-     *@param object oParams        Paramètres passés avant l'appel Ajax.
-     *
-     *@return void
-     */
-    this.vCallbackDynamisationFormulaireRecherche = function(oReponseJSON, oParams)
-    {
-        oParams.szModuleChargeListe = 'TABLE';
-        this.vChargeEvenementsChampsRecherche('TABLE', oParams);
-    }
-
-    /**
-     * Callback exécutée à la suite de la dynamisation de la liste.
-     *
-     * @return void
-     */
-    this.vChargeEvenementsBoutons = function() {
-    // $('.btn_supp').off('click');
-    // $('.btn_supp').on('click', function(oEvent) {
-    // oEvent.preventDefault();
-    // alert('supp');
-    // });
-    };
-//ACTION
 };

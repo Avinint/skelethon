@@ -5,3 +5,11 @@ html_accueil_TABLE:
         module: mODULE
         controller: TABLE
         mode: accueil_TABLE
+
+json_recherche_TABLE:
+    reecriture: admin/mODULE/TABLE/recherche.json
+    route:
+        zone: admin
+        module: mODULE
+        controller: TABLE
+        action: recherche
