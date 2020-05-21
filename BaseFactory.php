@@ -1,6 +1,6 @@
 <?php
-define('ARRAY_ALL', false);
-define('ARRAY_ANY', true);
+define('ARRAY_ALL', true);
+define('ARRAY_ANY', false);
 
 function array_contains($needle, array $haystack, bool $all = false)
 {

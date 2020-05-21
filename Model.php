@@ -21,6 +21,7 @@ class Model extends BaseFactory
     private $tableHeaders = [];
     private $tableColumns = [];
     private $viewFields = [];
+    private $modalTitle = [];
 
     protected function __construct($name, $module)
     {
@@ -33,6 +34,7 @@ class Model extends BaseFactory
         $this->name = $this->askName($name);
         $this->className = $this->conversionPascalCase($this->name);
         $this->actions = $this->askActions();
+        $this->multi = $this->askMulti();
         $this->setDbParams();
 
         $this->generate();
@@ -51,6 +53,16 @@ class Model extends BaseFactory
         }
 
         return $name;
+    }
+
+    private function askMulti()
+    {
+        $multi = '';
+        while (!array_contains($multi, ['o', 'n'])) {
+            $multi = strtolower(readline($this->msg('Voulez-vous pouvoir ouvrir plusieurs calques en même temps? (multi/concurrent) [O/N]')));
+        }
+
+        return $multi === 'o';
     }
 
     private function generate()
@@ -82,6 +94,8 @@ class Model extends BaseFactory
             $this->tableColumns[] = $this->addTableColumn($data);
 
             $this->viewFields[] = $this->addViewField($data);
+
+            $this->addModalTitle($data);
         }
     }
 
@@ -238,6 +252,15 @@ class Model extends BaseFactory
         $aValeurs = explode(',', $sValeurs);
 
         return $aValeurs;
+    }
+
+    public function getModalTitle()
+    {
+        if (empty($this->modalTitle)) {
+            return '';
+        }
+
+        return PHP_EOL.str_repeat("\x20", 8).'$this->aTitreLibelle = [\''.implode(',', $this->modalTitle).'\'];'.PHP_EOL;
     }
 
     /**
@@ -445,6 +468,17 @@ class Model extends BaseFactory
         }
 
         return $result;
+    }
+
+    public function addModalTitle($data)
+    {
+        if ($this->multi) {
+            if (array_contains($data->Field, ['nom', 'name', 'surname']) || strpos($data->Field, 'nom') === 0 || strpos($data->Field, 'name') === 0) {
+                array_unshift($this->modalTitle, $data->Field);
+            } else if (strpos($data->Field, 'nom') !== false || strpos($data->Field, 'name')) {
+                array_push($this->modalTitle, $data->Field);
+            }
+        }
     }
 
     /**

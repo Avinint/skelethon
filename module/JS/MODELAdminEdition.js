@@ -12,7 +12,7 @@
         if (typeof oReponseJSON.oElement != 'undefined' && typeof oReponseJSON.oElement.nIdElement != 'undefined') {
             nIdElement = oReponseJSON.oElement.nIdElement;
         }
-        oParams.szIdCalque = 'modal_calque_edition_TABLE'/*MULTI*/;
+        oParams.szIdCalque = 'modal_calque_edition_TABLE';
         var oModal = new Modal(oParams.szIdCalque, nIdElement, oReponseJSON);
 
         oModal.eModal.find('.action_mODULE_btn_enregistre_edition_TABLE').addClass('variable_1_' + nIdElement);
@@ -47,13 +47,14 @@
      */
     this.vFermeEditionEtRefreshListe = function(oReponseJSON, oParams)
     {
-        var nIdElement = 0;
-        if (typeof oReponseJSON.oElement != 'undefined' && typeof oReponseJSON.oElement.nIdElement != 'undefined') {
-            nIdElement = oReponseJSON.oElement.nIdElement;
+        if (oReponseJSON.bModif === true) {
+            var oParamsConsultation = {
+                aVariables: [oReponseJSON.oElement.nIdElement]
+            };
+            this.vExecuteAction('', 'mODULE', 'btn_ouverture_consultation_TABLE', oParamsConsultation);
         }
 
-        $('.btn_form_consultation.variable_1_' + nIdElement).trigger('click');
-        this.vRefreshListe({}, {});
+        this.vChargeListe('', $('.liste_TABLE'));
         vFermeCalque('modal_calque_edition_TABLE');
     };
 

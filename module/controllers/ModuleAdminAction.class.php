@@ -37,7 +37,7 @@ class MODELAdminAction extends UndeadBrain
                     break;
 //CASE
             }
-
+//MULTI
             $szRetour = json_encode($aRetour);
 
             echo $szRetour;

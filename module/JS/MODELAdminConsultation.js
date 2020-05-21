@@ -21,18 +21,13 @@
         var oModal = new Modal(szIdCalque, nIdElement, oReponseJSON);
 
         if (nIdElement > 0) {
-            // nIdElement = oReponseJSON.oElement.nIdElement; WTF ?
             $.each(oReponseJSON.oElement, function(sNomChamp, sValeur) {
-                if ($('#' + szIdCalque).hasClass('multicalques')) {
-                    $('#' + szIdCalque + '_' + nIdElement + ' .' + sNomChamp).html(sValeur);
-                } else {
-                    $('#' + szIdCalque+' .'+sNomChamp).html(sValeur);
-                }
+                oModal.eModal.find('.'+sNomChamp).html(sValeur);
             });
         }
 
-        $('#' + szIdCalque/*MULTI*/ + ' .btn_action').addClass('variable_1_' + nIdElement);
-        $('#' + szIdCalque/*MULTI*/ + ' .btn_supp').attr('id', 'btn_suppression_' + nIdElement);
+        oModal.eModal.find('.btn_action').addClass('variable_1_' + nIdElement);
+        oModal.eModal.find('.btn_supp').attr('id', 'btn_suppression_' + nIdElement);
         this.vChargeEvenementsBoutonsLigne();
 
         // Ouverture et stockage de l'instance de calque.

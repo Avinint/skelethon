@@ -24,7 +24,7 @@ class MODEL extends Bdd
         $this->aMappingChamps = array(
 //CHAMPS
         );
-
+//TITRELIBELLE
         $this->vInitialiseProprietes($nIdElement);
     }
 

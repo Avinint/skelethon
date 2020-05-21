@@ -162,7 +162,10 @@ class Module extends BaseFactory
         foreach ($this->model->actions as $action) {
             $templatePerActionPath = str_replace('.', '_'.$action.'.', $templatePath);
             if (glob($templatePerActionPath)) {
-                $texts[] = file_get_contents($templatePerActionPath);
+                $texts[] = file_get_contents($templatePerActionPath) .
+                    ($this->model->multi && strpos($templatePath, 'blocs') !== false  ?
+                        file_get_contents(str_replace($action, 'multi' ,$templatePerActionPath)) :
+                        '' );
             }
         }
 
@@ -302,8 +305,9 @@ class Module extends BaseFactory
             $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT'],
                 [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, $default], $methodText);
             $text .= file_get_contents($templatePath);
-            $text = str_replace(['MODULE', 'MODEL', '//CASE', 'INIT;', '//METHOD'],
-                [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $rechercheActionInitText, $methodText], $text);
+            $concurrentText = $this->model->multi ? file_get_contents(str_replace(['MODULE', 'Action.'], ['Module', 'ActionMulti.'], $templatePath)): '';
+            $text = str_replace(['MODULE', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
+                [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
         }
         return $text;
     }
@@ -338,13 +342,14 @@ class Module extends BaseFactory
             $text = file_get_contents($templatePath);
         }
 
-        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//CHAMPS', 'CHAMPS_SELECT', '//RECHERCHE', '//VALIDATION'], [
+        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//CHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', '//RECHERCHE', '//VALIDATION'], [
             $this->namespaceName,
             $this->model->getClassName(),
             $this->model->getName(),
             $this->model->getAlias(),
             $this->model->getPrimaryKey(), $this->model->getIdField(),
-            $this->model->GetMappingChamps(), $this->model->getSqlSelectFields(),
+            $this->model->GetMappingChamps(), $this->model->getModalTitle(),
+            $this->model->getSqlSelectFields(),
             $this->model->getSearchCriteria(),
             $this->model->getValidationCriteria()], $text);
 
@@ -365,7 +370,7 @@ class Module extends BaseFactory
         $multiText = '';
         $actionMethodText = '';
         if (array_contains(['edition', 'consultation'], $this->model->actions, ARRAY_ANY)) {
-            if (array_contains(['edition_multi', 'consultation_multi'], $this->model->actions, ARRAY_ANY)) {
+            if ($this->model->multi) {
                 $multiText = " + '_' + nIdElement";
             } else {
                 $multiText = '';
@@ -449,6 +454,8 @@ class Module extends BaseFactory
             $fieldText[] = str_replace(['LABEL', 'FIELD'], [$field['label'], $field['field']], $fieldTemplate);
         }
         $text = file_get_contents($templatePath);
+        $text = $this->addModalTitle($text);
+
         $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->name, implode(PHP_EOL, $fieldText)], $text);
         return $text;
     }
@@ -480,7 +487,22 @@ class Module extends BaseFactory
         }
 
         $text = file_get_contents($templatePath);
+        $text = $this->addModalTitle($text);
+
         $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->name, implode(PHP_EOL, $fieldText)], $text);
+        return $text;
+    }
+
+    private function addModalTitle($text)
+    {
+        if ($this->model->multi) {
+            list($search, $replace) = ['h2', 'h2 class="sTitreLibelle"'];
+            $pos = strpos($text, $search);
+            if ($pos !== false) {
+                return substr_replace($text, $replace, $pos, strlen($search));
+            }
+        }
+
         return $text;
     }
 
