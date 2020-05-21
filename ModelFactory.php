@@ -3,7 +3,7 @@
 require_once 'BaseFactory.php';
 require 'Database.php';
 
-class Model extends BaseFactory
+class ModelFactory extends BaseFactory
 {
     use Database;
     private $name;
@@ -44,8 +44,8 @@ class Model extends BaseFactory
     {
         if ($name === '') {
             // TODO regler CAMEL CASE conversions
-            $name = readline($this->msg('Veuillez renseigner le nom du modèle en snake_case (minuscules et underscores):'.
-                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module ['.$this->module->getName().']'));
+            $name = readline($this->msg('Veuillez renseigner en snake_case ('.$this->highlight('minuscules', 'info') . ' et ' . $this->highlight('underscores', 'info').') le nom de la '.$this->highlight('table').' correspondant au modèle'.
+                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module->getName(), 'success').''));
         }
 
         if ($name === '') {
@@ -57,10 +57,11 @@ class Model extends BaseFactory
 
     private function askMulti()
     {
-        $multi = '';
-        while (!array_contains($multi, ['o', 'n'])) {
-            $multi = strtolower(readline($this->msg('Voulez-vous pouvoir ouvrir plusieurs calques en même temps? (multi/concurrent) [O/N]')));
-        }
+        $multi = $this->prompt($this->msg('Voulez-vous pouvoir ouvrir plusieurs calques en même temps? (multi/concurrent)', '', true), ['o', 'n']);
+//        $multi = '';
+//        while (!array_contains($multi, ['o', 'n'])) {
+//            $multi = strtolower(readline());
+//        }
 
         return $multi === 'o';
     }
@@ -104,12 +105,15 @@ class Model extends BaseFactory
         $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
         $actions = [];
 
-        do {
-            $reponse1 =  strtoupper(readline($this->msg('Voulez vous sélectionner toutes les actions disponibles? ('. implode(',', $actionsDisponibles).') [O/N]')));
-        }
-        while (!in_array($reponse1 , ['N', 'O']));
+//        do {
+//            $reponse1 =  strtoupper(readline();
+//        }
+//        while (!in_array($reponse1 , ['N', 'O']));
 
-        if ('O' === $reponse1) {
+
+        $reponse1 = $this->prompt($this->msg('Voulez vous sélectionner toutes les actions disponibles? ('. implode(', ', array_map([$this, 'highlight'], $actionsDisponibles)).')', '', true));
+
+        if ('o' === $reponse1) {
             $actions = $actionsDisponibles;
         } else {
             foreach ($actionsDisponibles as $action) {
@@ -484,7 +488,7 @@ class Model extends BaseFactory
     /**
      * @param string $name
      * @param $arg2
-     * @return Model
+     * @return ModelFactory
      */
     public static function create(string $name, $arg2) : self
     {

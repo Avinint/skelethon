@@ -1,24 +1,24 @@
 <?php
 
-include 'Module.php';
+include 'ModuleFactory.php';
 
 require_once "lib/Spyc/Spyc.php";
 
 const DS = DIRECTORY_SEPARATOR;
 
 if ($argc < 2 || !in_array($argv[1], ['module', 'modele'])) {
-   Module::msg('
+   ModuleFactory::msg('
     + + + + AIDE Skelethon: + + + +
-    '.Module::Color['Red'].'
+    '.ModuleFactory::Color['Red'].'
     Vous devez passer une action en paramètre:
-    '.Module::Color['Yellow'].'
-    \'module\' '.Module::Color['White'].' pour créer un module avec tous ses composants
+    '.ModuleFactory::Color['Yellow'].'
+    \'module\' '.ModuleFactory::Color['White'].' pour créer un module avec tous ses composants
     avec en arguments optionnels le nom du module
-     '.Module::Color['Yellow'].'
-    \'modele\' '.Module::Color['White'].' pour ajouter un modèle.
+     '.ModuleFactory::Color['Yellow'].'
+    \'modele\' '.ModuleFactory::Color['White'].' pour ajouter un modèle.
     avec en arguments optionnels le nom et le module auquel le modèle est rattaché
     
-    ('.Module::Color['Red'].'Attention'.Module::Color['White'].', pour le modèle, l\'ordre des arguments est important)
+    ('.ModuleFactory::Color['Red'].'Attention'.ModuleFactory::Color['White'].', pour le modèle, l\'ordre des arguments est important)
     ');
 }
 $action = $argv[1];
@@ -30,11 +30,11 @@ if ($argc < 4) {
 switch($action)
 {
     case 'module':
-        Module::getInstance($argv[2], $argv[3]);
+        ModuleFactory::getInstance($argv[2], $argv[3]);
         //generateModule($argv[2]);
         break;
     case 'modele':
-        Module::msg('Modèle');
+        ModuleFactory::msg('Modèle');
         break;
 }
 

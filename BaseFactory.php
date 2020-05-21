@@ -16,7 +16,7 @@ function array_contains($needle, array $haystack, bool $all = false)
 
 class BaseFactory
 {
-    const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[0;32m", 'White' => "\e[1;37m"];
+    const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[1;32m", 'White' => "\e[1;37m", 'Blue' => "\e[1;36m"];
 
     private static $_instance;
 
@@ -34,25 +34,66 @@ class BaseFactory
         return self::$_instance;
     }
 
-    public function msg(string $text, $type = '')
+    public function prompt($msg, $validValues = [], $keepCase = false)
     {
-        // echo $color . $text . self::Color['White'] . PHP_EOL;
-        switch ($type){
+        $result = '';
+        if (empty($validValues)) {
+            while($result === '' || $result === null) {
+                $result = readline($msg);
+            }
+        } else {
+            while (!array_contains($result, $validValues)) {
+                $result = $keepCase ? readline($msg) : strtolower(readline($msg));
+            }
+        }
+
+        return $result;
+    }
+
+    public function msg(string $text, $type = '', $hasDisplayYesNo = false)
+    {
+        $displayYesNo = $hasDisplayYesNo ? ' ['.$this->highlight('O', 'success').'/'.$this->highlight('N', 'error').']' : '';
+
+        echo ($type? $this->frame(strtoupper($type), $type) : '') . ' ' . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
+
+        return (bool)$type;
+    }
+
+    public function getColorFromType($type)
+    {
+        switch ($type) {
             case 'error':
                 $color = self::Color['Red'];
                 break;
-            case 'neutral':
+            case 'warning':
                 $color = self::Color['Yellow'];
                 break;
             case 'success':
                 $color =  self::Color['Green'];
+                break;
+            case 'info':
+                $color =  self::Color['Blue'];
                 break;
             default:
                 $color = self::Color['White'];
                 break;
         }
 
-        echo $color . $text . self::Color['White'] . PHP_EOL;
+        return $color;
+    }
+
+    public function frame($text, $type)
+    {
+        $color = $this->getColorFromType($type);
+
+        return self::Color['White'] . '[' . $color . $text . self::Color['White'] . ']' ;
+    }
+
+    public function highlight($text, $type = 'warning')
+    {
+        $color = $this->getColorFromType($type);
+
+        return $color.$text.self::Color['White'];
     }
 
     // MODEL

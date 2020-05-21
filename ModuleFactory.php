@@ -1,9 +1,9 @@
 <?php
 
 require_once 'BaseFactory.php';
-require 'Model.php';
+require 'ModelFactory.php';
 
-class Module extends BaseFactory
+class ModuleFactory extends BaseFactory
 {
     private $name;
     private $model;
@@ -30,14 +30,14 @@ class Module extends BaseFactory
     {
         $verbose = true;
 
-        $this->model = Model::create($modelName, $this);
+        $this->model = ModelFactory::create($modelName, $this);
 
 //        if (!isset($this->model)) {
 //            $this->model = $this->getModelName();
 //        }
 //        $this->model->getClassName() = $this->conversionPascalCase($this->model);
 
-        if (!$this->addModule()) {
+        if ($this->addModule() === false) {
             $this->msg('Création de répertoire impossible. Processus interrompu', 'error');
             return false;
         }
@@ -64,10 +64,11 @@ class Module extends BaseFactory
 
     function askName() : string
     {
-        $name = '';
-        while($name === '' || $name === null) {
-            $name = readline($this->msg('Veuillez renseigner le nom du module :'));
-        }
+        $name = $this->prompt($this->msg('Veuillez renseigner le nom du module :'));
+//        $name = '';
+//        while($name === '' || $name === null) {
+//            $name = readline(;
+//        }
 
         return $name;
     }
@@ -76,13 +77,20 @@ class Module extends BaseFactory
     {
         foreach ($structure as $key => $value) {
             if (is_array($value)) {
-                if ($this->ensureDirExists($path.DS.$key, true, $verbose)) {
+                if ($this->ensureDirExists($path.DS.$key, true, $verbose) === true) {
                     $this->addSubDirectories($path.DS.$key, $value, $verbose);
                 }
             } else {
                 // crée fichier
-                if ($error = $this->ensureFileExists($path.DS.$value, $verbose)) {
+                $error = $this->ensureFileExists($path.DS.$value, $verbose);
+                if ($error === true) {
+                   $this->msg('Le '. $this->highlight('fichier ', 'error') . $path . ' existe déja', 'warning') ;
+                } elseif ($error  !== '') {
                     $this->msg($error, 'error');
+                } else {
+                    if ($verbose) {
+                        $this->msg('Création du fichier: '.$path, 'success');
+                    }
                 }
             }
         }
@@ -96,19 +104,16 @@ class Module extends BaseFactory
     private function ensureDirExists(string $dirname, bool $recursive = false, $verbose = false) : bool
     {
         if(!is_dir($dirname)) {
-            if ($verbose) {
-               $this->msg('Création du répertoire: '.$dirname, 'success');
-            }
-            return mkdir($dirname, 0777, $recursive) && is_dir($dirname);
-        }
-        if ($verbose) {
-            $this->msg('*** Répertoire: '.$dirname. ' déja existant', 'neutral');
+            return mkdir($dirname, 0777, $recursive) && is_dir($dirname) && $this->msg('Création du répertoire: '.$dirname, 'success');;
         }
 
+        if ($verbose) {
+            return $this->msg('Le ' . $this->highlight('répertoire: ', 'info').''.$dirname. ' existe déja.', 'warning');
+        }
         return true;
     }
 
-    function ensureFileExists(string $path, $verbose) : string
+    function ensureFileExists(string $path, $verbose)
     {
         $commonPath = str_replace('modules'.DS.$this->name, '', $path);
         $templatePath = __DIR__.DS.'module'.$commonPath;
@@ -118,11 +123,8 @@ class Module extends BaseFactory
         }
 
         if (glob($path)) {
-            return "Le fichier $path existe déja";
+            return true;
         } else {
-            if ($verbose) {
-                $this->msg('Création du fichier: '.$path, 'success');
-            }
             $text = '';
 
             if (strpos($templatePath, '.yml')) {
@@ -148,7 +150,7 @@ class Module extends BaseFactory
             }
             //$this->msg("Template path: ".$templatePath, self::Color['White']);
 
-            return $this->createFile($path, $text, true);
+            return $this->createFile($path, $text, true, $verbose);
         }
     }
 
@@ -227,7 +229,7 @@ class Module extends BaseFactory
         $switchCaseList = [];
         $noRecherche = true;
         foreach ($this->model->actions as $action) {
-            $schemaMethodsPerActionPath = str_replace(['MODULE', 'Action.'], ['Module', 'Action' . $this->conversionPascalCase($action) . '.'], $templatePath);
+            $schemaMethodsPerActionPath = str_replace('Action.', 'Action' . $this->conversionPascalCase($action) . '.', $templatePath);
             if (glob($schemaMethodsPerActionPath)) {
                 $methodText .= file_get_contents($schemaMethodsPerActionPath) . PHP_EOL;
             }
@@ -242,7 +244,7 @@ class Module extends BaseFactory
         }
 
         $rechercheActionInitPathHandle = $noRecherche ? 'SansFormulaireRecherche' : 'AvecFormulaireRecherche';
-        $rechercheActionInitText = file_get_contents(str_replace(['MODULE', 'Action.'], ['Module', 'Action' .  $rechercheActionInitPathHandle  . '.'], $templatePath));
+        $rechercheActionInitText = file_get_contents(str_replace('Action.', 'Action' .  $rechercheActionInitPathHandle  . '.', $templatePath));
 
         $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
 
@@ -285,7 +287,7 @@ class Module extends BaseFactory
             if (!empty($enums)) {
                 foreach ($enums as $enum) {
 
-                    $enumPath = str_replace(['MODULE', 'Action.'], ['Module', 'ActionEnum.'], $templatePath);
+                    $enumPath = str_replace('Action.', 'ActionEnum.', $templatePath);
                     $enumEditionLines = $enumSearchLines = file($enumPath);
                     unset($enumEditionLines[1]);
                     if ($enum['default'] === null) {
@@ -305,7 +307,7 @@ class Module extends BaseFactory
             $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT'],
                 [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, $default], $methodText);
             $text .= file_get_contents($templatePath);
-            $concurrentText = $this->model->multi ? file_get_contents(str_replace(['MODULE', 'Action.'], ['Module', 'ActionMulti.'], $templatePath)): '';
+            $concurrentText = $this->model->multi ? file_get_contents(str_replace('Action.', 'ActionMulti.', $templatePath)): '';
             $text = str_replace(['MODULE', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
                 [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
         }
