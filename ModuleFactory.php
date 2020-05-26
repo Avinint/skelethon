@@ -45,21 +45,7 @@ class ModuleFactory extends BaseFactory
         $moduleStructure = Spyc::YAMLLoad(__DIR__.DS.'module.yml');
         $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure, $verbose); //TODO this model
 
-        $path = 'config/menu.yml';
-        if (!file_exists($path)) {
-            $path = '';
-        }
-
-        $menu = Spyc::YAMLLoad($path);
-        $modelName = $this->model->getName();
-        $newMenu = ['admin' => [$this->name =>['html_accueil_'.$modelName => ['titre' => 'Mes '.$this->model->labelize($modelName).'s']]]];
-        //var_dump (strpos(serialize($menu['admin'][$this->name]), serialize($newMenu['admin'][$this->name])) !== false);
-
-        if (!isset($menu['admin'][$this->name]) || strpos(serialize($menu['admin'][$this->name]), serialize($newMenu['admin'][$this->name])) === false) {
-            unset($menu['admin'][$this->name]);
-            $menu = Spyc::YAMLDump(array_merge_recursive($menu, $newMenu), false, false, true);
-            $this->createFile($path, $menu, true);
-        }
+        $this->addModuleToMenu();
     }
 
     function askName() : string
@@ -83,13 +69,14 @@ class ModuleFactory extends BaseFactory
             } else {
                 // crée fichier
                 $error = $this->ensureFileExists($path.DS.$value, $verbose);
+                $filename = str_replace(['MODULE', 'MODEL', 'TABLE'], [$this->namespaceName, $this->model->getClassName(), $this->model->getName()], $value);
                 if ($error === true) {
-                   $this->msg('Le '. $this->highlight('fichier ', 'error') . $path . ' existe déja', 'warning') ;
+                   $this->msg('Le '. $this->highlight('fichier ', 'error') . $path.DS. $filename . ' existe déja', 'warning');
                 } elseif ($error  !== '') {
                     $this->msg($error, 'error');
                 } else {
                     if ($verbose) {
-                        $this->msg('Création du fichier: '.$path, 'success');
+                        $this->msg('Création du fichier: '.$path.DS. $filename, 'success');
                     }
                 }
             }
@@ -165,7 +152,7 @@ class ModuleFactory extends BaseFactory
             $templatePerActionPath = str_replace('.', '_'.$action.'.', $templatePath);
             if (glob($templatePerActionPath)) {
                 $texts[] = file_get_contents($templatePerActionPath) .
-                    ($this->model->multi && strpos($templatePath, 'blocs') !== false  ?
+                    ($this->model->usesMultiCalques && strpos($templatePath, 'blocs') !== false  ?
                         file_get_contents(str_replace($action, 'multi' ,$templatePerActionPath)) :
                         '' );
             }
@@ -252,8 +239,8 @@ class ModuleFactory extends BaseFactory
             $exceptions = [];
             $boolFields = $this->model->getViewFieldsByType('tinyint');
             $default = '';
+            $defaults = [];
             if (!empty($boolFields)) {
-                $defaults = [];
                 foreach ($boolFields as $field) {
                     $exceptions['aBooleens'][] = $field['field'];
                     if (isset($field['default'])) {
@@ -263,7 +250,7 @@ class ModuleFactory extends BaseFactory
                     }
                     $defaults[] = str_repeat("\x20", 8)."\$aRetour['aRadios']['{$field['name']}'] = '$defaultValue';";
                 }
-                $default = implode(PHP_EOL, $defaults);
+
             }
 
             $dateFields = $this->model->getViewFieldsByType([ 'date', 'datetime']);
@@ -282,32 +269,63 @@ class ModuleFactory extends BaseFactory
                 $exceptionText .= implode(',', $exceptionArr).']';
             }
 
-            $enumEditionText = '';
             $enums = $this->model->getViewFieldsByType('enum');
+            $enumEditText = '';
+            $enumSearchText = '';
+            $enumDefaults = [];
+            $allEnumEditLines = [];
+            $allEnumSearchLines = [];
             if (!empty($enums)) {
-                foreach ($enums as $enum) {
-
+                if ($this->model->usesSelect2) {
+                    $enumPath = str_replace('Action.', 'ActionEnumSelect2.', $templatePath);
+                } else {
                     $enumPath = str_replace('Action.', 'ActionEnum.', $templatePath);
-                    $enumEditionLines = $enumSearchLines = file($enumPath);
-                    unset($enumEditionLines[1]);
-                    if ($enum['default'] === null) {
-                        unset($enumEditionLines[2]);
-                        unset($enumSearchLines[1]);
-                        unset($enumSearchLines[2]);
+                }
 
+                foreach ($enums as $enum) {
+                    $enumLines = $enumSearchLines = file($enumPath);
+                    $enumEditionLine = $enumLines[0];
+
+                    if ($enum['default']) {
+                        $enumSearchLines = $enumLines;
+                        $enumDefault = $enumLines[2];
+                    } else {
+                        $enumSearchLines = [$enumLines[0]];
                     }
+
+                    if ($this->model->usesSelect2) {
+                        if ($enum['default']) {
+                            $enumSearchLines = array_slice($enumLines, 0, 3);
+                            $enumDefault = $enumLines[3];
+                        } else {
+                            $enumSearchLines = array_slice($enumLines, 0, 1);
+                        }
+                        if ($enum['default'] === null) {
+                           $enum['default'] = '';
+                        }
+                    }
+
+
                     $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
                     $replacements = [$enum['name'], $this->name, $this->model->getName(), $enum['column'], $enum['default']];
-                    
-                    $enumEditText = str_replace($searches, $replacements , implode('', $enumEditionLines));
-                    $enumSearchText = str_replace($searches, $replacements , implode('', $enumSearchLines));
+
+                    $allEnumEditLines[] = str_replace($searches, $replacements , $enumEditionLine);
+                    $allEnumSearchLines[] = str_replace($searches, $replacements , implode('', $enumSearchLines));
+                    $enumDefaults[] = str_replace($searches, $replacements , $enumDefault);
                 }
+
+                $enumEditText = implode(PHP_EOL, $allEnumEditLines);
+                $enumSearchText = implode(PHP_EOL, $allEnumSearchLines);
+                $enumSearchText .= implode('', $defaults);
+                $defaults = array_merge($enumDefaults, $defaults);
             }
 
+            $enumSearchLines = array_merge($enumSearchLines, $defaults);
+
             $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT'],
-                [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, $default], $methodText);
+                [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults)], $methodText);
             $text .= file_get_contents($templatePath);
-            $concurrentText = $this->model->multi ? file_get_contents(str_replace('Action.', 'ActionMulti.', $templatePath)): '';
+            $concurrentText = $this->model->usesMultiCalques ? file_get_contents(str_replace('Action.', 'ActionMulti.', $templatePath)): '';
             $text = str_replace(['MODULE', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
                 [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
         }
@@ -372,7 +390,7 @@ class ModuleFactory extends BaseFactory
         $multiText = '';
         $actionMethodText = '';
         if (array_contains(['edition', 'consultation'], $this->model->actions, ARRAY_ANY)) {
-            if ($this->model->multi) {
+            if ($this->model->usesMultiCalques) {
                 $multiText = " + '_' + nIdElement";
             } else {
                 $multiText = '';
@@ -396,8 +414,31 @@ class ModuleFactory extends BaseFactory
             $actionMethodText = $noRechecheText.$actionMethodText;
         }
 
-        $text = str_replace(['/*ACTION*/', 'mODULE', 'MODEL', '/*MULTI*/', 'TABLE'],
-            [$actionMethodText, $this->name, $this->model->getClassName(), $multiText, $this->model->getName()], $text);
+        $select2Text = PHP_EOL;
+        $select2EditText = '';
+        if ($fields = $this->model->getViewFieldsByType('enum')) {
+            if ($this->model->usesSelect2 && strpos($templatePath, 'Admin') > 0) {
+                if (strpos($templatePath, 'Admin') > 0) {
+
+                }
+                $select2DefautTemplate = file(str_replace('.', 'RechercheSelect2.', $templatePath));
+                $select2RechercheTemplate = array_shift($select2DefautTemplate);
+
+                $select2EditTemplate = file_get_contents(str_replace('.', 'EditionSelect2.', $templatePath));
+
+                foreach ($fields as $field) {
+
+                    $select2Text .= str_replace('NAME', $field['name'], $select2RechercheTemplate);
+                    $select2EditText .= str_replace('NAME', $field['name'], $select2EditTemplate).PHP_EOL;
+                }
+                $select2Text .= implode('', $select2DefautTemplate);
+
+            }
+           // [$select2Template, $selectClass] = $this->model->usesSelect2 ? [file_get_contents(str_replace('.', 'Select2.', $templatePath)), 'select2'] : ['', 'selectmenu'];
+        }
+
+        $text = str_replace(['/*ACTION*/', 'mODULE', 'MODEL', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2'],
+            [$actionMethodText, $this->name, $this->model->getClassName(), $multiText, $this->model->getName(), $select2EditText, $select2Text], $text);
 
         return $text;
     }
@@ -471,9 +512,18 @@ class ModuleFactory extends BaseFactory
         $fieldText = [];
         foreach ($this->model->getViewFields() as $field) {
             if (array_contains($field['type'], ['enum'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_enum.', $templatePath));
+                if ($this->model->usesSelect2) {
+                    $fieldTemplate = file_get_contents(str_replace('.', '_enum_select2.', $templatePath));
+                } else {
+                    $fieldTemplate = file_get_contents(str_replace('.', '_enum.', $templatePath));
+                }
             } elseif (array_contains($field['type'], ['tinyint'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_tinyint.', $templatePath));
+                if ($this->model->usesSwitches) {
+                    $fieldTemplate = file_get_contents(str_replace('.', '_tinyint_switch.', $templatePath));
+                } else {
+                    $fieldTemplate = file_get_contents(str_replace('.', '_tinyint_radio.', $templatePath));
+                }
+
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
                 $fieldTemplate = file_get_contents(str_replace('.', '_date.', $templatePath));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
@@ -497,7 +547,7 @@ class ModuleFactory extends BaseFactory
 
     private function addModalTitle($text)
     {
-        if ($this->model->multi) {
+        if ($this->model->usesMultiCalques) {
             list($search, $replace) = ['h2', 'h2 class="sTitreLibelle"'];
             $pos = strpos($text, $search);
             if ($pos !== false) {
@@ -517,9 +567,17 @@ class ModuleFactory extends BaseFactory
         $fieldText = [];
         foreach ($this->model->getViewFields() as $field) {
             if (array_contains($field['type'], ['enum'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_enum.', $templatePath));
+                if ($this->model->usesSelect2) {
+                    $fieldTemplate = file_get_contents(str_replace('.', '_enum_select2.', $templatePath));
+                } else {
+                    $fieldTemplate = file_get_contents(str_replace('.', '_enum.', $templatePath));
+                }
             } elseif (array_contains($field['type'], ['tinyint'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_tinyint.', $templatePath));
+                if ($this->model->usesSwitches) {
+                    $fieldTemplate = file_get_contents(str_replace('.', '_tinyint_switch.', $templatePath));
+                } else {
+                    $fieldTemplate = file_get_contents(str_replace('.', '_tinyint_radio.', $templatePath));
+                }
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
                 $fieldTemplate = file_get_contents(str_replace('.', '_date.', $templatePath));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
@@ -561,6 +619,28 @@ class ModuleFactory extends BaseFactory
     public function getNamespace()
     {
         return $this->namespaceName;
+    }
+
+    /**
+     * @param string $modelName
+     */
+    private function addModuleToMenu(): void
+    {
+        $menuPath = 'config/menu.yml';
+        if (!file_exists($menuPath)) {
+            $menuPath = '';
+        }
+
+        $menu = Spyc::YAMLLoad($menuPath);
+        $modelName = $this->model->getName();
+        $newMenu = ['admin' => [$this->name => ['html_accueil_' . $modelName => ['titre' => 'Mes ' . $this->model->labelize($modelName) . 's']]]];
+        //var_dump (strpos(serialize($menu['admin'][$this->name]), serialize($newMenu['admin'][$this->name])) !== false);
+
+        if (!isset($menu['admin'][$this->name]) || strpos(serialize($menu['admin'][$this->name]), serialize($newMenu['admin'][$this->name])) === false) {
+            unset($menu['admin'][$this->name]);
+            $menu = Spyc::YAMLDump(array_merge_recursive($menu, $newMenu), false, false, true);
+            $this->createFile($menuPath, $menu, true);
+        }
     }
 
 }

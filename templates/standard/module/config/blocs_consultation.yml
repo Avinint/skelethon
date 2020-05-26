@@ -1,5 +1,5 @@
-calque_edition_TABLE:
-    route: html_edition_TABLE
+calque_consultation_TABLE:
+    route: html_consultation_TABLE
     priorite: 1
     ordre: 1
     callback: ''
@@ -8,7 +8,7 @@ calque_edition_TABLE:
         - admin
     auto_reset: oui
     module_callback: ''
-    largeur: large
+    largeur: small
     cache:
         html: oui
         base: oui

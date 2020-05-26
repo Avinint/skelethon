@@ -1,0 +1,1 @@
+oParams.eFormulaire.find('.NAME').select2({ 'data': oReponseJSON.aSelects.NAME, 'allowClear': true, 'placeholder': ' '}).val(oReponseJSON.oElement.NAME).trigger('change');

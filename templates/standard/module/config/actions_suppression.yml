@@ -5,5 +5,5 @@ btn_suppression_TABLE:
         type: save_data
     callback:
         module: mODULE
-        fonction: vRefreshListe
+        fonction: vFermeConsultationEtRefreshListe
         alerte: non

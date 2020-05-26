@@ -15,11 +15,12 @@
         oParams.szIdCalque = 'modal_calque_edition_TABLE';
         var oModal = new Modal(oParams.szIdCalque, nIdElement, oReponseJSON);
 
-        oModal.eModal.find('.action_mODULE_btn_enregistre_edition_TABLE').addClass('variable_1_' + nIdElement);
-        oParams.oModal = oModal;
         oParams.eFormulaire = oModal.eModal.find('form');
-        var oCallback = this.oGetFonctionCallback(this, this.vOuvreEdition, oParams);
-        this.vChargeFormulaireData(oReponseJSON, oParams, oCallback);
+        this.vChargeFormulaireData(oReponseJSON, oParams);
+        oModal.eModal.find('.action_mODULE_btn_enregistre_edition_TABLE').addClass('variable_1_' + nIdElement);
+        SELECT2EDIT
+        oModal.oOpenModal();
+        aInstancesCalques[oParams.szIdCalque] = oModal;
     };
 
     /**

@@ -34,7 +34,9 @@ class ModelFactory extends BaseFactory
         $this->name = $this->askName($name);
         $this->className = $this->conversionPascalCase($this->name);
         $this->actions = $this->askActions();
-        $this->multi = $this->askMulti();
+        $this->usesMultiCalques = $this->askMulti();
+        $this->usesSelect2 = $this->askSelect2();
+        $this->usesSwitches = $this->askSwitches();
         $this->setDbParams();
 
         $this->generate();
@@ -57,13 +59,23 @@ class ModelFactory extends BaseFactory
 
     private function askMulti()
     {
-        $multi = $this->prompt($this->msg('Voulez-vous pouvoir ouvrir plusieurs calques en même temps? (multi/concurrent)', '', true), ['o', 'n']);
-//        $multi = '';
-//        while (!array_contains($multi, ['o', 'n'])) {
-//            $multi = strtolower(readline());
-//        }
+        $useMulti = $this->prompt($this->msg('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', '', true), ['o', 'n']);
 
-        return $multi === 'o';
+        return $useMulti === 'o';
+    }
+
+    private function askSwitches()
+    {
+        $usesSwitches = $this->prompt($this->msg('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', '', true), ['o', 'n']);
+
+        return $usesSwitches === 'o';
+    }
+    
+    private function askSelect2()
+    {
+        $useSelect2 = $this->prompt($this->msg('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', '', true), ['o', 'n']);
+        
+        return  $useSelect2 === 'o';
     }
 
     private function generate()
@@ -382,11 +394,11 @@ class ModelFactory extends BaseFactory
     private function addBooleanCriterion($field, $whereClause)
     {
         return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'nc\') {'.PHP_EOL.
-        str_repeat("\x20", 12).'if ($aRecherche[\''.$field.'\'] === \'oui\') {'.PHP_EOL.
-        str_repeat("\x20", 16).'$aRecherche[\''.$field."'] = 1;".PHP_EOL.
-        str_repeat("\x20", 12)."} else {".PHP_EOL.
-        str_repeat("\x20", 16).'$aRecherche[\''.$field.'\'] = 0;'.PHP_EOL.
-        str_repeat("\x20", 12)."}".PHP_EOL.
+//        str_repeat("\x20", 12).'if ($aRecherche[\''.$field.'\'] === \'oui\') {'.PHP_EOL.
+//        str_repeat("\x20", 16).'$aRecherche[\''.$field."'] = 1;".PHP_EOL.
+//        str_repeat("\x20", 12)."} else {".PHP_EOL.
+//        str_repeat("\x20", 16).'$aRecherche[\''.$field.'\'] = 0;'.PHP_EOL.
+//        str_repeat("\x20", 12)."}".PHP_EOL.
         $this->addQuery($whereClause);
     }
 
@@ -476,7 +488,7 @@ class ModelFactory extends BaseFactory
 
     public function addModalTitle($data)
     {
-        if ($this->multi) {
+        if ($this->usesMultiCalques) {
             if (array_contains($data->Field, ['nom', 'name', 'surname']) || strpos($data->Field, 'nom') === 0 || strpos($data->Field, 'name') === 0) {
                 array_unshift($this->modalTitle, $data->Field);
             } else if (strpos($data->Field, 'nom') !== false || strpos($data->Field, 'name')) {

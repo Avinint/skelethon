@@ -27,7 +27,7 @@
         oParams.bSansVidage = true;
         var oInfos = {
             aSelects: oReponseJSON.aSelects,
-            oElement: oReponseJSON.oElement
+            oSelectDefauts: oReponseJSON.oSelectDefauts
         };
 
         var oCallback = this.oGetFonctionCallback(this, this.vDynamisationFormulaireRecherche, oParams);
@@ -45,9 +45,8 @@
     this.vDynamisationFormulaireRecherche = function(oReponseJSON, oParams)
     {
         oParams.szModuleChargeListe = 'TABLE';
-        if (oParams.bChargementPage === true) {
-            $('#zone_navigation_2 form').find('select').trigger('change');
-        }
+        var eFormulaire = $('#zone_navigation_2').find('form');
+SELECT2
 
         this.vChargeEvenementsChampsRecherche('TABLE', oParams);
     }
