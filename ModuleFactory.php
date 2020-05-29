@@ -21,6 +21,7 @@ class ModuleFactory extends BaseFactory
         }
 
         $this->name = $name;
+        $this->template = 'standard';
         $this->namespaceName = $this->conversionPascalCase($this->name);
 
         $this->generate($modelName);
@@ -43,7 +44,7 @@ class ModuleFactory extends BaseFactory
         }
 
         $moduleStructure = Spyc::YAMLLoad(__DIR__.DS.'module.yml');
-        $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure, $verbose); //TODO this model
+        $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure, $verbose);
 
         $this->addModuleToMenu();
     }
@@ -103,7 +104,8 @@ class ModuleFactory extends BaseFactory
     function ensureFileExists(string $path, $verbose)
     {
         $commonPath = str_replace('modules'.DS.$this->name, '', $path);
-        $templatePath = __DIR__.DS.'module'.$commonPath;
+        $templatePath = __DIR__.DS.'templates'.DS.$this->template.DS.'module'.$commonPath;
+        var_dump($templatePath);
 
         if (strpos($path, '.yml') === false) {
             $path = str_replace(['MODULE', 'MODEL', 'TABLE'], [$this->namespaceName, $this->model->getClassName(), $this->model->getName()], $path);
@@ -633,8 +635,10 @@ class ModuleFactory extends BaseFactory
 
         $menu = Spyc::YAMLLoad($menuPath);
         $modelName = $this->model->getName();
-        $newMenu = ['admin' => [$this->name => ['html_accueil_' . $modelName => ['titre' => 'Mes ' . $this->model->labelize($modelName) . 's']]]];
-        //var_dump (strpos(serialize($menu['admin'][$this->name]), serialize($newMenu['admin'][$this->name])) !== false);
+        $newMenu = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
+            [$this->name, $modelName, $this->model->labelize($modelName) . 's'],
+            file_get_contents(__DIR__.DS.'templates'.DS.$this->template.DS.'menu.yml')));
+        //$newMenu = ['admin' => [$this->name => ['html_accueil_' . $modelName => ['titre' => 'Mes ' . $this->model->labelize($modelName) . 's']]]];
 
         if (!isset($menu['admin'][$this->name]) || strpos(serialize($menu['admin'][$this->name]), serialize($newMenu['admin'][$this->name])) === false) {
             unset($menu['admin'][$this->name]);
