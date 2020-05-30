@@ -2,10 +2,12 @@
 define('ARRAY_ALL', true);
 define('ARRAY_ANY', false);
 
-function array_contains($needle, array $haystack, bool $all = false)
+function array_contains($needle, array $haystack, bool $all = false, $has_nested_arrays = false)
 {
     if (is_array($needle)) {
-        if ($all) {
+        if ($has_nested_arrays) {
+            return strpos(serialize($needle), serialize($haystack)) !== false;
+        } elseif ($all) {
             return empty(array_diff($needle, $haystack));
         }
         return !empty(array_intersect($needle, $haystack));
@@ -42,8 +44,9 @@ class BaseFactory
                 $result = readline($msg);
             }
         } else {
+            $result = false;
             while (!array_contains($result, $validValues)) {
-                $result = $keepCase ? readline($msg) : strtolower(readline($msg));
+                $result = $keepCase ? readline($msg) : strtolower(readline($this->msg($msg, '', $validValues === ['o', 'n'])));
             }
         }
 
@@ -57,6 +60,11 @@ class BaseFactory
         echo ($type? $this->frame(strtoupper($type), $type) : '') . ' ' . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
 
         return (bool)$type;
+    }
+
+    public function displayList($list, $hl = '')
+    {
+        return implode(PHP_EOL, array_map(function($el) use ($hl) { if ($hl) {$el = $this->highlight($el, $hl);} return "\t$el";}, $list));
     }
 
     public function getColorFromType($type)
@@ -118,6 +126,29 @@ class BaseFactory
     protected function camelize($name = '')
     {
         return strtolower(str_replace(['-', ' '], '_', $name));
+    }
+
+    /**
+     * Remplace le chemin du template choisi par le chemin du template standard s'il n'y a pas de template personnalisé
+     *
+     * @param $templatePath
+     * @return string|string[]
+     */
+    protected function getTrueTemplatePath($templatePath, $suffix = '', $marker = '.')
+    {
+        $search = [];
+        $replace = [];
+
+        if (!empty($suffix)) {
+            $templatePath = str_replace($marker, $suffix.$marker, $templatePath);
+        }
+
+        if (!file_exists($templatePath)) {
+            $templatePath = str_replace($this->template, 'standard', $templatePath);
+        }
+
+
+        return $templatePath;
     }
 
     protected function createFile($path, $text = '', $write = false)

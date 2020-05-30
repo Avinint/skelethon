@@ -8,6 +8,7 @@ class ModuleFactory extends BaseFactory
     private $name;
     private $model;
     private $namespaceName;
+    private $config;
 
     protected function __construct($name, $modelName)
     {
@@ -16,12 +17,16 @@ class ModuleFactory extends BaseFactory
             throw new Exception();
         }
 
+        if (file_exists(__DIR__.DS.'config.yml')) {
+            $this->config = file_exists(__DIR__.DS.'config.yml') ? Spyc::YAMLLoad(__DIR__ . DS . 'config.yml') : [];
+        }
+
         if (!isset($name)) {
             $name = $this->askName();
         }
 
         $this->name = $name;
-        $this->template = 'standard';
+        $this->template = $this->askTemplate();
         $this->namespaceName = $this->conversionPascalCase($this->name);
 
         $this->generate($modelName);
@@ -32,11 +37,6 @@ class ModuleFactory extends BaseFactory
         $verbose = true;
 
         $this->model = ModelFactory::create($modelName, $this);
-
-//        if (!isset($this->model)) {
-//            $this->model = $this->getModelName();
-//        }
-//        $this->model->getClassName() = $this->conversionPascalCase($this->model);
 
         if ($this->addModule() === false) {
             $this->msg('Création de répertoire impossible. Processus interrompu', 'error');
@@ -51,13 +51,7 @@ class ModuleFactory extends BaseFactory
 
     function askName() : string
     {
-        $name = $this->prompt($this->msg('Veuillez renseigner le nom du module :'));
-//        $name = '';
-//        while($name === '' || $name === null) {
-//            $name = readline(;
-//        }
-
-        return $name;
+        return $this->prompt($this->msg('Veuillez renseigner le nom du module :'));
     }
 
     function addSubDirectories($path, $structure, $verbose = false)
@@ -89,6 +83,14 @@ class ModuleFactory extends BaseFactory
         return $this->ensureDirExists('modules/'.$this->name);
     }
 
+    /**
+     * Crée répertoire s'il n'existe pas
+     *
+     * @param string $dirname
+     * @param bool $recursive
+     * @param bool $verbose
+     * @return bool
+     */
     private function ensureDirExists(string $dirname, bool $recursive = false, $verbose = false) : bool
     {
         if(!is_dir($dirname)) {
@@ -101,17 +103,23 @@ class ModuleFactory extends BaseFactory
         return true;
     }
 
+    /**
+     * Crée fichier s'il n'existe pas
+     *
+     * @param string $path
+     * @param $verbose
+     * @return bool|string
+     */
     function ensureFileExists(string $path, $verbose)
     {
         $commonPath = str_replace('modules'.DS.$this->name, '', $path);
         $templatePath = __DIR__.DS.'templates'.DS.$this->template.DS.'module'.$commonPath;
-        var_dump($templatePath);
 
         if (strpos($path, '.yml') === false) {
             $path = str_replace(['MODULE', 'MODEL', 'TABLE'], [$this->namespaceName, $this->model->getClassName(), $this->model->getName()], $path);
         }
 
-        if (glob($path)) {
+        if (file_exists($path)) {
             return true;
         } else {
             $text = '';
@@ -127,7 +135,7 @@ class ModuleFactory extends BaseFactory
             } elseif (strpos($templatePath, '.js')) {
                 $text = $this->generateJSFiles($templatePath);
             } elseif (strpos($templatePath, 'accueil_TABLE.html')) {
-                $text = file_get_contents($templatePath);
+                $text = file_get_contents($this->getTrueTemplatePath($templatePath));
             }elseif (strpos($templatePath, 'liste_TABLE.html')) {
                 $text = $this->getListView($templatePath);
             } elseif (strpos($templatePath, 'consultation_TABLE.html')) {
@@ -143,16 +151,18 @@ class ModuleFactory extends BaseFactory
         }
     }
 
-    private function generateConfigFiles(string $templatePath) : string
+    private function generateConfigFiles(string $selectedTemplatePath) : string
     {
         $texts = [];
-        if (glob($templatePath)) {
+
+        $templatePath = $this->getTrueTemplatePath($selectedTemplatePath);
+        if (file_exists($templatePath)) {
             $texts[] = file_get_contents($templatePath);
         }
 
         foreach ($this->model->actions as $action) {
-            $templatePerActionPath = str_replace('.', '_'.$action.'.', $templatePath);
-            if (glob($templatePerActionPath)) {
+            $templatePerActionPath = $this->getTrueTemplatePath(str_replace('.', '_'.$action.'.', $selectedTemplatePath));
+            if (file_exists($templatePerActionPath)) {
                 $texts[] = file_get_contents($templatePerActionPath) .
                     ($this->model->usesMultiCalques && strpos($templatePath, 'blocs') !== false  ?
                         file_get_contents(str_replace($action, 'multi' ,$templatePerActionPath)) :
@@ -185,10 +195,10 @@ class ModuleFactory extends BaseFactory
     }
 
     /**
-     * @param string $templatePath
+     * @param string $selectedTemplatePath
      * @return string|string[]
      */
-    private function generateActionController(string $templatePath)
+    private function generateActionController(string $selectedTemplatePath)
     {
         $switchCases = [
             'recherche' => 'case \'dynamisation_recherche\':
@@ -218,8 +228,8 @@ class ModuleFactory extends BaseFactory
         $switchCaseList = [];
         $noRecherche = true;
         foreach ($this->model->actions as $action) {
-            $schemaMethodsPerActionPath = str_replace('Action.', 'Action' . $this->conversionPascalCase($action) . '.', $templatePath);
-            if (glob($schemaMethodsPerActionPath)) {
+            $schemaMethodsPerActionPath = $this->getTrueTemplatePath(str_replace('Action.', 'Action' . $this->conversionPascalCase($action) . '.', $selectedTemplatePath));
+            if (file_exists($schemaMethodsPerActionPath)) {
                 $methodText .= file_get_contents($schemaMethodsPerActionPath) . PHP_EOL;
             }
 
@@ -233,11 +243,12 @@ class ModuleFactory extends BaseFactory
         }
 
         $rechercheActionInitPathHandle = $noRecherche ? 'SansFormulaireRecherche' : 'AvecFormulaireRecherche';
-        $rechercheActionInitText = file_get_contents(str_replace('Action.', 'Action' .  $rechercheActionInitPathHandle  . '.', $templatePath));
+        $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath(str_replace('Action.', 'Action' .  $rechercheActionInitPathHandle  . '.', $selectedTemplatePath)));
 
         $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
 
-        if (glob($templatePath)) {
+        $templatePath = $this->getTrueTemplatePath($selectedTemplatePath);
+        if (file_exists($templatePath)) {
             $exceptions = [];
             $boolFields = $this->model->getViewFieldsByType('tinyint');
             $default = '';
@@ -279,9 +290,9 @@ class ModuleFactory extends BaseFactory
             $allEnumSearchLines = [];
             if (!empty($enums)) {
                 if ($this->model->usesSelect2) {
-                    $enumPath = str_replace('Action.', 'ActionEnumSelect2.', $templatePath);
+                    $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnumSelect2.', $selectedTemplatePath));
                 } else {
-                    $enumPath = str_replace('Action.', 'ActionEnum.', $templatePath);
+                    $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnum.', $selectedTemplatePath));
                 }
 
                 foreach ($enums as $enum) {
@@ -334,11 +345,10 @@ class ModuleFactory extends BaseFactory
         return $text;
     }
 
-    private function generateHTMLController(string $templatePath) : string
+    private function generateHTMLController(string $selectedTemplatePath) : string
     {
         $text = '';
-
-        if (glob($templatePath)) {
+        if (file_exists($templatePath = $this->getTrueTemplatePath($selectedTemplatePath))) {
             $text = file_get_contents($templatePath);
 
             $recherche = array_contains('recherche', $this->model->actions) ? '$sFichierContenu = $this->szGetFichierPourInclusion(\'modules\', \'mODULE/vues/recherche_TABLE.html\');
@@ -359,8 +369,7 @@ class ModuleFactory extends BaseFactory
     private function generateModel(string $templatePath)
     {
         $text = '';
-        //$templatePath = str_replace('MODEL', 'Model', $templatePath);
-        if (glob($templatePath)) {
+        if (file_exists($templatePath = $this->getTrueTemplatePath($templatePath))) {
             $text = file_get_contents($templatePath);
         }
 
@@ -382,10 +391,11 @@ class ModuleFactory extends BaseFactory
      * @param string $templatePath
      * @return string|string[]
      */
-    private function generateJSFiles(string $templatePath)
+    private function generateJSFiles(string $selectedTemplatePath)
     {
         $text = '';
-        if (glob($templatePath)) {
+        $templatePath = $this->getTrueTemplatePath($selectedTemplatePath);
+        if (file_exists($templatePath)) {
             $text = file_get_contents($templatePath);
         }
 
@@ -401,8 +411,8 @@ class ModuleFactory extends BaseFactory
 
         $noRecherche = true;
         foreach ($this->model->actions as $action) {
-            $templatePerActionPath = str_replace('.', $this->conversionPascalCase($action) . '.', $templatePath);
-            if (glob($templatePerActionPath)) {
+            $templatePerActionPath =  $this->getTrueTemplatePath(str_replace('.', $this->conversionPascalCase($action) . '.', $selectedTemplatePath));
+            if (file_exists($templatePerActionPath)) {
                 $actionMethodText .= file_get_contents($templatePerActionPath);
             }
 
@@ -412,8 +422,8 @@ class ModuleFactory extends BaseFactory
         }
 
         if ($noRecherche) {
-            $noRechecheText = file_get_contents(str_replace('.', 'NoRecherche.', $templatePath));
-            $actionMethodText = $noRechecheText.$actionMethodText;
+            $noRechercheText = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'NoRecherche.', $selectedTemplatePath)));
+            $actionMethodText = $noRechercheText.$actionMethodText;
         }
 
         $select2Text = PHP_EOL;
@@ -423,10 +433,10 @@ class ModuleFactory extends BaseFactory
                 if (strpos($templatePath, 'Admin') > 0) {
 
                 }
-                $select2DefautTemplate = file(str_replace('.', 'RechercheSelect2.', $templatePath));
+                $select2DefautTemplate = file($this->getTrueTemplatePath(str_replace('.', 'RechercheSelect2.', $selectedTemplatePath)));
                 $select2RechercheTemplate = array_shift($select2DefautTemplate);
 
-                $select2EditTemplate = file_get_contents(str_replace('.', 'EditionSelect2.', $templatePath));
+                $select2EditTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'EditionSelect2.', $selectedTemplatePath)));
 
                 foreach ($fields as $field) {
 
@@ -455,22 +465,22 @@ class ModuleFactory extends BaseFactory
         $actionText = str_repeat("\x20", 16) . '<td class="centre">' . PHP_EOL;
 
         if (array_contains('edition', $this->model->getActions())) {
-            $actionBarTemplatePath = str_replace('.', '_actionbar.', $templatePath);
+            $actionBarTemplatePath = $this->getTrueTemplatePath(str_replace('.', '_actionbar.', $templatePath));
             $actionBarText = file_get_contents($actionBarTemplatePath);
         }
 
         if (array_contains('consultation', $this->model->getActions())) {
-            $consultationTemplatePath = str_replace('.', '_consultation.', $templatePath);
+            $consultationTemplatePath = $this->getTrueTemplatePath(str_replace('.', '_consultation.', $templatePath));
             $actionText .= file_get_contents($consultationTemplatePath);
         } else {
 
             if (array_contains('edition', $this->model->getActions())) {
-                $editionTemplatePath = str_replace('.', '_edition.', $templatePath);
+                $editionTemplatePath = $this->getTrueTemplatePath(str_replace('.', '_edition.', $templatePath));
                 $actionText .= file_get_contents($editionTemplatePath);
             }
 
             if (array_contains('suppression', $this->model->getActions())) {
-                $suppressionTemplatePath = str_replace('.', '_suppression.', $templatePath);
+                $suppressionTemplatePath = $this->getTrueTemplatePath(str_replace('.', '_suppression.', $templatePath));
                 $actionText .= file_get_contents($suppressionTemplatePath);
             }
         }
@@ -480,7 +490,7 @@ class ModuleFactory extends BaseFactory
         if (array_contains(['consultation', 'edition', 'suppression'], $this->model->getActions())) {
             $callbackLigne = " ligne_callback_TABLE_vCallbackLigneListe";
         }
-        $text = file_get_contents($templatePath);
+        $text = file_get_contents($this->getTrueTemplatePath($templatePath));
         $text = str_replace(['ACTION_BAR', 'JSFILE', 'CALLBACKLIGNE', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'TABLE', 'NUMCOL'],
             [$actionBarText, $this->model->GetName(), $callbackLigne, $this->model->getClassname(), $this->model->getTableHeaders(),
                 $actionText, $this->model->getTableColumns(), $this->name, $this->model->GetName(), $this->model->getColumnNumber()], $text);
@@ -493,12 +503,12 @@ class ModuleFactory extends BaseFactory
      */
     private function getConsultationView(string $templatePath)
     {
-        $fieldTemplate = file_get_contents(str_replace('.', '_field.', $templatePath));
+        $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_field.', $templatePath)));
         $fieldText = [];
         foreach ($this->model->getViewFields() as $field) {
             $fieldText[] = str_replace(['LABEL', 'FIELD'], [$field['label'], $field['field']], $fieldTemplate);
         }
-        $text = file_get_contents($templatePath);
+        $text = file_get_contents($this->getTrueTemplatePath($templatePath));
         $text = $this->addModalTitle($text);
 
         $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->name, implode(PHP_EOL, $fieldText)], $text);
@@ -515,32 +525,32 @@ class ModuleFactory extends BaseFactory
         foreach ($this->model->getViewFields() as $field) {
             if (array_contains($field['type'], ['enum'])) {
                 if ($this->model->usesSelect2) {
-                    $fieldTemplate = file_get_contents(str_replace('.', '_enum_select2.', $templatePath));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_enum_select2.', $templatePath)));
                 } else {
-                    $fieldTemplate = file_get_contents(str_replace('.', '_enum.', $templatePath));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_enum.', $templatePath)));
                 }
             } elseif (array_contains($field['type'], ['tinyint'])) {
                 if ($this->model->usesSwitches) {
-                    $fieldTemplate = file_get_contents(str_replace('.', '_tinyint_switch.', $templatePath));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_tinyint_switch.', $templatePath)));
                 } else {
-                    $fieldTemplate = file_get_contents(str_replace('.', '_tinyint_radio.', $templatePath));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_tinyint_radio.', $templatePath)));
                 }
 
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_date.', $templatePath));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_date.', $templatePath)));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_tinyint.', $templatePath));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_tinyint.', $templatePath)));
             } elseif (array_contains($field['type'], ['float', 'decimal', 'int', 'smallint', 'double'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_number.', $templatePath));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_number.', $templatePath)));
             } else {
-                $fieldTemplate = file_get_contents(str_replace('.', '_string.', $templatePath));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_string.', $templatePath)));
             }
 
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME'],
                 [$field['label'], $field['field'], $field['type'], $field['name']], $fieldTemplate);
         }
 
-        $text = file_get_contents($templatePath);
+        $text = file_get_contents($this->getTrueTemplatePath($templatePath));
         $text = $this->addModalTitle($text);
 
         $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->name, implode(PHP_EOL, $fieldText)], $text);
@@ -570,24 +580,24 @@ class ModuleFactory extends BaseFactory
         foreach ($this->model->getViewFields() as $field) {
             if (array_contains($field['type'], ['enum'])) {
                 if ($this->model->usesSelect2) {
-                    $fieldTemplate = file_get_contents(str_replace('.', '_enum_select2.', $templatePath));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_enum_select2.', $templatePath)));
                 } else {
-                    $fieldTemplate = file_get_contents(str_replace('.', '_enum.', $templatePath));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_enum.', $templatePath)));
                 }
             } elseif (array_contains($field['type'], ['tinyint'])) {
                 if ($this->model->usesSwitches) {
-                    $fieldTemplate = file_get_contents(str_replace('.', '_tinyint_switch.', $templatePath));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_tinyint_switch.', $templatePath)));
                 } else {
-                    $fieldTemplate = file_get_contents(str_replace('.', '_tinyint_radio.', $templatePath));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_tinyint_radio.', $templatePath)));
                 }
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_date.', $templatePath));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_date.', $templatePath)));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_tinyint.', $templatePath));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_tinyint.', $templatePath)));
             } elseif (array_contains($field['type'], ['float', 'decimal', 'int', 'smallint', 'double'])) {
-                $fieldTemplate = file_get_contents(str_replace('.', '_number.', $templatePath));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_number.', $templatePath)));
             } else {
-                $fieldTemplate = file_get_contents(str_replace('.', '_string.', $templatePath));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_string.', $templatePath)));
             }
 
             $defautOui = $field['default'] === '1' ? ' checked' : '';
@@ -596,7 +606,7 @@ class ModuleFactory extends BaseFactory
                 [$field['label'], $field['field'], $field['type'], $field['default'], $defautOui, $defautNon], $fieldTemplate);
         }
 
-        $text = file_get_contents($templatePath);
+        $text = file_get_contents($this->getTrueTemplatePath($templatePath));
         $text = str_replace(['TABLE', 'FIELDS'], [$this->model->getName(), implode(PHP_EOL, $fieldText)], $text);
         return $text;
     }
@@ -624,27 +634,74 @@ class ModuleFactory extends BaseFactory
     }
 
     /**
-     * @param string $modelName
+     * Vérifie qu'un sous menu correspondant au module existe dans menu.yml et soit conforme
+     * Sinon on ajoute le sous-menu idoine
      */
     private function addModuleToMenu(): void
     {
+        if (!$this->config['updateMenu']) {
+            return;
+        }
         $menuPath = 'config/menu.yml';
-        if (!file_exists($menuPath)) {
-            $menuPath = '';
+        if (file_exists($menuPath)) {
+            $menu = Spyc::YAMLLoad($menuPath);
+
+        } else {
+            $menu = [];
         }
 
-        $menu = Spyc::YAMLLoad($menuPath);
-        $modelName = $this->model->getName();
-        $newMenu = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
-            [$this->name, $modelName, $this->model->labelize($modelName) . 's'],
-            file_get_contents(__DIR__.DS.'templates'.DS.$this->template.DS.'menu.yml')));
-        //$newMenu = ['admin' => [$this->name => ['html_accueil_' . $modelName => ['titre' => 'Mes ' . $this->model->labelize($modelName) . 's']]]];
+        $subMenu = $this->getSubMenu();
 
-        if (!isset($menu['admin'][$this->name]) || strpos(serialize($menu['admin'][$this->name]), serialize($newMenu['admin'][$this->name])) === false) {
-            unset($menu['admin'][$this->name]);
-            $menu = Spyc::YAMLDump(array_merge_recursive($menu, $newMenu), false, false, true);
+        if (!empty($menu)) {
+            if (isset($menu['admin'][$this->name]) && !array_contains($menu['admin'][$this->name], $subMenu['admin'][$this->name], false, true)) {
+                unset($menu['admin'][$this->name]);
+            }
+
+            if (!isset($menu['admin'][$this->name])) {
+                $menu = Spyc::YAMLDump(array_merge_recursive($menu, $subMenu), false, false, true);
+                $this->createFile($menuPath, $menu, true);
+            }
+        } else {
+            $menu = Spyc::YAMLDump($subMenu, false, false, true);
             $this->createFile($menuPath, $menu, true);
         }
+    }
+
+    private function askTemplate()
+    {
+        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(__DIR__.DS.'templates'.DS.'*', GLOB_ONLYDIR));
+        if (count($templates) === 1) {
+            return $templates[0];
+        } elseif (count($templates) > 1) {
+
+            if (count($this->config) > 0 && isset($this->config['defaultTemplate']) && array_contains($this->config['defaultTemplate'], $templates)) {
+                $template = $this->config['defaultTemplate'];
+            } else {
+                $template = $this->prompt('Choisir un template dans la liste suivante:'.PHP_EOL.$this->displayList($templates, 'info'), array_merge($templates, ['']));
+                if ($template === '') {
+                    $template = 'standard';
+                }
+            }
+
+            return $template;
+        } else {
+            throw new Exception("Pas de templates disponibles");
+        }
+
+    }
+
+    /**
+     * @return array
+     */
+    private function getSubMenu(): array
+    {
+        $template = file_exists(__DIR__ . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
+        $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
+            $this->model->labelize('Mes '.$this->model->getName().'s');
+
+        return Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
+            [$this->name, $this->model->getName(), $label],
+            file_get_contents(__DIR__ . DS . 'templates' . DS . $template . DS . 'menu.yml')));
     }
 
 }

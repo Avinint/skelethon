@@ -59,21 +59,21 @@ class ModelFactory extends BaseFactory
 
     private function askMulti()
     {
-        $useMulti = $this->prompt($this->msg('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', '', true), ['o', 'n']);
+        $useMulti = $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']);
 
         return $useMulti === 'o';
     }
 
     private function askSwitches()
     {
-        $usesSwitches = $this->prompt($this->msg('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', '', true), ['o', 'n']);
+        $usesSwitches = $this->prompt('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', ['o', 'n']);
 
         return $usesSwitches === 'o';
     }
     
     private function askSelect2()
     {
-        $useSelect2 = $this->prompt($this->msg('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', '', true), ['o', 'n']);
+        $useSelect2 = $this->prompt('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', ['o', 'n']);
         
         return  $useSelect2 === 'o';
     }
@@ -123,7 +123,7 @@ class ModelFactory extends BaseFactory
 //        while (!in_array($reponse1 , ['N', 'O']));
 
 
-        $reponse1 = $this->prompt($this->msg('Voulez vous sélectionner toutes les actions disponibles? ('. implode(', ', array_map([$this, 'highlight'], $actionsDisponibles)).')', '', true));
+        $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? ('. implode(', ', array_map([$this, 'highlight'], $actionsDisponibles, array_fill(0, 4, 'info'))).')', ['o', 'n']);
 
         if ('o' === $reponse1) {
             $actions = $actionsDisponibles;
