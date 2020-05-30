@@ -137,13 +137,13 @@ class ModuleFactory extends BaseFactory
             } elseif (strpos($templatePath, 'accueil_TABLE.html')) {
                 $text = file_get_contents($this->getTrueTemplatePath($templatePath));
             }elseif (strpos($templatePath, 'liste_TABLE.html')) {
-                $text = $this->getListView($templatePath);
+                $text = $this->generateListView($templatePath);
             } elseif (strpos($templatePath, 'consultation_TABLE.html')) {
-                $text = $this->getConsultationView($templatePath);
+                $text = $this->generateConsultationView($templatePath);
             } elseif (strpos($templatePath, 'edition_TABLE.html')) {
-                $text = $this->getEditionView($templatePath);
+                $text = $this->generateEditionView($templatePath);
             } elseif (strpos($templatePath, 'recherche_TABLE.html')) {
-                $text = $this->getSearchView($templatePath);
+                $text = $this->generateSearchView($templatePath);
             }
             //$this->msg("Template path: ".$templatePath, self::Color['White']);
 
@@ -198,7 +198,7 @@ class ModuleFactory extends BaseFactory
      * @param string $selectedTemplatePath
      * @return string|string[]
      */
-    private function generateActionController(string $selectedTemplatePath)
+    private function generateActionController(string $templatePath)
     {
         $switchCases = [
             'recherche' => 'case \'dynamisation_recherche\':
@@ -228,7 +228,7 @@ class ModuleFactory extends BaseFactory
         $switchCaseList = [];
         $noRecherche = true;
         foreach ($this->model->actions as $action) {
-            $schemaMethodsPerActionPath = $this->getTrueTemplatePath(str_replace('Action.', 'Action' . $this->conversionPascalCase($action) . '.', $selectedTemplatePath));
+            $schemaMethodsPerActionPath = $this->getTrueTemplatePath(str_replace('Action.', 'Action' . $this->conversionPascalCase($action) . '.', $templatePath));
             if (file_exists($schemaMethodsPerActionPath)) {
                 $methodText .= file_get_contents($schemaMethodsPerActionPath) . PHP_EOL;
             }
@@ -243,35 +243,49 @@ class ModuleFactory extends BaseFactory
         }
 
         $rechercheActionInitPathHandle = $noRecherche ? 'SansFormulaireRecherche' : 'AvecFormulaireRecherche';
-        $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath(str_replace('Action.', 'Action' .  $rechercheActionInitPathHandle  . '.', $selectedTemplatePath)));
+        $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath(str_replace('Action.', 'Action' .  $rechercheActionInitPathHandle  . '.', $templatePath)));
 
         $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
 
-        $templatePath = $this->getTrueTemplatePath($selectedTemplatePath);
-        if (file_exists($templatePath)) {
+        if ($this->model->usesSelect2) {
+            $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnumSelect2.', $templatePath));
+        } else {
+            $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnum.', $templatePath));
+        }
+
+        if (file_exists($templatePath = $this->getTrueTemplatePath($templatePath))) {
             $exceptions = [];
-            $boolFields = $this->model->getViewFieldsByType('tinyint');
-            $default = '';
             $defaults = [];
-            if (!empty($boolFields)) {
-                foreach ($boolFields as $field) {
-                    $exceptions['aBooleens'][] = $field['field'];
-                    if (isset($field['default'])) {
-                        $defaultValue = $field['default'];
-                    } else {
-                        $defaultValue  =  'nc';
-                    }
-                    $defaults[] = str_repeat("\x20", 8)."\$aRetour['aRadios']['{$field['name']}'] = '$defaultValue';";
-                }
+            $allEnumEditLines = [];
+            $allEnumSearchLines = [];
+
+            $boolFields = $this->model->getViewFieldsByType('tinyint');
+            foreach ($boolFields as $field) {
+
+                $exceptions['aBooleens'][] = $field['field'];
+                $defaultValue = isset($field['default']) ?  $field['default'] : 'nc';
+                $defaults[] = str_repeat("\x20", 8)."\$aRetour['aRadios']['{$field['name']}'] = '$defaultValue';";
 
             }
 
             $dateFields = $this->model->getViewFieldsByType([ 'date', 'datetime']);
-            if (!empty($dateFields)) {
-                foreach ($dateFields as $field) {
-                    $exceptions['aDates'][] = $field['name'];
-                }
+            foreach ($dateFields as $field) {
+
+                $exceptions['aDates'][] = $field['name'];
+
             }
+
+            $enums = $this->model->getViewFieldsByType('enum');
+            foreach ($enums as $enum) {
+
+              $this->handleControllerEnumFields($enumPath, $enum, $allEnumEditLines, $allEnumSearchLines, $defaults);
+
+            }
+
+            $enumEditText = implode(PHP_EOL, $allEnumEditLines);
+            $enumSearchText = implode(PHP_EOL, $allEnumSearchLines);
+            $enumSearchText .= implode('', $defaults);
+            //$defaults = array_merge($enumDefaults, $defaults);
 
             if ($exceptions) {
                 $exceptionText = ', [';
@@ -282,58 +296,8 @@ class ModuleFactory extends BaseFactory
                 $exceptionText .= implode(',', $exceptionArr).']';
             }
 
-            $enums = $this->model->getViewFieldsByType('enum');
-            $enumEditText = '';
-            $enumSearchText = '';
-            $enumDefaults = [];
-            $allEnumEditLines = [];
-            $allEnumSearchLines = [];
-            if (!empty($enums)) {
-                if ($this->model->usesSelect2) {
-                    $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnumSelect2.', $selectedTemplatePath));
-                } else {
-                    $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnum.', $selectedTemplatePath));
-                }
-
-                foreach ($enums as $enum) {
-                    $enumLines = $enumSearchLines = file($enumPath);
-                    $enumEditionLine = $enumLines[0];
-
-                    if ($enum['default']) {
-                        $enumSearchLines = $enumLines;
-                        $enumDefault = $enumLines[2];
-                    } else {
-                        $enumSearchLines = [$enumLines[0]];
-                    }
-
-                    if ($this->model->usesSelect2) {
-                        if ($enum['default']) {
-                            $enumSearchLines = array_slice($enumLines, 0, 3);
-                            $enumDefault = $enumLines[3];
-                        } else {
-                            $enumSearchLines = array_slice($enumLines, 0, 1);
-                        }
-                        if ($enum['default'] === null) {
-                           $enum['default'] = '';
-                        }
-                    }
-
-
-                    $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
-                    $replacements = [$enum['name'], $this->name, $this->model->getName(), $enum['column'], $enum['default']];
-
-                    $allEnumEditLines[] = str_replace($searches, $replacements , $enumEditionLine);
-                    $allEnumSearchLines[] = str_replace($searches, $replacements , implode('', $enumSearchLines));
-                    $enumDefaults[] = str_replace($searches, $replacements , $enumDefault);
-                }
-
-                $enumEditText = implode(PHP_EOL, $allEnumEditLines);
-                $enumSearchText = implode(PHP_EOL, $allEnumSearchLines);
-                $enumSearchText .= implode('', $defaults);
-                $defaults = array_merge($enumDefaults, $defaults);
-            }
-
-            $enumSearchLines = array_merge($enumSearchLines, $defaults);
+//            $enumSearchLines = array_merge($enumSearchLines, $defaults);
+//            var_dump($enumSearchLines);
 
             $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT'],
                 [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults)], $methodText);
@@ -342,6 +306,7 @@ class ModuleFactory extends BaseFactory
             $text = str_replace(['MODULE', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
                 [$this->namespaceName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
         }
+
         return $text;
     }
 
@@ -459,7 +424,7 @@ class ModuleFactory extends BaseFactory
      * @param string $templatePath
      * @return false|string|string[]
      */
-    private function getListView(string $templatePath)
+    private function generateListView(string $templatePath)
     {
         $actionBarText = '';
         $actionText = str_repeat("\x20", 16) . '<td class="centre">' . PHP_EOL;
@@ -501,7 +466,7 @@ class ModuleFactory extends BaseFactory
      * @param string $templatePath
      * @return false|string|string[]
      */
-    private function getConsultationView(string $templatePath)
+    private function generateConsultationView(string $templatePath)
     {
         $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_field.', $templatePath)));
         $fieldText = [];
@@ -519,7 +484,7 @@ class ModuleFactory extends BaseFactory
      * @param string $templatePath
      * @return false|string|string[]
      */
-    private function getEditionView(string $templatePath)
+    private function generateEditionView(string $templatePath)
     {
         $fieldText = [];
         foreach ($this->model->getViewFields() as $field) {
@@ -574,7 +539,7 @@ class ModuleFactory extends BaseFactory
      * @param string $templatePath
      * @return false|string|string[]
      */
-    private function getSearchView(string $templatePath)
+    private function generateSearchView(string $templatePath)
     {
         $fieldText = [];
         foreach ($this->model->getViewFields() as $field) {
@@ -702,6 +667,48 @@ class ModuleFactory extends BaseFactory
         return Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
             [$this->name, $this->model->getName(), $label],
             file_get_contents(__DIR__ . DS . 'templates' . DS . $template . DS . 'menu.yml')));
+    }
+
+    /**
+     * @param $enumPath
+     * @param $enum
+     * @param array $allEnumEditLines
+     * @param array $allEnumSearchLines
+     * @param array $enumDefaults
+     * @return array
+     */
+    private function handleControllerEnumFields($enumPath, $enum, array &$allEnumEditLines, array &$allEnumSearchLines, array &$enumDefaults): array
+    {
+        $enumLines = $enumSearchLines = file($enumPath);
+        $enumEditionLine = $enumLines[0];
+
+        if ($enum['default']) {
+            $enumSearchLines = $enumLines;
+            $enumDefault = $enumLines[2];
+        } else {
+            $enumSearchLines = [$enumLines[0]];
+        }
+
+        if ($this->model->usesSelect2) {
+            if ($enum['default']) {
+                $enumSearchLines = array_slice($enumLines, 0, 3);
+                $enumDefault = $enumLines[3];
+            } else {
+                $enumSearchLines = array_slice($enumLines, 0, 1);
+            }
+            if ($enum['default'] === null) {
+                $enum['default'] = '';
+            }
+        }
+
+
+        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
+        $replacements = [$enum['name'], $this->name, $this->model->getName(), $enum['column'], $enum['default']];
+
+        $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLine);
+        $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));
+        $enumDefaults[] = str_replace($searches, $replacements, $enumDefault);
+        return $enumSearchLines;
     }
 
 }

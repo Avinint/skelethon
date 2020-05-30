@@ -1,3 +1,5 @@
+<?php
+
     /**
      * Dynamisation d'un élément
      *
@@ -39,16 +41,9 @@
 
         $oElement->nIdMODEL = $nIdElement;
 
-        $aChamps = $this->aGetDonnees($oElementEXCEPTIONS);
-        /*foreach ($_REQUEST as $mCle => $mValeur) {
-            if (in_array($mCle, $oElement->aGetChamps())) {
-                if (in_array($mCle, [DATE]) {
-                    $aChamps[$oElement->aGetColonnes()[$mCle]] = $this->sGetDateFormatUniversel($mValeur], 'Y-m-d'),
-                } else {
-                    $aChamps[$oElement->aGetColonnes()[$mCle]] = $mValeur;
-                }
-            }
-        }*/
+        //$aChamps = $this->aGetDonnees($oElementEXCEPTIONS);
+        $aChamps = [];
+
 
         if ($nIdElement > 0) {
             $aRetour['bSucces'] = $oElement->bUpdate($aChamps);
@@ -65,30 +60,4 @@
         $aRetour['oElement']->nIdElement = $nIdElement;
 
         return $aRetour;
-    }
-
-    /**
-    * @param $oElement
-    * @param array $aChampsDate
-    * @return array
-    */
-    private function aGetDonnees($oElement, $aExceptions = [])
-    {
-        $aChamps = [];
-
-        foreach ($_REQUEST as $mCle => $mValeur) {
-            if (in_array($mCle, $oElement->aGetChamps())) {
-                if (isset($aExceptions['aDates']) && in_array($mCle, $aExceptions['aDates'])) {
-                    $aChamps[$oElement->aGetColonnes()[$mCle]] = $this->sGetDateFormatUniversel($mValeur, 'Y-m-d');
-                } elseif (isset($aExceptions['aBooleens'])  && in_array($mCle, $aExceptions['aBooleens'])) {
-                    if ($mValeur !== 'nc') {
-                        $aChamps[$oElement->aGetColonnes()[$mCle]] = $mValeur;
-                    }
-                } else {
-                    $aChamps[$oElement->aGetColonnes()[$mCle]] = $mValeur;
-                }
-            }
-        }
-
-        return $aChamps;
     }

@@ -84,6 +84,8 @@
                     if ($mValeur !== 'nc') {
                         $aChamps[$oElement->aGetColonnes()[$mCle]] = $mValeur;
                     }
+                } elseif (isset($aExceptions['aFloats'])  && in_array($mCle, $aExceptions['aFloats'])) {
+                    $aChamps[$oElement->aGetColonnes()[$mCle]] = str_replace(',', '.', $mValeur);
                 } else {
                     $aChamps[$oElement->aGetColonnes()[$mCle]] = $mValeur;
                 }

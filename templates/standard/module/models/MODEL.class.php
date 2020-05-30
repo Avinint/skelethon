@@ -233,26 +233,4 @@ CHAMPS_SELECT
 
      	return $bRetour;
      }
-
-    /**
-     * Retourne la liste des attributs de l'objet
-     *
-     * @return array   Liste attributs
-     */
-    public function aGetChamps()
-    {
-        return $this->aMappingChamps;
-    }
-
-    /**
-     * Retourne la liste des colonnes de la table correspondant à la classe
-     *
-     * @return array   Liste colonnes
-     */
-    public function aGetColonnes()
-    {
-        return array_flip($this->aGetChamps());
-    }
-
-
 }

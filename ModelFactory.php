@@ -243,6 +243,7 @@ class ModelFactory extends BaseFactory
 
     public function getViewFields($showIdField = false)
     {
+        // TODO Fix pour récup id field quelle que soit sa position
         $fields = $this->viewFields;
         if (false === $showIdField && $this->idField === $fields[0]['field']) {
             array_shift($fields);
@@ -257,6 +258,16 @@ class ModelFactory extends BaseFactory
                 return array_contains($field['type'], $type);
             }
             return $field['type'] === $type;
+        });
+    }
+
+    public function getViewFieldsExcludingType($type)
+    {
+        return array_filter($this->viewFields, function($field) use ($type) {
+            if (is_array($type)) {
+                return !array_contains($field['type'], $type);
+            }
+            return $field['type'] !== $type;
         });
     }
 
