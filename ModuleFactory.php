@@ -51,7 +51,7 @@ class ModuleFactory extends BaseFactory
 
     function askName() : string
     {
-        return $this->prompt($this->msg('Veuillez renseigner le nom du module :'));
+        return $this->prompt('Veuillez renseigner le nom du module :');
     }
 
     function addSubDirectories($path, $structure, $verbose = false)
@@ -253,34 +253,49 @@ class ModuleFactory extends BaseFactory
             $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnum.', $templatePath));
         }
 
+        $fieldTemplatePath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEditionChamps.', $templatePath));
+
         if (file_exists($templatePath = $this->getTrueTemplatePath($templatePath))) {
             $exceptions = [];
             $defaults = [];
             $allEnumEditLines = [];
             $allEnumSearchLines = [];
 
-            $boolFields = $this->model->getViewFieldsByType('tinyint');
-            foreach ($boolFields as $field) {
+            $fields = $this->model->getViewFields();
+            $fieldsText = '';
+            foreach ($fields as $field) {
+                if ($field['type'] === 'tinyint') {
+                    $this->handleControllerBooleanField($field, $exceptions, $defaults);
+                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
 
-                $exceptions['aBooleens'][] = $field['field'];
-                $defaultValue = isset($field['default']) ?  $field['default'] : 'nc';
-                $defaults[] = str_repeat("\x20", 8)."\$aRetour['aRadios']['{$field['name']}'] = '$defaultValue';";
+                } elseif (array_contains($field['type'], ['date', 'datetime'])) {
+                    var_dump($field);
+                    $exceptions['aDates'][] = $field['name'];
+                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[1]);
+                } elseif ($field['type'] === 'enum') {
+                    $this->handleControllerEnumField($enumPath, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
+                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
 
+                } elseif (array_contains($field['type'], ['float', 'double', 'decimal'])) {
+                    $exceptions['aFloats'][] = $field['name'];
+                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[2]);
+                } else {
+                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
+                }
             }
 
-            $dateFields = $this->model->getViewFieldsByType([ 'date', 'datetime']);
-            foreach ($dateFields as $field) {
-
-                $exceptions['aDates'][] = $field['name'];
-
+            if (!empty($fieldsText)) {
+                $fieldsText = PHP_EOL.$fieldsText.str_repeat("\x20", 8);
             }
 
-            $enums = $this->model->getViewFieldsByType('enum');
-            foreach ($enums as $enum) {
+//            $boolFields = $this->model->getViewFieldsByType('tinyint');
+//            foreach ($boolFields as $field) {}
 
-              $this->handleControllerEnumFields($enumPath, $enum, $allEnumEditLines, $allEnumSearchLines, $defaults);
+//            $dateFields = $this->model->getViewFieldsByType([ 'date', 'datetime']);
+//            foreach ($dateFields as $field) {}
 
-            }
+//            $enums = $this->model->getViewFieldsByType('enum');
+//            foreach ($enums as $enum) {}
 
             $enumEditText = implode(PHP_EOL, $allEnumEditLines);
             $enumSearchText = implode(PHP_EOL, $allEnumSearchLines);
@@ -299,8 +314,8 @@ class ModuleFactory extends BaseFactory
 //            $enumSearchLines = array_merge($enumSearchLines, $defaults);
 //            var_dump($enumSearchLines);
 
-            $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT'],
-                [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults)], $methodText);
+            $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', 'CHAMPS'],
+                [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsText], $methodText);
             $text .= file_get_contents($templatePath);
             $concurrentText = $this->model->usesMultiCalques ? file_get_contents(str_replace('Action.', 'ActionMulti.', $templatePath)): '';
             $text = str_replace(['MODULE', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
@@ -638,11 +653,11 @@ class ModuleFactory extends BaseFactory
         if (count($templates) === 1) {
             return $templates[0];
         } elseif (count($templates) > 1) {
-
             if (count($this->config) > 0 && isset($this->config['defaultTemplate']) && array_contains($this->config['defaultTemplate'], $templates)) {
                 $template = $this->config['defaultTemplate'];
             } else {
-                $template = $this->prompt('Choisir un template dans la liste suivante:'.PHP_EOL.$this->displayList($templates, 'info'), array_merge($templates, ['']));
+                $template = $this->prompt('Choisir un template dans la liste suivante:'.PHP_EOL.$this->displayList($templates, 'info') .
+                    PHP_EOL.'En cas de chaine vide, Le template '. $this->frame('standard', 'success').' sera sélectionné par défaut.', array_merge($templates, ['']));
                 if ($template === '') {
                     $template = 'standard';
                 }
@@ -656,6 +671,8 @@ class ModuleFactory extends BaseFactory
     }
 
     /**
+     * Retourne le sous-menu intégrant le module au menu principal
+     *
      * @return array
      */
     private function getSubMenu(): array
@@ -677,7 +694,7 @@ class ModuleFactory extends BaseFactory
      * @param array $enumDefaults
      * @return array
      */
-    private function handleControllerEnumFields($enumPath, $enum, array &$allEnumEditLines, array &$allEnumSearchLines, array &$enumDefaults): array
+    private function handleControllerEnumField($enumPath, $enum, array &$allEnumEditLines, array &$allEnumSearchLines, array &$enumDefaults)
     {
         $enumLines = $enumSearchLines = file($enumPath);
         $enumEditionLine = $enumLines[0];
@@ -708,7 +725,19 @@ class ModuleFactory extends BaseFactory
         $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLine);
         $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));
         $enumDefaults[] = str_replace($searches, $replacements, $enumDefault);
-        return $enumSearchLines;
+        //return $enumSearchLines;
     }
 
+    /**
+     * @param $field
+     * @param array $exceptions
+     * @param array $defaults
+     * @return array
+     */
+    private function handleControllerBooleanField($field, array &$exceptions, array &$defaults)
+    {
+        $exceptions['aBooleens'][] = $field['field'];
+        $defaultValue = isset($field['default']) ? $field['default'] : 'nc';
+        $defaults[] = str_repeat("\x20", 8) . "\$aRetour['aRadios']['{$field['name']}'] = '$defaultValue';";
+    }
 }

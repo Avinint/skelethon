@@ -38,15 +38,17 @@ class BaseFactory
 
     public function prompt($msg, $validValues = [], $keepCase = false)
     {
+        echo PHP_EOL;
         $result = '';
         if (empty($validValues)) {
             while($result === '' || $result === null) {
-                $result = readline($msg);
+                $result = readline($this->msg($msg));
             }
         } else {
             $result = false;
             while (!array_contains($result, $validValues)) {
-                $result = $keepCase ? readline($msg) : strtolower(readline($this->msg($msg, '', $validValues === ['o', 'n'])));
+                $tempResult = readline($this->msg($msg, '', $validValues === ['o', 'n']));
+                $result = $keepCase ? $result : strtolower($tempResult);
             }
         }
 
@@ -57,7 +59,7 @@ class BaseFactory
     {
         $displayYesNo = $hasDisplayYesNo ? ' ['.$this->highlight('O', 'success').'/'.$this->highlight('N', 'error').']' : '';
 
-        echo ($type? $this->frame(strtoupper($type), $type) : '') . ' ' . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
+        echo ($type? $this->frame(strtoupper($type), $type).' ' : '')  . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
 
         return (bool)$type;
     }

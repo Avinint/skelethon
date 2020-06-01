@@ -1,5 +1,3 @@
-<?php
-
     /**
      * Dynamisation d'un élément
      *
@@ -42,8 +40,7 @@
         $oElement->nIdMODEL = $nIdElement;
 
         //$aChamps = $this->aGetDonnees($oElementEXCEPTIONS);
-        $aChamps = [];
-
+        $aChamps = [CHAMPS];
 
         if ($nIdElement > 0) {
             $aRetour['bSucces'] = $oElement->bUpdate($aChamps);

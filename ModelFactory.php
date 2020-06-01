@@ -44,9 +44,10 @@ class ModelFactory extends BaseFactory
 
     private function askName($name = '')
     {
+        echo PHP_EOL;
         if ($name === '') {
             // TODO regler CAMEL CASE conversions
-            $name = readline($this->msg('Veuillez renseigner en snake_case ('.$this->highlight('minuscules', 'info') . ' et ' . $this->highlight('underscores', 'info').') le nom de la '.$this->highlight('table').' correspondant au modèle'.
+            $name = readline($this->msg('Veuillez renseigner en snake_case le nom de la '.$this->highlight('table').' correspondant au modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
                 PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module->getName(), 'success').''));
         }
 
