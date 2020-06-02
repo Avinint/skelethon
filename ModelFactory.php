@@ -1,6 +1,7 @@
 <?php
 
 require_once 'BaseFactory.php';
+require 'Field.php';
 require 'Database.php';
 
 class ModelFactory extends BaseFactory
@@ -14,13 +15,8 @@ class ModelFactory extends BaseFactory
     private $mappingChamps = [];
     protected $primaryKey;
     protected $idField;
-    protected $searchCriteria = [];
-    protected $validationCriteria = [];
+
     private $alias;
-    private $sqlSelectFields = [];
-    private $tableHeaders = [];
-    private $tableColumns = [];
-    private $viewFields = [];
     private $modalTitle = [];
 
     protected function __construct($name, $module)
@@ -83,31 +79,36 @@ class ModelFactory extends BaseFactory
     {
         $tables = $this->aListeTables();
         $this->table = $tables[$this->name];
-        $this->alias = strtoupper(substr(str_replace('_', '', $this->name), 0, 3));
         if (is_null($this->table)) {
             $this->msg('Erreur: Il faut créer la table \''.$this->name.'\' avant de générer le code', 'error');
             die();
         }
+        $this->alias = strtoupper(substr(str_replace('_', '', $this->name), 0, 3));
 
-        $indent = str_repeat("\x20", 12);
         foreach ($this->table as $field => $data) {
             if ('PRI' === $data->Key) {
                 $this->primaryKey = $data->Field;
                 $this->idField = $data->sChamp;
             }
-            $this->mappingChamps[] = $indent."'$field' => '$data->sChamp',";
-            $this->addLabel($data);
-            $this->addSelectField($data, $indent);
-            foreach ($this->addSearchCriterion($data) as $criterion) {
-                $this->searchCriteria[] = $criterion;
+
+            $params = [
+                'pk' => 'PRI' === $data->Key,
+                'is_nullable' => $data->Null !== 'NO',
+                'enum' => $data->Type
+            ];
+
+            if (isset($data->maxLength)) {
+                $params['maxLength'] = $data->maxLength;
             }
-            //$this->searchCriteria = array_merge($this->searchCriteria, $this->addSearchCriterion($data));
-            $this->validationCriteria[] = $this->addValidationCriterion($data);
 
-            $this->tableHeaders[] = $this->addTtableHeader($data);
-            $this->tableColumns[] = $this->addTableColumn($data);
-
-            $this->viewFields[] = $this->addViewField($data);
+            new Field(
+                $data->sType,
+                $data->sChamp,
+                $data->Field,
+                $data->Default,
+                $this->alias,
+                $params
+            );
 
             $this->addModalTitle($data);
         }
@@ -117,12 +118,6 @@ class ModelFactory extends BaseFactory
     {
         $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
         $actions = [];
-
-//        do {
-//            $reponse1 =  strtoupper(readline();
-//        }
-//        while (!in_array($reponse1 , ['N', 'O']));
-
 
         $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? ('. implode(', ', array_map([$this, 'highlight'], $actionsDisponibles, array_fill(0, 4, 'info'))).')', ['o', 'n']);
 
@@ -175,7 +170,7 @@ class ModelFactory extends BaseFactory
 
     public function getMappingChamps() :string
     {
-        return implode(PHP_EOL, $this->mappingChamps);
+        return implode(PHP_EOL, Field::getFieldMappings());
     }
 
     /**
@@ -199,7 +194,7 @@ class ModelFactory extends BaseFactory
      */
     public function getSearchCriteria(): string
     {
-        return implode(PHP_EOL, $this->searchCriteria);
+        return implode(PHP_EOL, Field::getSearchCriteria());
     }
 
     /**
@@ -207,12 +202,7 @@ class ModelFactory extends BaseFactory
      */
     public function getValidationCriteria(): string
     {
-        if (empty($this->validationCriteria)) {
-            return str_repeat("\x20", 8).'$aConfig = []'.PHP_EOL;
-        }
-
-        return implode(PHP_EOL, $this->validationCriteria);
-
+        return implode(PHP_EOL, Field::getValidationCriteria());
     }
 
     /**
@@ -226,7 +216,8 @@ class ModelFactory extends BaseFactory
     public function getTableHeaders()
     {
         $actionHeader = empty($this->actions) ? '' : str_repeat("\x20", 16).'<th class="centre">Actions</th>'.PHP_EOL;
-        return $actionHeader.implode(PHP_EOL, $this->tableHeaders);
+
+        return $actionHeader.implode(PHP_EOL, Field::getTableHeaders());
     }
 
     /**
@@ -234,7 +225,7 @@ class ModelFactory extends BaseFactory
      */
     public function getTableColumns()
     {
-        return implode(PHP_EOL, $this->tableColumns);
+        return implode(PHP_EOL, Field::getTableColumns());
     }
 
     public function getColumnNumber()
@@ -244,17 +235,12 @@ class ModelFactory extends BaseFactory
 
     public function getViewFields($showIdField = false)
     {
-        // TODO Fix pour récup id field quelle que soit sa position
-        $fields = $this->viewFields;
-        if (false === $showIdField && $this->idField === $fields[0]['field']) {
-            array_shift($fields);
-        }
-        return $fields;
+        return Field::getViewFields($showIdField);
     }
 
     public function getViewFieldsByType($type)
     {
-        return array_filter($this->viewFields, function($field) use ($type) {
+        return array_filter(Field::getViewFields(), function($field) use ($type) {
             if (is_array($type)) {
                 return array_contains($field['type'], $type);
             }
@@ -264,22 +250,12 @@ class ModelFactory extends BaseFactory
 
     public function getViewFieldsExcludingType($type)
     {
-        return array_filter($this->viewFields, function($field) use ($type) {
+        return array_filter(Field::getViewFields(), function($field) use ($type) {
             if (is_array($type)) {
                 return !array_contains($field['type'], $type);
             }
             return $field['type'] !== $type;
         });
-    }
-
-    public function getEnumValues($enum)
-    {
-        $sValeurs = str_replace('enum(', '', $enum);
-        $sValeurs = str_replace(')', '', $sValeurs);
-        $sValeurs = str_replace('\'', '', $sValeurs);
-        $aValeurs = explode(',', $sValeurs);
-
-        return $aValeurs;
     }
 
     public function getModalTitle()
@@ -296,206 +272,9 @@ class ModelFactory extends BaseFactory
      */
     public function getSqlSelectFields(): string
     {
-        return implode(','.PHP_EOL, $this->sqlSelectFields);
-    }
-    
-    private function addSelectField($data, $indent = '')
-    {
-        if (array_contains($data->sType, ['date', 'datetime', 'float', 'decimal', 'tinyint'])) {
-            $ajoutMappingChampFormate =  "$indent'{$data->Field}_formate' => '{$data->sChamp}Formate',".PHP_EOL;
-        }
+        $fields =  implode(','.PHP_EOL, Field::getSelectFields());
 
-        $indent .= str_repeat("\x20", 8);
-
-        $this->sqlSelectFields[] = "{$indent}$this->alias.$data->Field";
-        if ('PRI' === $data->Key) {
-            $this->sqlSelectFields[] = "{$indent}$this->alias.$data->Field nIdElement";
-        }
-        if ('date' === $data->sType) {
-            $this->sqlSelectFields[] = "{$indent}IF($this->alias.$data->Field, DATE_FORMAT($this->alias.$data->Field, \'%d/%m/%Y\'), \'\') AS {$data->Field}_formate";
-            $this->mappingChamps[] = $ajoutMappingChampFormate;
-
-        } elseif ('datetime' === $data->sType) {
-            $this->sqlSelectFields[] = "{$indent}IF($this->alias.$data->Field, DATE_FORMAT($this->alias.$data->Field, \'%d/%m/%Y à %H\h%i\'), \'\') AS {$data->Field}_formate";
-            $this->mappingChamps[] = $ajoutMappingChampFormate;
-
-        } elseif (array_contains($data->sType, array('float', 'decimal'))) {
-            $this->sqlSelectFields[] = "{$indent}REPLACE($this->alias.$data->Field, \'.\', \',\') AS {$data->Field}_formate";
-            $this->mappingChamps[] = $ajoutMappingChampFormate;
-        } elseif ('tinyint' === $data->sType) {
-
-            $this->sqlSelectFields[] = "$indent(CASE WHEN $this->alias.$data->Field = 1 THEN \'oui\' ELSE \'non\' END) AS {$data->Field}_formate";
-            $this->mappingChamps[] = $ajoutMappingChampFormate;
-        }
-    }
-
-    private function addLabel(&$data)
-    {
-        $data->sLabel = $this->labelize($data->Field);
-    }
-
-    private function addSearchCriterion($data)
-    {
-        $aCriteresRecherche = [];
-        $fieldName = "AND $this->alias.$data->Field";
-
-        if (array_contains($data->sType, array('smallint', 'int', 'float', 'decimal', 'double'))) {
-
-            $conditionEquals = $fieldName . ' = ' . $this->addNumberField($data->sChamp, in_array($data->sType, array('smallint', 'int')))  ;
-
-            $aCriteresRecherche[] = $this->addNumberCriterion($data->sChamp, $conditionEquals);
-
-            if (!preg_match('/^nId([A-Z]{1}([a-z]*))$/', $data->sChamp)) {
-                $conditionMin = $fieldName . ' >= ' . $this->addNumberField($data->sChamp . 'Min', in_array($data->sType, array('smallint', 'int')));
-
-                $aCriteresRecherche[] = $this->addNumberCriterion($data->sChamp.'Min', $conditionMin);
-
-                $conditionMax = $fieldName . ' <= ' . $this->addNumberField($data->sChamp . 'Max', in_array($data->sType, array('smallint', 'int')));
-
-                $aCriteresRecherche[] = $this->addNumberCriterion($data->sChamp.'Max', $conditionMax);
-            }
-
-        } elseif ('tinyint' === $data->sType) {
-            $conditionEquals = $fieldName . ' = ' . $this->addNumberField($data->sChamp);
-
-            $aCriteresRecherche[] = $this->addBooleanCriterion($data->sChamp, $conditionEquals);
-
-        } elseif (array_contains($data->sType, array('date', 'datetime')) === true) {
-            
-            if ($data->sType === 'date') {
-                $sSuffixeDebut = '';
-                $sSuffixeFin = '';
-                $sFormat = ', \'Y-m-d\'';
-            } else {
-                $sSuffixeDebut = ' 00:00:00';
-                $sSuffixeFin = ' 23:59:59';
-                $sFormat = ', \'Y-m-d H:i:s\'';
-            }
-
-            $whereDebut = $fieldName .' >= \'".addslashes($this->sGetDateFormatUniversel($aRecherche[\''. $data->sChamp.'Debut'.'\']'.$sFormat.")).\"'";
-            $aCriteresRecherche[] = $this->addDateCriterion($data->sChamp.'Debut', $whereDebut, $sSuffixeDebut);
-
-            $whereFin = $fieldName .' <= \'".addslashes($this->sGetDateFormatUniversel($aRecherche[\''. $data->sChamp.'Fin'.'\']'.$sFormat.")).\"'";
-            $aCriteresRecherche[] = $this->addDateCriterion($data->sChamp.'Fin' , $whereFin, $sSuffixeFin);
-        } else {
-            $whereIEquals = $fieldName.' LIKE \'".addslashes($aRecherche[\''.$data->sChamp.'\'])."\'';
-
-            $aCriteresRecherche[] = $this->addStringCriterion($data->sChamp, $whereIEquals);
-            $whereLike = $fieldName.' LIKE \'%".addslashes($aRecherche[\''.$data->sChamp.'\'])."%\'';
-            $aCriteresRecherche[] = $this->addStringCriterion($data->sChamp.'Partiel', $whereLike);
-            }
-
-        return $aCriteresRecherche;
-    }
-
-    private function addNumberField($field, $integer = true)
-    {
-        $text = 'addslashes($aRecherche[\'' . $field . '\'])';
-
-        $text =  $integer ? $text : 'str_replace(\',\', \'.\', '. $text.')';
-
-        return '".'.$text.'."';
-    }
-
-    private function addNumberCriterion($field, $whereClause)
-    {
-        return  str_repeat("\x20", 8) . 'if (isset($aRecherche[\''.$field .'\']) && $aRecherche[\''. $field .'\'] > 0) {'.PHP_EOL.
-            $this->addQuery($whereClause);
-    }
-
-    private function addBooleanCriterion($field, $whereClause)
-    {
-        return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'nc\') {'.PHP_EOL.
-//        str_repeat("\x20", 12).'if ($aRecherche[\''.$field.'\'] === \'oui\') {'.PHP_EOL.
-//        str_repeat("\x20", 16).'$aRecherche[\''.$field."'] = 1;".PHP_EOL.
-//        str_repeat("\x20", 12)."} else {".PHP_EOL.
-//        str_repeat("\x20", 16).'$aRecherche[\''.$field.'\'] = 0;'.PHP_EOL.
-//        str_repeat("\x20", 12)."}".PHP_EOL.
-        $this->addQuery($whereClause);
-    }
-
-    private function addDateCriterion($field, $whereClause, $suffixe)
-    {
-        return str_repeat("\x20", 8) . "if (isset(\$aRecherche['" . $field . '\']) === true && $aRecherche[\'' . $field . '\'] !== \'\') {' . PHP_EOL .
-            str_repeat("\x20", 12) . 'if (!preg_match(\'/:/\', $aRecherche[\'' . $field . '\']) && !preg_match(\'/h/\', $aRecherche[\'' . $field . "'])) {" . PHP_EOL .
-            str_repeat("\x20", 16) . '$aRecherche[\'' . $field . '\']'.($suffixe ? ' .= \'' . $suffixe . '\'' : $suffixe).';' . PHP_EOL .
-            str_repeat("\x20", 12)."}" . PHP_EOL .
-            $this->addQuery($whereClause);
-    }
-
-    private function addStringCriterion($field, $whereClause)
-    {
-        return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'\') {'.PHP_EOL.
-        $this->addQuery($whereClause);
-    }
-
-    private function addQuery($whereClause)
-    {
-        return str_repeat("\x20", 12).'$sRequete .= "'.PHP_EOL.
-        str_repeat("\x20", 16) . $whereClause . PHP_EOL.
-        str_repeat("\x20", 12).'";'.PHP_EOL.
-            str_repeat("\x20", 8).'}'.PHP_EOL;
-    }
-
-    private function addValidationCriterion($data)
-    {
-        $sCritere = str_repeat("\x20", 8)."\$aConfig['".$data->sChamp.'\'] = array(' . PHP_EOL;
-        if ($data->Null == 'NO') {
-            $sCritere .=
-                str_repeat("\x20", 12).'\'required\' => \'1\','.PHP_EOL.
-                str_repeat("\x20", 12).'\'minlength\' => \'1\','.PHP_EOL;
-        }
-
-        if (isset($data->nMaxLength)) {
-            $nMaxLength = str_replace(' unsigned', '', $data->nMaxLength);
-            if (preg_match('/,/', $data->nMaxLength)) {
-                $aLength = explode(',', $data->nMaxLength);
-                $nMaxLength = 1;
-                $nMaxLength += (int)$aLength[0];
-                $nMaxLength += (int)$aLength[1];
-            }
-
-            $sCritere .= str_repeat("\x20", 12)."'maxlength' => '$nMaxLength'," . PHP_EOL;
-        }
-
-        return $sCritere.str_repeat("\x20",8).');' . PHP_EOL;
-    }
-
-    /**
-     * @param $data
-     */
-    public function addTtableHeader($data)
-    {
-        return str_repeat("\x20", 16).'<th id="th_'.$data->Field.'" class="tri">'.$data->sChamp.'</th>';
-    }
-
-    public function addTableColumn($data)
-    {
-        $formate = array_contains($data->sType, array('float', 'decimal', 'date', 'datetime', 'tinyint', 'double')) ? 'Formate' : '';
-
-        $alignment = '';
-        if (array_contains($data->sType, array('float', 'decimal', 'int', 'smallint', 'double'))) {
-            $alignment = ' align-right';
-        }
-        if (array_contains($data->sType, array('date', 'datetime', 'enum'))) {
-            $alignment = ' align-center';
-        }
-
-        return str_repeat("\x20", 16)."<td class=\"{$data->sChamp}$formate{$alignment}\"></td>";
-    }
-
-    public function addViewField($data)
-    {
-        $formate = array_contains($data->sType, array('float', 'decimal', 'date', 'datetime', 'double')) ? 'Formate' : '';
-        $result =  ['field' => $data->sChamp.$formate, 'column' => $data->Field, 'label'=> $data->sLabel, 'type'=> $data->sType, 'default' =>  $data->Default ?? '', 'name' => $data->sChamp];
-
-        if ($data->sType === 'tinyint') {
-            $result['default'] = $data->Default;
-        } elseif ($data->sType === 'enum') {
-            $result['enum'] = $this->getEnumValues($data->Type);
-        }
-
-        return $result;
+        return $fields;
     }
 
     public function addModalTitle($data)

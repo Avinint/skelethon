@@ -8,6 +8,5 @@
         $aRetour = array();
 
 //SEARCHSELECT
-
         return $aRetour;
     }

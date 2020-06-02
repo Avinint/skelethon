@@ -100,31 +100,33 @@ trait Database
         $aResultats = $this->query($sRequete);
 
         $sCle = 'Tables_in_'.$this->dBName;
-        foreach ($aResultats as $nIndex => $oTable) {
+        foreach ($aResultats as $oTable) {
             $aTables[$oTable->$sCle] = array();
 
             $sRequete = "SHOW columns FROM ".$oTable->$sCle;
             $aResultats = $this->query($sRequete);
 
-            foreach ($aResultats as $nIndex => $oChamp) {
-
+            foreach ($aResultats as $oChamp) {
                 $aType = explode('(', $oChamp->Type);
-                $sType = array_shift($aType);
+                $oChamp->sType = array_shift($aType);
                 $sMaxLength = array_shift($aType);
 
                 $aNom = explode('_', $oChamp->Field);
                 $aNom = array_map('ucfirst', $aNom);
                 $sNom = implode('', $aNom);
 
-                $oChamp->sType = $sType;
-
-                switch ($sType) {
-                    case 'int':
+                switch ($oChamp->sType) {
                     case 'tinyint':
+                        $oChamp->sChamp = 'b'.$sNom;
+                        if ($sMaxLength != '') {
+                            $oChamp->maxLength = $this->getMaxLength($sMaxLength);
+                        }
+                        break;
+                    case 'int':
                     case 'smallint':
                         $oChamp->sChamp = 'n'.$sNom;
                         if ($sMaxLength != '') {
-                            $oChamp->nMaxLength = str_replace(')', '', $sMaxLength);
+                            $oChamp->maxLength = $this->getMaxLength($sMaxLength);
                         }
                         break;
 
@@ -134,7 +136,7 @@ trait Database
                     case 'longtext':
                         $oChamp->sChamp = 's'.$sNom;
                         if ($sMaxLength != '') {
-                            $oChamp->nMaxLength = str_replace(')', '', $sMaxLength);
+                            $oChamp->maxLength = $this->getMaxLength($sMaxLength);
                         }
                         break;
 
@@ -159,7 +161,7 @@ trait Database
                     case 'double':
                         $oChamp->sChamp = 'f'.$sNom;
                         if ($sMaxLength != '') {
-                            $oChamp->nMaxLength = str_replace(')', '', $sMaxLength);
+                            $oChamp->maxLength = $this->getMaxLength($sMaxLength);
                         }
                         break;
                 }
@@ -171,6 +173,18 @@ trait Database
         // echo "<pre>".print_r($aTables, true)."</pre>";
 
         return $aTables;
+    }
 
+    public function getMaxLength($maxLength)
+    {
+        $maxLength = str_replace([')', ' unsigned'], '',$maxLength);
+        if (preg_match('/,/', $maxLength)) {
+            $aLength = explode(',', $maxLength);
+            $maxLength = 1;
+            $maxLength += (int)$aLength[0];
+            $maxLength += (int)$aLength[1];
+        }
+
+        return $maxLength;
     }
 }

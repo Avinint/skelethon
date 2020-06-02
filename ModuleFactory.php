@@ -177,6 +177,7 @@ class ModuleFactory extends BaseFactory
         if (strpos($templatePath, 'conf.yml') !== false ) {
             $modelName = $this->model->getClassName() ;
             $fields = $this->model->getViewFieldsByType('enum');
+
             if (!empty($fields)) {
                 foreach ($fields as $field) {
                     $enums .= PHP_EOL."aListe-{$this->model->getName()}-{$field['column']}:".PHP_EOL;
@@ -269,7 +270,6 @@ class ModuleFactory extends BaseFactory
                     $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
 
                 } elseif (array_contains($field['type'], ['date', 'datetime'])) {
-                    var_dump($field);
                     $exceptions['aDates'][] = $field['name'];
                     $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[1]);
                 } elseif ($field['type'] === 'enum') {
@@ -288,18 +288,9 @@ class ModuleFactory extends BaseFactory
                 $fieldsText = PHP_EOL.$fieldsText.str_repeat("\x20", 8);
             }
 
-//            $boolFields = $this->model->getViewFieldsByType('tinyint');
-//            foreach ($boolFields as $field) {}
-
-//            $dateFields = $this->model->getViewFieldsByType([ 'date', 'datetime']);
-//            foreach ($dateFields as $field) {}
-
-//            $enums = $this->model->getViewFieldsByType('enum');
-//            foreach ($enums as $enum) {}
-
             $enumEditText = implode(PHP_EOL, $allEnumEditLines);
             $enumSearchText = implode(PHP_EOL, $allEnumSearchLines);
-            $enumSearchText .= implode('', $defaults);
+            //$enumSearchText .= implode('', $defaults);
             //$defaults = array_merge($enumDefaults, $defaults);
 
             if ($exceptions) {
@@ -310,9 +301,6 @@ class ModuleFactory extends BaseFactory
                 }
                 $exceptionText .= implode(',', $exceptionArr).']';
             }
-
-//            $enumSearchLines = array_merge($enumSearchLines, $defaults);
-//            var_dump($enumSearchLines);
 
             $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', 'CHAMPS'],
                 [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsText], $methodText);
@@ -410,9 +398,7 @@ class ModuleFactory extends BaseFactory
         $select2EditText = '';
         if ($fields = $this->model->getViewFieldsByType('enum')) {
             if ($this->model->usesSelect2 && strpos($templatePath, 'Admin') > 0) {
-                if (strpos($templatePath, 'Admin') > 0) {
 
-                }
                 $select2DefautTemplate = file($this->getTrueTemplatePath(str_replace('.', 'RechercheSelect2.', $selectedTemplatePath)));
                 $select2RechercheTemplate = array_shift($select2DefautTemplate);
 
@@ -424,7 +410,6 @@ class ModuleFactory extends BaseFactory
                     $select2EditText .= str_replace('NAME', $field['name'], $select2EditTemplate).PHP_EOL;
                 }
                 $select2Text .= implode('', $select2DefautTemplate);
-
             }
            // [$select2Template, $selectClass] = $this->model->usesSelect2 ? [file_get_contents(str_replace('.', 'Select2.', $templatePath)), 'select2'] : ['', 'selectmenu'];
         }
@@ -526,8 +511,8 @@ class ModuleFactory extends BaseFactory
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_string.', $templatePath)));
             }
 
-            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME'],
-                [$field['label'], $field['field'], $field['type'], $field['name']], $fieldTemplate);
+            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME', 'COLUMN'],
+                [$field['label'], $field['field'], $field['type'], $field['name'], $field['column']], $fieldTemplate);
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($templatePath));
@@ -582,8 +567,8 @@ class ModuleFactory extends BaseFactory
 
             $defautOui = $field['default'] === '1' ? ' checked' : '';
             $defautNon = $field['default'] === '0' ? ' checked' : '';
-            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'DEFAUT_OUI', 'DEFAUT_NON'],
-                [$field['label'], $field['field'], $field['type'], $field['default'], $defautOui, $defautNon], $fieldTemplate);
+            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'NAME', 'COLUMN', 'DEFAUT_OUI', 'DEFAUT_NON'],
+                [$field['label'], $field['field'], $field['type'], $field['default'], $field['name'], $field['column'], $defautOui, $defautNon], $fieldTemplate);
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($templatePath));
