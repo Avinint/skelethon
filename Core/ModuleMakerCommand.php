@@ -4,9 +4,9 @@ namespace Core;
 
 class ModuleMakerCommand
 {
-    public function __construct($arguments, $config)
+    public function __construct($arguments)
     {
-        $moduleMaker = $config['moduleMaker'];
+        $moduleMaker = get_config()['moduleMaker'];
         [$action, $module, $model] = $arguments;
         if (!array_contains($action, ['module', 'modele'])) {
             $this->displayErrorMessage();

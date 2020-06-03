@@ -11,9 +11,7 @@ spl_autoload_register('autoloader');
 $argv = array_replace(array_fill(0, 5, ''), $argv);
 array_shift($argv);
 
-$config = file_exists(__DIR__ . DS . 'config.yml') ? Spyc::YAMLLoad(__DIR__ . DS . 'config.yml') : [];
-
-new Core\ModuleMakerCommand($argv, $config);
+new Core\ModuleMakerCommand($argv);
 
 function autoloader($class_name)
 {
@@ -35,5 +33,10 @@ function array_contains($needle, array $haystack, bool $all = false, $has_nested
     }
 
     return isset(array_flip($haystack)[$needle]);
+}
+
+function get_config()
+{
+    return file_exists(__DIR__ . DS . 'config.yml') ? Spyc::YAMLLoad(__DIR__ . DS . 'config.yml') : [];
 }
 

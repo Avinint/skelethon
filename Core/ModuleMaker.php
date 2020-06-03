@@ -18,9 +18,7 @@ class ModuleMaker extends CommandLineMaker
             throw new Exception();
         }
 
-        if (file_exists(dirname(__DIR__) . DS)) {
-            $this->config = file_exists(dirname(__DIR__) . DS . 'config.yml') ? Spyc::YAMLLoad(dirname(__DIR__) . DS . 'config.yml') : [];
-        }
+        $this->config = get_config();
 
         if (empty($name)) {
             $name = $this->askName();
@@ -44,7 +42,6 @@ class ModuleMaker extends CommandLineMaker
         $this->initializeModule($modelName);
         $moduleStructure = Spyc::YAMLLoad(dirname(__DIR__) . DS. 'module.yml');
         $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure, $verbose);
-
     }
 
     /**
@@ -162,7 +159,7 @@ class ModuleMaker extends CommandLineMaker
 
     protected function askTemplate()
     {
-        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(__DIR__) . DS .DS.'*', GLOB_ONLYDIR));
+        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(__DIR__) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
         if (count($templates) === 1) {
             return $templates[0];
         } elseif (count($templates) > 1) {
