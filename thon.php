@@ -8,42 +8,12 @@ require 'lib/Spyc/Spyc.php';
 
 spl_autoload_register('autoloader');
 
-if ($argc < 2 || !in_array($argv[1], ['module', 'modele'])) {
-   ModuleFactory::msg('
-    + + + + AIDE Skelethon: + + + +
-    '.ModuleFactory::Color['Red'].'
-    Vous devez passer une action en paramètre:
-    '.ModuleFactory::Color['Yellow'].'
-    \'module\' '.ModuleFactory::Color['White'].' pour créer un module avec tous ses composants
-    avec en arguments optionnels le nom du module
-     '.ModuleFactory::Color['Yellow'].'
-    \'modele\' '.ModuleFactory::Color['White'].' pour ajouter un modèle.
-    avec en arguments optionnels le nom et le module auquel le modèle est rattaché
-    
-    ('.ModuleFactory::Color['Red'].'Attention'.ModuleFactory::Color['White'].', pour le modèle, l\'ordre des arguments est important)
-    ');
+$argv = array_replace(array_fill(0, 5, ''), $argv);
+array_shift($argv);
 
-   die();
-}
+$config = file_exists(__DIR__ . DS . 'config.yml') ? Spyc::YAMLLoad(__DIR__ . DS . 'config.yml') : [];
 
-$action = $argv[1];
-
-if ($argc < 4) {
-    $argv[3] = '';
-}
-
-$argv[2] = $argc < 3 ? '' : $argv[2];
-
-switch($action)
-{
-    case 'module':
-        E2DModuleMaker::create($argv[2], $argv[3]);
-        //generateModule($argv[2]);
-        break;
-    case 'modele':
-        ModuleFactory::msg('Modèle');
-        break;
-}
+new Core\ModuleMakerCommand($argv, $config);
 
 function autoloader($class_name)
 {
