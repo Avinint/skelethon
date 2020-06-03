@@ -1,48 +1,19 @@
 <?php
 
-class Field
+use Core\Field;
+
+class E2DField extends Field
 {
-    private static $collection = [];
-
-    private $type;
-    private $name;
-    private $column;
-    private $alias;
-    private $formatted;
-    private $label;
-    private $defaultValue;
-
-    /**
-     * Field constructor.
-     * @param $type
-     * @param $name
-     * @param $column
-     * @param $formattedName
-     * @param $defaultValue
-     */
-    public function __construct($type, $name, $columnName, $defaultValue, $alias, $columnInfo = [])
+    protected $formatted;
+    
+    public function __construct($type, $name, $columnName, $defaultValue, $alias, $params = [])
     {
-        $this->type = $type;
-        $this->name = $name;
-        $this->column = $columnName;
-        $this->defaultValue = $defaultValue;
-        $this->alias = $alias;
+        parent::__construct($type, $name, $columnName, $defaultValue, $alias, $params);
 
         $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'double', 'tinyint'));
-        $this->label = $this->labelize($columnName);
-
-        if ('enum' === $type) {
-            $this->enum = $this->parseEnumValues($columnInfo['enum']);
-        }
-
-        $this->isPrimaryKey = isset($columnInfo['pk']) && (true === $columnInfo['pk']);
-        $this->isNullable = isset($columnInfo['is_nullable']) && ($columnInfo['is_nullable']);
-        $this->maxLength = isset($columnInfo['maxlength']) ? ($columnInfo['maxlength']) : null;
-
-        self::$collection[] = $this;
     }
 
-    private function getFormattedName()
+    protected function getFormattedName()
     {
         if ($this->formatted) {
             return $this->name.'Format';
@@ -51,7 +22,7 @@ class Field
         return $this->name;
     }
 
-    private function getFormattedColumn()
+    protected function getFormattedColumn()
     {
         if ($this->formatted) {
             return $this->column.'_format';
@@ -60,7 +31,10 @@ class Field
         return $this->column;
     }
 
-    private function getSelectField()
+    /**
+     * @return string
+     */
+    protected function getSelectField()
     {
         $indent = str_repeat("\x20", 20);
         $lines = [];
@@ -82,40 +56,7 @@ class Field
         return implode(','.PHP_EOL, $lines);
     }
 
-    public static function getSelectFields()
-    {
-        return array_map(function ($field) {return $field->getSelectField();}, self::$collection);
-    }
-
-    private function parseEnumValues($enum)
-    {
-        $values = str_replace(['enum(',')', '\''], '', $enum);
-
-        return explode(',', $values);
-    }
-
-    private function labelize($name = '')
-    {
-        $name = strtolower(str_replace('-', '_', $name));
-        $name = ucfirst(str_replace('_', ' ', $name));
-
-        return $name;
-    }
-
-    public static function getViewFields($showId = false)
-    {
-        return array_map(function ($field) {return [
-            'field' => $field->getFormattedName(),
-            'column' => $field->column,
-            'label' => $field->label,
-            'type' => $field->type,
-            'default' => $field->defaultValue,
-            'name' => $field->name,
-            'enum' => (isset($field->enum) ? $field->enum : null)
-        ];}, array_filter(self::$collection, function ($field) use ($showId) {return !$field->isPrimaryKey || $showId;}));
-    }
-
-    private function getSearchCriterion()
+    protected function getSearchCriterion()
     {
         $aCriteresRecherche = [];
         $fieldName = "AND $this->alias.$this->column";
@@ -164,12 +105,7 @@ class Field
         return implode(PHP_EOL, $aCriteresRecherche);
     }
 
-    public static function getSearchCriteria()
-    {
-        return array_map(function($field) {return $field->getSearchCriterion();}, self::$collection);
-    }
-
-    private function addNumberField($field, $integer = true)
+    protected function addNumberField($field, $integer = true)
     {
         $text = 'addslashes($aRecherche[\'' . $field . '\'])';
         $text =  $integer ? $text : 'str_replace(\',\', \'.\', '. $text.')';
@@ -177,19 +113,19 @@ class Field
         return '".'.$text.'."';
     }
 
-    private function addNumberCriterion($field, $whereClause)
+    protected function addNumberCriterion($field, $whereClause)
     {
         return  str_repeat("\x20", 8) . 'if (isset($aRecherche[\''.$field .'\']) && $aRecherche[\''. $field .'\'] > 0) {'.PHP_EOL.
             $this->addQuery($whereClause);
     }
 
-    private function addBooleanCriterion($field, $whereClause)
+    protected function addBooleanCriterion($field, $whereClause)
     {
         return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'nc\') {'.PHP_EOL.
             $this->addQuery($whereClause);
     }
 
-    private function addDateCriterion($field, $whereClause, $suffixe)
+    protected function addDateCriterion($field, $whereClause, $suffixe)
     {
         return str_repeat("\x20", 8) . "if (isset(\$aRecherche['" . $field . '\']) === true && $aRecherche[\'' . $field . '\'] !== \'\') {' . PHP_EOL .
             str_repeat("\x20", 12) . 'if (!preg_match(\'/:/\', $aRecherche[\'' . $field . '\']) && !preg_match(\'/h/\', $aRecherche[\'' . $field . "'])) {" . PHP_EOL .
@@ -198,13 +134,13 @@ class Field
             $this->addQuery($whereClause);
     }
 
-    private function addStringCriterion($field, $whereClause)
+    protected function addStringCriterion($field, $whereClause)
     {
         return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'\') {'.PHP_EOL.
             $this->addQuery($whereClause);
     }
 
-    private function addQuery($whereClause)
+    protected function addQuery($whereClause)
     {
         return str_repeat("\x20", 12).'$sRequete .= "'.PHP_EOL.
             str_repeat("\x20", 16) . $whereClause . PHP_EOL.
@@ -212,13 +148,13 @@ class Field
             str_repeat("\x20", 8).'}'.PHP_EOL;
     }
 
-    private function getValidationCriterion()
+    protected function getValidationCriterion()
     {
-        $sCritere = str_repeat("\x20", 8)."\$aConfig['".$this->name.'\'] = array(' . PHP_EOL;
+        $sCritere = str_repeat("\x20", 8) . "\$aConfig['" . $this->name . '\'] = array(' . PHP_EOL;
         if (!$this->isNullable) {
             $sCritere .=
-                str_repeat("\x20", 12).'\'required\' => \'1\','.PHP_EOL.
-                str_repeat("\x20", 12).'\'minlength\' => \'1\','.PHP_EOL;
+                str_repeat("\x20", 12) . '\'required\' => \'1\',' . PHP_EOL .
+                str_repeat("\x20", 12) . '\'minlength\' => \'1\',' . PHP_EOL;
         }
 
         if (isset($this->maxLength)) {
@@ -230,31 +166,21 @@ class Field
                 $maxLength += (int)$aLength[1];
             }
 
-            $sCritere .= str_repeat("\x20", 12)."'maxlength' => '$maxLength'," . PHP_EOL;
+            $sCritere .= str_repeat("\x20", 12) . "'maxlength' => '$maxLength'," . PHP_EOL;
         }
 
-        return $sCritere.str_repeat("\x20",8).');' . PHP_EOL;
-    }
-
-    public static function getValidationCriteria()
-    {
-        return array_map(function($field) { return $field->getValidationCriterion(); }, self::$collection);
+        return $sCritere . str_repeat("\x20", 8) . ');' . PHP_EOL;
     }
 
     /**
      * @param $data
      */
-    private function getTableHeader()
+    protected function getTableHeader()
     {
         return str_repeat("\x20", 16).'<th id="th_'.$this->column.'" class="tri">'.$this->name.'</th>';
     }
 
-    public static function getTableHeaders()
-    {
-        return array_map(function($field) {return $field->getTableHeader();}, self::$collection);
-    }
-
-    private function getTableColumn()
+    protected function getTableColumn()
     {
         $alignment = $this->getAlignmentFromType();
 
@@ -266,33 +192,8 @@ class Field
         return ($this->isNumber() ? ' align-right' : ($this->isDateOrEnum() ? ' align-center'  : ''));
     }
 
-    public static function getTableColumns()
-    {
-        return array_map(function ($field) {return $field->getTableColumn();}, self::$collection);
-    }
-
-    private function getFieldMapping()
+    protected function getFieldMapping()
     {
         return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
-    }
-
-    public static function getFieldMappings()
-    {
-        return array_map(function($field){ return $field->getFieldMapping(); }, self::$collection);
-    }
-
-    public function isNumber()
-    {
-        return array_contains($this->type, array('int', 'smallint', 'float', 'decimal', 'double'));
-    }
-
-    public function isDate()
-    {
-        return array_contains($this->type, array('date', 'datetime'));
-    }
-
-    public function isDateOrEnum()
-    {
-        return $this->isDate() || $this->type === 'enum';
     }
 }

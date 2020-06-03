@@ -1,14 +1,18 @@
 <?php
 
+namespace Core;
+
+use \PDO;
+
 trait Database
 {
-    private $hostname;
-    private $username;
-    private $password;
-    private $dBName =  '';
-    private $pdo;
+    protected $hostname;
+    protected $username;
+    protected $password;
+    protected $dBName =  '';
+    protected $pdo;
 
-    private function getPDO()
+    protected function getPDO()
     {
         if ($this->pdo === null) {
             try
@@ -45,8 +49,6 @@ trait Database
         return $data;
 
     }
-
-
 
     public function prepare($statement, $attr, $class = null, $one = false, $ctor = null)
     {

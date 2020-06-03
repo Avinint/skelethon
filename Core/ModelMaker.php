@@ -1,10 +1,8 @@
 <?php
 
-require_once 'BaseFactory.php';
-require 'Field.php';
-require 'Database.php';
+namespace Core;
 
-class ModelFactory extends BaseFactory
+class ModelMaker extends CommandLineMaker
 {
     use Database;
     private $name;
@@ -16,8 +14,9 @@ class ModelFactory extends BaseFactory
     protected $primaryKey;
     protected $idField;
 
-    private $alias;
-    private $modalTitle = [];
+    protected $alias;
+
+    protected $fieldClass;
 
     protected function __construct($name, $module)
     {
@@ -28,12 +27,10 @@ class ModelFactory extends BaseFactory
 
         $this->module = $module;
         $this->name = $this->askName($name);
+        $this->table = $this->getDbTable();
         $this->className = $this->conversionPascalCase($this->name);
         $this->actions = $this->askActions();
-        $this->usesMultiCalques = $this->askMulti();
-        $this->usesSelect2 = $this->askSelect2();
-        $this->usesSwitches = $this->askSwitches();
-        $this->setDbParams();
+        $this->askSpecifics();
 
         $this->generate();
     }
@@ -54,35 +51,8 @@ class ModelFactory extends BaseFactory
         return $name;
     }
 
-    private function askMulti()
-    {
-        $useMulti = $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']);
-
-        return $useMulti === 'o';
-    }
-
-    private function askSwitches()
-    {
-        $usesSwitches = $this->prompt('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', ['o', 'n']);
-
-        return $usesSwitches === 'o';
-    }
-    
-    private function askSelect2()
-    {
-        $useSelect2 = $this->prompt('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', ['o', 'n']);
-        
-        return  $useSelect2 === 'o';
-    }
-
     private function generate()
     {
-        $tables = $this->aListeTables();
-        $this->table = $tables[$this->name];
-        if (is_null($this->table)) {
-            $this->msg('Erreur: Il faut créer la table \''.$this->name.'\' avant de générer le code', 'error');
-            die();
-        }
         $this->alias = strtoupper(substr(str_replace('_', '', $this->name), 0, 3));
 
         foreach ($this->table as $field => $data) {
@@ -91,27 +61,32 @@ class ModelFactory extends BaseFactory
                 $this->idField = $data->sChamp;
             }
 
-            $params = [
-                'pk' => 'PRI' === $data->Key,
-                'is_nullable' => $data->Null !== 'NO',
-                'enum' => $data->Type
-            ];
-
-            if (isset($data->maxLength)) {
-                $params['maxLength'] = $data->maxLength;
-            }
-
-            new Field(
-                $data->sType,
-                $data->sChamp,
-                $data->Field,
-                $data->Default,
-                $this->alias,
-                $params
-            );
+            $this->addField($data);
 
             $this->addModalTitle($data);
         }
+    }
+
+    private function addField($data)
+    {
+        $params = [
+            'pk' => 'PRI' === $data->Key,
+            'is_nullable' => $data->Null !== 'NO',
+            'enum' => $data->Type
+        ];
+
+        if (isset($data->maxLength)) {
+            $params['maxLength'] = $data->maxLength;
+        }
+
+        new $this->fieldClass(
+            $data->sType,
+            $data->sChamp,
+            $data->Field,
+            $data->Default,
+            $this->alias,
+            $params
+        );
     }
 
     private function askActions()
@@ -141,16 +116,12 @@ class ModelFactory extends BaseFactory
         return $actions;
     }
 
-    private function setDbParams()
+    /**
+     *  initialiser l'accès à la base de données
+     */
+    protected function setDbParams()
     {
-        if (!isset($GLOBALS['aParamsAppli']) || !isset($GLOBALS['aParamsBdd'])) {
-            $text = str_replace('<?php', '',file_get_contents('surcharge_conf.php'));
-            eval($text);
-            $this->hostname = 'localhost';
-            $this->username = $GLOBALS['aParamsBdd']['utilisateur'];
-            $this->password = $GLOBALS['aParamsBdd']['mot_de_passe'];
-            $this->dBName = $GLOBALS['aParamsBdd']['base'];
-        }
+        // initialiser la base de données en fonction du fichier config du projet ou la main
     }
 
     public function getName() : string
@@ -168,9 +139,9 @@ class ModelFactory extends BaseFactory
         return $this->actions;
     }
 
-    public function getMappingChamps() :string
+    public function getAttributes() :string
     {
-        return implode(PHP_EOL, Field::getFieldMappings());
+        return implode(PHP_EOL, $this->fieldClass::getAttributes());
     }
 
     /**
@@ -194,7 +165,7 @@ class ModelFactory extends BaseFactory
      */
     public function getSearchCriteria(): string
     {
-        return implode(PHP_EOL, Field::getSearchCriteria());
+        return implode(PHP_EOL, $this->fieldClass::getSearchCriteria());
     }
 
     /**
@@ -202,7 +173,7 @@ class ModelFactory extends BaseFactory
      */
     public function getValidationCriteria(): string
     {
-        return implode(PHP_EOL, Field::getValidationCriteria());
+        return implode(PHP_EOL, $this->fieldClass::getValidationCriteria());
     }
 
     /**
@@ -217,7 +188,7 @@ class ModelFactory extends BaseFactory
     {
         $actionHeader = empty($this->actions) ? '' : str_repeat("\x20", 16).'<th class="centre">Actions</th>'.PHP_EOL;
 
-        return $actionHeader.implode(PHP_EOL, Field::getTableHeaders());
+        return $actionHeader.implode(PHP_EOL, $this->fieldClass::getTableHeaders());
     }
 
     /**
@@ -225,7 +196,7 @@ class ModelFactory extends BaseFactory
      */
     public function getTableColumns()
     {
-        return implode(PHP_EOL, Field::getTableColumns());
+        return implode(PHP_EOL, $this->fieldClass::getTableColumns());
     }
 
     public function getColumnNumber()
@@ -235,12 +206,12 @@ class ModelFactory extends BaseFactory
 
     public function getViewFields($showIdField = false)
     {
-        return Field::getViewFields($showIdField);
+        return $this->fieldClass::getViewFields($showIdField);
     }
 
     public function getViewFieldsByType($type)
     {
-        return array_filter(Field::getViewFields(), function($field) use ($type) {
+        return array_filter($this->fieldClass::getViewFields(), function($field) use ($type) {
             if (is_array($type)) {
                 return array_contains($field['type'], $type);
             }
@@ -250,7 +221,7 @@ class ModelFactory extends BaseFactory
 
     public function getViewFieldsExcludingType($type)
     {
-        return array_filter(Field::getViewFields(), function($field) use ($type) {
+        return array_filter($this->fieldClass::getViewFields(), function($field) use ($type) {
             if (is_array($type)) {
                 return !array_contains($field['type'], $type);
             }
@@ -258,44 +229,34 @@ class ModelFactory extends BaseFactory
         });
     }
 
-    public function getModalTitle()
-    {
-        if (empty($this->modalTitle)) {
-            return '';
-        }
-
-        return PHP_EOL.str_repeat("\x20", 8).'$this->aTitreLibelle = [\''.implode(',', $this->modalTitle).'\'];'.PHP_EOL;
-    }
-
     /**
      * @return array
      */
     public function getSqlSelectFields(): string
     {
-        $fields =  implode(','.PHP_EOL, Field::getSelectFields());
+        $fields =  implode(','.PHP_EOL, $this->fieldClass::getSelectFields());
 
         return $fields;
     }
 
-    public function addModalTitle($data)
+
+    protected function getDbTable(): array
     {
-        if ($this->usesMultiCalques) {
-            if (array_contains($data->Field, ['nom', 'name', 'surname']) || strpos($data->Field, 'nom') === 0 || strpos($data->Field, 'name') === 0) {
-                array_unshift($this->modalTitle, $data->Field);
-            } else if (strpos($data->Field, 'nom') !== false || strpos($data->Field, 'name')) {
-                array_push($this->modalTitle, $data->Field);
-            }
+        $this->setDbParams();
+        $tables = $this->aListeTables();
+        if (!isset($tables[$this->name])) {
+            $this->msg('Erreur: Il faut créer la table \'' . $this->name . '\' avant de générer le code', 'error');
+            die();
         }
+        return $tables[$this->name];
     }
 
     /**
-     * @param string $name
-     * @param $arg2
-     * @return ModelFactory
+     * Details spécifiques au projet
      */
-    public static function create(string $name, $arg2) : self
+    protected function askSpecifics(): void
     {
-        return parent::getInstance($name, $arg2);
+
     }
 
 }
