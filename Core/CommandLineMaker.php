@@ -4,7 +4,7 @@ namespace Core;
 
 class CommandLineMaker
 {
-    use CommandLineToolShelf;
+    use CommandLineToolShelf, FileManager;
 
     const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[1;32m", 'White' => "\e[1;37m", 'Blue' => "\e[1;36m"];
 
@@ -15,10 +15,10 @@ class CommandLineMaker
      * @param $arg2
      * @return static
      */
-    public static function create(string $name, $arg2)
+    public static function create(string $module, $model, $creationMode = 'generate')
     {
         if (is_null(static :: $_instance)) {
-            static::$_instance = new static($name, $arg2);
+            static::$_instance = new static($module, $model, $creationMode);
         }
 
         return self::$_instance;
@@ -66,18 +66,4 @@ class CommandLineMaker
         return $templatePath;
     }
 
-    protected function createFile($path, $text = '', $write = false)
-    {
-        $errorMessage = [];
-        $mode = $write ? 'w' : 'a';
-        $file = fopen($path, $mode);
-        if (fwrite($file, $text) === false) {
-            $errorMessage[] = 'Erreur lors de l\'éxriture du fichier '.$path;
-        }
-        if (fclose($file) === false) {
-            $errorMessage[] = 'Erreur lors de la fermeture du fichier '.$path;
-        }
-
-        return implode(PHP_EOL, $errorMessage);
-    }
 }

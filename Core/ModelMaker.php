@@ -251,6 +251,12 @@ class ModelMaker extends CommandLineMaker
         return $tables[$this->name];
     }
 
+    public function getTitre() : string
+    {
+
+        return 'Mes '.$this->labelize($this->name).'s';
+    }
+
     /**
      * Details spécifiques au projet
      */

@@ -1,4 +1,4 @@
-function MODELAdmin()
+function CONTROLLERAdmin()
 {
     Recherche.apply(this, arguments);
 

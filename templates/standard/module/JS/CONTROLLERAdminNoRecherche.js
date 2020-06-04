@@ -5,7 +5,7 @@
      * @return {void}
      */
     this.vChargementPage = function() {
-        this.vAfficheFilAriane('<h1>Les MODELs</h1>');
+        this.vAfficheFilAriane('<h1>TITRE</h1>');
     }
 
     /**

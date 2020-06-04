@@ -4,11 +4,11 @@ config:
     - actions.yml
     - blocs.yml
 controllers:
-    - MODULEAdminAction.class.php
-    - MODULEAdminHTML.class.php
+    - CONTROLLERAdminAction.class.php
+    - CONTROLLERAdminHTML.class.php
 JS:
-    - MODEL.js
-    - MODELAdmin.js
+    - CONTROLLER.js
+    - CONTROLLERAdmin.js
 models:
     - MODEL.class.php
 templates:

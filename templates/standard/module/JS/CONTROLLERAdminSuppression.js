@@ -9,5 +9,5 @@
      */
     this.vFermeConsultationEtRefreshListe = function(oReponseJSON, oParams) {
         this.vChargeListe('', $('.liste_TABLE'));
-        vFermeCalque('modal_calque_consultation_TABLE'/*MULTI*/);
+        vFermeCalque('modal_calque_consultation_TABLE');
     };

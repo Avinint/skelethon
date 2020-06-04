@@ -10,7 +10,7 @@ class E2DField extends Field
     {
         parent::__construct($type, $name, $columnName, $defaultValue, $alias, $params);
 
-        $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'double', 'tinyint'));
+        $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'double', 'bool'));
     }
 
     protected function getFormattedName()
@@ -49,7 +49,7 @@ class E2DField extends Field
             $lines[] = "{$indent}IF($this->alias.$this->column, DATE_FORMAT($this->alias.$this->column, \'%d/%m/%Y à %H\h%i\'), \'\') AS {$this->getFormattedName()}";
         } elseif (array_contains($this->type, ['float', 'double', 'decimal'])) {
             $lines[] = "{$indent}REPLACE($this->alias.$this->column, \'.\', \',\') AS {$this->getFormattedName()}";
-        } elseif ('tinyint' === $this->type) {
+        } elseif ('bool' === $this->type) {
             $lines[] = "$indent(CASE WHEN $this->alias.$this->column = 1 THEN \'oui\' ELSE \'non\' END) AS {$this->getFormattedName()}";
         }
 
@@ -61,7 +61,7 @@ class E2DField extends Field
         $aCriteresRecherche = [];
         $fieldName = "AND $this->alias.$this->column";
 
-        if (array_contains($this->type, array('smallint', 'int', 'float', 'decimal', 'double'))) {
+        if (array_contains($this->type, array('tinyint', 'smallint', 'int', 'float', 'decimal', 'double'))) {
             $conditionEquals = $fieldName . ' = ' . $this->addNumberField($this->name, array_contains($this->type, ['smallint', 'int']));
             $aCriteresRecherche[] = $this->addNumberCriterion($this->name, $conditionEquals);
 
@@ -71,7 +71,7 @@ class E2DField extends Field
                 $conditionMax = $fieldName . ' <= ' . $this->addNumberField($this->name . 'Max', array_contains($this->type, ['smallint', 'int']));
                 $aCriteresRecherche[] = $this->addNumberCriterion($this->name.'Max', $conditionMax);
             }
-        } elseif ('tinyint' === $this->type) {
+        } elseif ('bool' === $this->type) {
             $conditionEquals = $fieldName . ' = ' . $this->addNumberField($this->name);
 
             $aCriteresRecherche[] = $this->addBooleanCriterion($this->name, $conditionEquals);
@@ -177,7 +177,7 @@ class E2DField extends Field
      */
     protected function getTableHeader()
     {
-        return str_repeat("\x20", 16).'<th id="th_'.$this->column.'" class="tri">'.$this->name.'</th>';
+        return str_repeat("\x20", 16).'<th id="th_'.$this->column.'" class="tri">'.$this->label.'</th>';
     }
 
     protected function getTableColumn()

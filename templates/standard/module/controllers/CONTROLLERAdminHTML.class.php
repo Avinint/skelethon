@@ -4,7 +4,7 @@ namespace APP\Modules\MODULE\Controllers;
 
 use APP\Core\Lib\Interne\PHP\AffichageHTML;
 
-class MODULEAdminHTML extends AffichageHTML
+class CONTROLLERAdminHTML extends AffichageHTML
 {
     /**
      * Récupère le contenu central de la page

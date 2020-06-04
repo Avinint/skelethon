@@ -3,7 +3,7 @@ html_accueil_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         mode: accueil_TABLE
 
 json_recherche_TABLE:
@@ -11,7 +11,7 @@ json_recherche_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: recherche
 
 html_consultation_TABLE:
@@ -19,7 +19,7 @@ html_consultation_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         mode: consultation_TABLE
 
 json_dynamisation_consultation_TABLE:
@@ -27,7 +27,7 @@ json_dynamisation_consultation_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: dynamisation_consultation
         variables:
             - nIdElement
@@ -37,7 +37,7 @@ html_edition_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         mode: edition_TABLE
 
 json_dynamisation_edition_TABLE:
@@ -45,7 +45,7 @@ json_dynamisation_edition_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: edition
         variables:
             - nIdElement
@@ -55,7 +55,7 @@ json_enregistre_edition_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: enregistrement
         variables:
             - nIdElement
@@ -65,7 +65,7 @@ json_suppression_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: suppression
         variables:
             - nIdElement

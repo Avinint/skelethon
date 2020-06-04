@@ -1,12 +1,12 @@
 aNamespace:
     HTML:
-        MODULEAdminHTML: APP\Modules\MODULE\Controllers\MODULEAdminHTML
+        CONTROLLERAdminHTML: APP\Modules\MODULE\Controllers\CONTROLLERAdminHTML
     data:
         MODEL: APP\Modules\MODULE\Models\MODEL
-        MODULEAdminAction: APP\Modules\MODULE\Controllers\MODULEAdminAction
+        CONTROLLERAdminAction: APP\Modules\MODULE\Controllers\CONTROLLERAdminAction
 
 aVues:
-    TABLE:
+    cONTROLLER:
         admin:
             simples:
                 accueil_TABLE:
@@ -18,11 +18,11 @@ aVues:
                                 - package-plugins-light/JS/Select2/css/select2.min.css
                         JS:
                             modules:
-                                - mODULE/JS/MODELAdmin.js
-                                - mODULE/JS/MODEL.js
+                                - mODULE/JS/CONTROLLERAdmin.js
+                                - mODULE/JS/CONTROLLER.js
                             lib_externe_dist:
-                                package-plugins-light/JS/jQuery-Mask/jquery.mask.js
-                                package-plugins-light/JS/Select2/select2.min.js
+                                - package-plugins-light/JS/jQuery-Mask/jquery.mask.js
+                                - package-plugins-light/JS/Select2/select2.min.js
                 consultation_TABLE:
                     ressources:
                         CSS: []
@@ -35,7 +35,7 @@ aVues:
                         CSS: []
                         JS:
                             modules:
-                                - mODULE/JS/MODELAdmin.js
-                                - mODULE/JS/MODEL.js
+                                - mODULE/JS/CONTROLLERAdmin.js
+                                - mODULE/JS/CONTROLLER.js
             specifiques: []
 ENUMS

@@ -3,7 +3,7 @@
 namespace APP\Modules\MODULE\Controllers;
 use APP\Core\Lib\Interne\PHP\UndeadBrain;
 
-class MODELAdminAction extends UndeadBrain
+class CONTROLLERAdminAction extends UndeadBrain
 {
     /**
      * Constructeur de la classe

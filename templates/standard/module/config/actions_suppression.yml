@@ -4,6 +4,6 @@ btn_suppression_TABLE:
         route: json_suppression_TABLE
         type: save_data
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vFermeConsultationEtRefreshListe
         alerte: non

@@ -119,9 +119,14 @@ trait Database
 
                 switch ($oChamp->sType) {
                     case 'tinyint':
-                        $oChamp->sChamp = 'b'.$sNom;
                         if ($sMaxLength != '') {
                             $oChamp->maxLength = $this->getMaxLength($sMaxLength);
+                        }
+                        if (1 === $oChamp->maxLength) {
+                            $oChamp->sType = 'bool';
+                            $oChamp->sChamp = 'b'.$sNom;
+                        } else {
+                            $oChamp->sChamp = 'n'.$sNom;
                         }
                         break;
                     case 'int':
@@ -187,6 +192,6 @@ trait Database
             $maxLength += (int)$aLength[1];
         }
 
-        return $maxLength;
+        return (int)$maxLength;
     }
 }

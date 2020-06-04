@@ -6,7 +6,8 @@ class ModuleMakerCommand
 {
     public function __construct($arguments)
     {
-        $moduleMaker = get_config()['moduleMaker'];
+        Config::create(\dirname(__DIR__) . DS . 'config.yml');
+        $moduleMaker = Config::get()['moduleMaker'];
         [$action, $module, $model] = $arguments;
         if (!array_contains($action, ['module', 'modele'])) {
             $this->displayErrorMessage();
@@ -19,7 +20,7 @@ class ModuleMakerCommand
                 //generateModule($argv[2]);
                 break;
             case 'modele':
-                $moduleMaker::msg('Modèle');
+                $moduleMaker::create($module, $model, 'addModel');
                 break;
         }
     }

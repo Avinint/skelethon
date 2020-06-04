@@ -4,7 +4,7 @@ btn_ouverture_edition_TABLE:
         route: json_dynamisation_edition_TABLE
         type: load_data
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vDynamisationEditionMODELJSON
         alerte: non
 
@@ -15,6 +15,6 @@ btn_enregistre_edition_TABLE:
         type: save_data
         save_formulaire: formulaire_edition_TABLE
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vFermeEditionEtRefreshListe
         alerte: non

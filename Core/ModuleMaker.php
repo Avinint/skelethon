@@ -11,14 +11,14 @@ class ModuleMaker extends CommandLineMaker
     protected $namespaceName;
     protected $config;
 
-    protected function __construct($name, $modelName)
+    protected function __construct($name, $modelName, $creationMode = 'generate')
     {
         if (!is_dir('modules')) {
             $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error');
             throw new Exception();
         }
 
-        $this->config = get_config();
+        $this->config = Config::get();
 
         if (empty($name)) {
             $name = $this->askName();
@@ -26,14 +26,13 @@ class ModuleMaker extends CommandLineMaker
 
         $this->name = $name;
         $this->namespaceName = $this->conversionPascalCase($this->name);
-
+        $this->creationMode = $creationMode;
         $this->generate($modelName);
+
     }
 
-    public function generate($modelName)
+    public function generate($modelName, $verbose = true)
     {
-        $verbose = true;
-
         if ($this->addModule() === false) {
             $this->msg('Création de répertoire impossible. Processus interrompu', 'error');
             return false;
@@ -42,6 +41,29 @@ class ModuleMaker extends CommandLineMaker
         $this->initializeModule($modelName);
         $moduleStructure = Spyc::YAMLLoad(dirname(__DIR__) . DS. 'module.yml');
         $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure, $verbose);
+
+        $configFields = array_map(function($field) {return $field['column'];}, array_values($this->model->getViewFields(true)));
+        Config::write($this->name, [
+                'template' => $this->template,
+                'models' => [ $this->model->getName() => ['fields' => $configFields]]
+            ]);
+    }
+
+    public function addModel($modelName, $verbose = true)
+    {
+        if (!is_dir('modules/'.$this->name)) {
+            $this->msg('Création de répertoire impossible. Processus interrompu', 'error');
+            return false;
+        }
+        $this->initializeModule($modelName);
+        $moduleStructure = Spyc::YAMLLoad(dirname(__DIR__) . DS. 'module.yml');
+        $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure, $verbose);
+
+        $configFields = array_map(function($field) {return $field['column'];}, array_values($this->model->getViewFields(true)));
+        Config::write($this->name, [
+            'template' => $this->template,
+            'models' => [ $this->model->getName() => ['fields' => $configFields]]
+        ]);
     }
 
     /**
@@ -100,10 +122,10 @@ class ModuleMaker extends CommandLineMaker
     private function ensureDirExists(string $dirname, bool $recursive = false, $verbose = false) : bool
     {
         if(!is_dir($dirname)) {
-            return mkdir($dirname, 0777, $recursive) && is_dir($dirname) && $this->msg('Création du répertoire: '.$dirname, 'success');;
+            return mkdir($dirname, 0777, $recursive) && is_dir($dirname) && $verbose && $this->msg('Création du répertoire: '.$dirname, 'success');;
         }
 
-        if ($verbose) {
+        if ($verbose && $this->creationMode === 'generate') {
             return $this->msg('Le ' . $this->highlight('répertoire: ', 'info').''.$dirname. ' existe déja.', 'warning');
         }
         return true;
@@ -121,18 +143,15 @@ class ModuleMaker extends CommandLineMaker
         $commonPath = str_replace('modules'.DS.$this->name, '', $path);
         $templatePath = dirname(__DIR__) . DS. 'templates' .DS.$this->template.DS.'module'.$commonPath;
 
-        if (strpos($path, '.yml') === false) {
-            $path = str_replace(['MODULE', 'MODEL', 'TABLE'], [$this->namespaceName, $this->model->getClassName(), $this->model->getName()], $path);
-        }
+        $path = $this->getTrueFilePath($path);
 
-        if (file_exists($path)) {
+        if ($this->creationMode === 'generate' && file_exists($path)) {
             return true;
         } else {
-            $text = $this->generateFileContent($templatePath);
+            $text = $this->generateFileContent($templatePath, $path);
             //$this->msg("Template path: ".$templatePath, self::Color['White']);
-
-            return $this->createFile($path, $text, true, $verbose);
         }
+        return $this->createFile($path, $text, true, $verbose);
     }
 
     private function getModelName()
@@ -163,7 +182,11 @@ class ModuleMaker extends CommandLineMaker
         if (count($templates) === 1) {
             return $templates[0];
         } elseif (count($templates) > 1) {
-            if (count($this->config) > 0 && isset($this->config['defaultTemplate']) && array_contains($this->config['defaultTemplate'], $templates)) {
+            $moduleConfig = Config::get($this->name);
+
+            if (count($moduleConfig) > 0 && isset($moduleConfig['template']) && array_contains($moduleConfig['template'], $templates)) {
+                $template = Config::get($this->name)['template'];
+            } elseif (count($this->config) > 0 && isset($this->config['defaultTemplate']) && array_contains($this->config['defaultTemplate'], $templates)) {
                 $template = $this->config['defaultTemplate'];
             } else {
                 $template = $this->prompt('Choisir un template dans la liste suivante:'.PHP_EOL.$this->displayList($templates, 'info') .
@@ -232,5 +255,17 @@ class ModuleMaker extends CommandLineMaker
         $exceptions['aBooleens'][] = $field['field'];
         $defaultValue = isset($field['default']) ? $field['default'] : 'nc';
         $defaults[] = str_repeat("\x20", 8) . "\$aRetour['aRadios']['{$field['name']}'] = '$defaultValue';";
+    }
+
+    /**
+     * Modifie le nom du template pour generer le fichier,
+     * à surcharger en fonction du projet
+     *
+     * @param string $path
+     * @return string
+     */
+    protected function getTrueFilePath(string $path) : string
+    {
+        return $path;
     }
 }

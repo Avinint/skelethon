@@ -4,6 +4,6 @@ btn_dynamisation_recherche_TABLE:
         route: json_dynamisation_recherche_TABLE
         type: load_data
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vDynamisationFormulaireRecherche
         alerte: non

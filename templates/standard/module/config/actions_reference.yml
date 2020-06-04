@@ -4,7 +4,7 @@ btn_dynamisation_recherche_TABLE:
         route: json_dynamisation_recherche_TABLE
         type: load_data
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vDynamisationFormulaireRechercheMODEL
         alerte: non
 
@@ -14,7 +14,7 @@ btn_ouverture_consultation_TABLE:
         route: json_dynamisation_consultation_TABLE
         type: load_data
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vDynamisationConsultationMODELJSON
         alerte: non
 
@@ -24,7 +24,7 @@ btn_ouverture_edition_TABLE:
         route: json_dynamisation_edition_TABLE
         type: load_data
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vDynamisationEditionMODELJSON
         alerte: non
 
@@ -35,7 +35,7 @@ btn_enregistre_edition_TABLE:
         type: save_data
         save_formulaire: formulaire_edition_TABLE
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vFermeEditionRefreshListe
         alerte: non
 
@@ -45,6 +45,6 @@ btn_suppression_TABLE:
         route: json_suppression_TABLE
         type: save_data
     callback:
-        module: mODULE
+        module: cONTROLLER
         fonction: vRefreshListe
         alerte: non

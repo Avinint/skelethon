@@ -70,10 +70,7 @@ trait CommandLineToolShelf
 
     protected function labelize($name = '')
     {
-        $name = strtolower(str_replace('-', '_', $name));
-        $name = ucfirst(str_replace('_', ' ', $name));
-
-        return $name;
+        return ucfirst(strtolower(str_replace(['-', '_'], ' ', $name)));
     }
 
     protected function camelize($name = '')

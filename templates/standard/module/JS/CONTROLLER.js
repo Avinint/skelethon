@@ -1,12 +1,12 @@
-function MODEL()
+function CONTROLLER()
 {
     // La classe hérite du fichier JS de la zone courante.
     if (szZoneCourante == 'site') {
-        MODELPublic.apply(this, arguments);
+        CONTROLLERPublic.apply(this, arguments);
     } else if (szZoneCourante == 'application') {
-        MODELPrive.apply(this, arguments);
+        CONTROLLERPrive.apply(this, arguments);
     } else if (szZoneCourante == 'admin') {
-        MODELAdmin.apply(this, arguments);
+        CONTROLLERAdmin.apply(this, arguments);
     }
 
     var oThis = this;

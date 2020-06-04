@@ -35,8 +35,4 @@ function array_contains($needle, array $haystack, bool $all = false, $has_nested
     return isset(array_flip($haystack)[$needle]);
 }
 
-function get_config()
-{
-    return file_exists(__DIR__ . DS . 'config.yml') ? Spyc::YAMLLoad(__DIR__ . DS . 'config.yml') : [];
-}
 
