@@ -28,6 +28,7 @@ class ModelMaker extends CommandLineMaker
         $this->module = $module;
         $this->name = $this->askName($name);
         $this->table = $this->getDbTable();
+        
         $this->className = $this->conversionPascalCase($this->name);
         $this->actions = $this->askActions();
         $this->askSpecifics();
@@ -77,6 +78,10 @@ class ModelMaker extends CommandLineMaker
 
         if (isset($data->maxLength)) {
             $params['maxLength'] = $data->maxLength;
+        }
+
+        if (isset($data->step)) {
+            $params['step'] = $data->step;
         }
 
         new $this->fieldClass(

@@ -91,17 +91,8 @@ class ModuleMaker extends CommandLineMaker
                 }
             } else {
                 // crée fichier
-                $error = $this->ensureFileExists($path.DS.$value, $verbose);
-                $filename = str_replace(['MODULE', 'MODEL', 'TABLE'], [$this->namespaceName, $this->model->getClassName(), $this->model->getName()], $value);
-                if ($error === true) {
-                   $this->msg('Le '. $this->highlight('fichier ', 'error') . $path.DS. $filename . ' existe déja', 'warning');
-                } elseif ($error  !== '') {
-                    $this->msg($error, 'error');
-                } else {
-                    if ($verbose) {
-                        $this->msg('Création du fichier: '.$path.DS. $filename, 'success');
-                    }
-                }
+                $message = $this->ensureFileExists($path.DS.$value, $verbose);
+                $this->msg($message[0], $message[1]);
             }
         }
     }
@@ -145,13 +136,43 @@ class ModuleMaker extends CommandLineMaker
 
         $path = $this->getTrueFilePath($path);
 
-        if ($this->creationMode === 'generate' && file_exists($path)) {
-            return true;
-        } else {
-            $text = $this->generateFileContent($templatePath, $path);
-            //$this->msg("Template path: ".$templatePath, self::Color['White']);
+        if ($this->fileShouldNotbeCreated($path)) {
+            return ['Le '. $this->highlight('fichier ', 'error') . $path . ' existe déja', 'warning'];
         }
-        return $this->createFile($path, $text, true, $verbose);
+
+        $text = $this->generateFileContent($templatePath, $path);
+
+        $modifiable = 'generation' !== $this->creationMode && $this->fileIsUpdateable($path) && file_exists($path);
+        $modified = $modifiable && file_get_contents($path) !== $text;
+
+        $message = $modified || !$modifiable ? $this->createFile($path, $text, true, $verbose) : '';
+        if (empty($message)) {
+            if ($modified) {
+                return [$this->highlight('Mise à jour', 'info') . ' du fichier: ' . $path, 'success'];
+            } elseif ($modifiable) {
+                return ['Le '. $this->highlight('fichier ', 'error') . $path . ' n\'est pas mis à jour', 'warning'];
+            } else {
+                return [$this->highlight('Création', 'info').' du fichier: '.$path, 'success'];
+            }
+        } else {
+            return [$message, 'error'];
+        }
+    }
+
+    protected function fileShouldNotbeCreated($path)
+    {
+        return file_exists($path) && ($this->creationMode === 'generate' || !$this->fileIsUpdateable($path));
+    }
+
+    /**
+     * Identifie quels fichiers sont partagés entre plusieurs models et seront mis a jour quand on rajoute un modèle
+     *
+     * @param $path
+     * @return false|int
+     */
+    protected function fileIsUpdateable($path)
+    {
+        return false;
     }
 
     private function getModelName()

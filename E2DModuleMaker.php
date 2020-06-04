@@ -30,6 +30,17 @@ class E2DModuleMaker extends ModuleMaker
     }
 
     /**
+     * Identifie quels fichiers sont partagés entre plusieurs models et seront mis a jour quand on rajoute un modèle
+     *
+     * @param $path
+     * @return false|int
+     */
+    protected function fileIsUpdateable($path)
+    {
+        return strpos($path, '.yml');
+    }
+
+    /**
      * @param string $templatePath
      * @return string
      */
@@ -466,14 +477,15 @@ class E2DModuleMaker extends ModuleMaker
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_date.', $templatePath)));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_text.', $templatePath)));
-            } elseif (array_contains($field['type'], ['float', 'decimal', 'int', 'smallint', 'double'])) {
+            } elseif (array_contains($field['type'], ['float', 'decimal', 'tinyint', 'int', 'smallint', 'double'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_number.', $templatePath)));
             } else {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_string.', $templatePath)));
             }
 
-            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME', 'COLUMN'],
-                [$field['label'], $field['field'], $field['type'], $field['name'], $field['column']], $fieldTemplate);
+            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME', 'COLUMN', 'STEP'],
+                [$field['label'], $field['field'], $field['type'], $field['name'], $field['column'],
+                    (isset($field['step']) ? ' step="'.$field['step'].'"' : '')], $fieldTemplate);
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($templatePath));
@@ -515,8 +527,9 @@ class E2DModuleMaker extends ModuleMaker
 
             $defautOui = $field['default'] === '1' ? ' checked' : '';
             $defautNon = $field['default'] === '0' ? ' checked' : '';
-            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'NAME', 'COLUMN', 'DEFAUT_OUI', 'DEFAUT_NON'],
-                [$field['label'], $field['field'], $field['type'], $field['default'], $field['name'], $field['column'], $defautOui, $defautNon], $fieldTemplate);
+            $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'NAME', 'COLUMN', 'STEP', 'DEFAUT_OUI', 'DEFAUT_NON'],
+                [$field['label'], $field['field'], $field['type'], $field['default'], $field['name'], $field['column'],
+                    (isset($field['step']) ? ' step="'.$field['step'].'"' : ''), $defautOui, $defautNon], $fieldTemplate);
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($templatePath));

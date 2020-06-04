@@ -169,6 +169,7 @@ trait Database
                         $oChamp->sChamp = 'f'.$sNom;
                         if ($sMaxLength != '') {
                             $oChamp->maxLength = $this->getMaxLength($sMaxLength);
+                            $oChamp->step = $this->getStep($sMaxLength);
                         }
                         break;
                 }
@@ -184,14 +185,28 @@ trait Database
 
     public function getMaxLength($maxLength)
     {
-        $maxLength = str_replace([')', ' unsigned'], '',$maxLength);
+
         if (preg_match('/,/', $maxLength)) {
             $aLength = explode(',', $maxLength);
             $maxLength = 1;
             $maxLength += (int)$aLength[0];
             $maxLength += (int)$aLength[1];
+            $step = 1 / (10 ** (int)$aLength[1]);
+            return [(int)$maxLength, $step];
         }
 
         return (int)$maxLength;
+    }
+
+    public function getStep($maxLength)
+    {
+        $maxLength = str_replace([')', ' unsigned'], '',$maxLength);
+        if (strpos($maxLength, ',') > 0) {
+            $aLength = explode(',', $maxLength);
+            $step = 1 / (10 ** (int)$aLength[1]);
+            return $step;
+        }
+
+        return null;
     }
 }

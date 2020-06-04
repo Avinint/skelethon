@@ -37,6 +37,7 @@ class Field
         $this->isPrimaryKey = isset($params['pk']) && (true === $params['pk']);
         $this->isNullable = isset($params['is_nullable']) && ($params['is_nullable']);
         $this->maxLength = isset($params['maxlength']) ? ($params['maxlength']) : null;
+        $this->step = isset($params['step']) ? ($params['step']) : null;
 
         self::$collection[] = $this;
     }
@@ -63,15 +64,22 @@ class Field
 
     public static function getViewFields($showId = false)
     {
-        return array_map(function ($field) {return [
-            'field' => $field->getFormattedName(),
-            'column' => $field->column,
-            'label' => $field->label,
-            'type' => $field->type,
-            'default' => $field->defaultValue,
-            'name' => $field->name,
-            'enum' => (isset($field->enum) ? $field->enum : null)
-        ];}, array_filter(self::$collection, function ($field) use ($showId) {return !$field->isPrimaryKey || $showId;}));
+        return array_map(function ($field) {
+            $properties = [
+                'field' => $field->getFormattedName(),
+                'column' => $field->column,
+                'label' => $field->label,
+                'type' => $field->type,
+                'default' => $field->defaultValue,
+                'name' => $field->name,
+                'enum' => (isset($field->enum) ? $field->enum : null)
+            ];
+
+            if (isset($field->step)) {
+                $properties['step'] = $field->step;
+            }
+
+            return $properties;}, array_filter(self::$collection, function ($field) use ($showId) {return !$field->isPrimaryKey || $showId;}));
     }
 
     public static function getSearchCriteria()
