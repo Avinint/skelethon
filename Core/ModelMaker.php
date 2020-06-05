@@ -2,7 +2,7 @@
 
 namespace Core;
 
-class ModelMaker extends CommandLineMaker
+class ModelMaker extends BaseMaker
 {
     use Database;
     private $name;

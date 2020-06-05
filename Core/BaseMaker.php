@@ -2,7 +2,7 @@
 
 namespace Core;
 
-class CommandLineMaker
+class BaseMaker
 {
     use CommandLineToolShelf, FileManager;
 
@@ -18,6 +18,7 @@ class CommandLineMaker
     public static function create(string $module, $model, $creationMode = 'generate')
     {
         if (is_null(static :: $_instance)) {
+            static::$verbose = Config::get()['verbose'] ?? true ;
             static::$_instance = new static($module, $model, $creationMode);
         }
 

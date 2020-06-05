@@ -4,7 +4,7 @@ namespace Core;
 
 use \Spyc;
 
-class ModuleMaker extends CommandLineMaker
+class ModuleMaker extends BaseMaker
 {
     protected $name;
     protected $model;
@@ -14,7 +14,7 @@ class ModuleMaker extends CommandLineMaker
     protected function __construct($name, $modelName, $creationMode = 'generate')
     {
         if (!is_dir('modules')) {
-            $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error');
+            $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
             throw new Exception();
         }
 
@@ -28,43 +28,36 @@ class ModuleMaker extends CommandLineMaker
         $this->namespaceName = $this->conversionPascalCase($this->name);
         $this->creationMode = $creationMode;
         $this->generate($modelName);
-
     }
 
-    public function generate($modelName, $verbose = true)
+    public function generate($modelName)
     {
-        if ($this->addModule() === false) {
-            $this->msg('Création de répertoire impossible. Processus interrompu', 'error');
+        if ('addModel' === $this->creationMode) {
+            if (!is_dir('modules/'.$this->name)) {
+                $this->msg('Création du '.$this->highlight('modèle', 'error').' impossible, il faut d\'abord créer le '.$this->highlight('module'), 'error', false, true, true);
+                return false;
+            }
+        } elseif ($this->addModule() === false) {
+            $this->msg('Création de répertoire impossible. Processus interrompu', 'error', false, true, true);
             return false;
         }
 
         $this->initializeModule($modelName);
+
         $moduleStructure = Spyc::YAMLLoad(dirname(__DIR__) . DS. 'module.yml');
-        $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure, $verbose);
+        $success = $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure);
 
         $configFields = array_map(function($field) {return $field['column'];}, array_values($this->model->getViewFields(true)));
         Config::write($this->name, [
                 'template' => $this->template,
                 'models' => [ $this->model->getName() => ['fields' => $configFields]]
             ]);
+
+        $this->displayCompletionMessage($success);
+
+        return $success;
     }
 
-    public function addModel($modelName, $verbose = true)
-    {
-        if (!is_dir('modules/'.$this->name)) {
-            $this->msg('Création de répertoire impossible. Processus interrompu', 'error');
-            return false;
-        }
-        $this->initializeModule($modelName);
-        $moduleStructure = Spyc::YAMLLoad(dirname(__DIR__) . DS. 'module.yml');
-        $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure, $verbose);
-
-        $configFields = array_map(function($field) {return $field['column'];}, array_values($this->model->getViewFields(true)));
-        Config::write($this->name, [
-            'template' => $this->template,
-            'models' => [ $this->model->getName() => ['fields' => $configFields]]
-        ]);
-    }
 
     /**
      * Personnalisation du module (recommandé de surcharger cette méthode en fonction du projet)
@@ -82,21 +75,28 @@ class ModuleMaker extends CommandLineMaker
         return $this->prompt('Veuillez renseigner le nom du module :');
     }
 
-    function addSubDirectories($path, $structure, $verbose = false)
+    function addSubDirectories($path, $structure)
     {
+        $result = true;
         foreach ($structure as $key => $value) {
             if (is_array($value)) {
-                if ($this->ensureDirExists($path.DS.$key, true, $verbose) === true) {
-                    $this->addSubDirectories($path.DS.$key, $value, $verbose);
+                if ($result = ($result && $this->ensureDirExists($path.DS.$key, true))) {
+                    $this->addSubDirectories($path.DS.$key, $value);
                 }
             } else {
                 // crée fichier
-                $message = $this->ensureFileExists($path.DS.$value, $verbose);
+                $message = $this->ensureFileExists($path.DS.$value);
                 $this->msg($message[0], $message[1]);
+                $result = $result && $message[1] !== 'error';
             }
         }
+
+        return $result;
     }
 
+    /**
+     * @return bool
+     */
     private function addModule() : bool
     {
         return $this->ensureDirExists('modules/'.$this->name);
@@ -107,18 +107,16 @@ class ModuleMaker extends CommandLineMaker
      *
      * @param string $dirname
      * @param bool $recursive
-     * @param bool $verbose
      * @return bool
      */
-    private function ensureDirExists(string $dirname, bool $recursive = false, $verbose = false) : bool
+    private function ensureDirExists(string $dirname, bool $recursive = false) : bool
     {
         if(!is_dir($dirname)) {
-            return mkdir($dirname, 0777, $recursive) && is_dir($dirname) && $verbose && $this->msg('Création du répertoire: '.$dirname, 'success');;
+            return mkdir($dirname, 0777, $recursive) && is_dir($dirname) && $this->msg($this->highlight('Création').' du répertoire: '.$dirname, 'success');;
         }
 
-        if ($verbose && $this->creationMode === 'generate') {
-            return $this->msg('Le ' . $this->highlight('répertoire: ', 'info').''.$dirname. ' existe déja.', 'warning');
-        }
+        $this->msg('Le ' . 'répertoire: '.''.$this->highlight($dirname). ' existe déja.', 'warning', false, $this->creationMode === 'generate');
+
         return true;
     }
 
@@ -126,10 +124,9 @@ class ModuleMaker extends CommandLineMaker
      * Crée fichier s'il n'existe pas
      *
      * @param string $path
-     * @param $verbose
      * @return bool|string
      */
-    function ensureFileExists(string $path, $verbose)
+    function ensureFileExists(string $path)
     {
         $commonPath = str_replace('modules'.DS.$this->name, '', $path);
         $templatePath = dirname(__DIR__) . DS. 'templates' .DS.$this->template.DS.'module'.$commonPath;
@@ -137,22 +134,22 @@ class ModuleMaker extends CommandLineMaker
         $path = $this->getTrueFilePath($path);
 
         if ($this->fileShouldNotbeCreated($path)) {
-            return ['Le '. $this->highlight('fichier ', 'error') . $path . ' existe déja', 'warning'];
+            return ['Le fichier ' . $this->highlight($path, 'info') . ' existe déja', 'warning'];
         }
 
         $text = $this->generateFileContent($templatePath, $path);
 
-        $modifiable = 'generation' !== $this->creationMode && $this->fileIsUpdateable($path) && file_exists($path);
+        $modifiable = $this->fileIsUpdateable($path) && file_exists($path);
         $modified = $modifiable && file_get_contents($path) !== $text;
 
-        $message = $modified || !$modifiable ? $this->createFile($path, $text, true, $verbose) : '';
+        $message = $modified || !$modifiable ? $this->createFile($path, $text, true) : '';
         if (empty($message)) {
             if ($modified) {
-                return [$this->highlight('Mise à jour', 'info') . ' du fichier: ' . $path, 'success'];
+                return [$this->highlight('Mise à jour', 'info') . ' du fichier: ' . $this->highlight($path), 'success'];
             } elseif ($modifiable) {
-                return ['Le '. $this->highlight('fichier ', 'error') . $path . ' n\'est pas mis à jour', 'warning'];
+                return ['Le '. 'fichier ' . $this->highlight($path, 'info') . ' n\'est pas mis à jour', 'warning'];
             } else {
-                return [$this->highlight('Création', 'info').' du fichier: '.$path, 'success'];
+                return [$this->highlight('Création', 'info').' du fichier: '.$this->highlight($path), 'success'];
             }
         } else {
             return [$message, 'error'];
@@ -161,7 +158,7 @@ class ModuleMaker extends CommandLineMaker
 
     protected function fileShouldNotbeCreated($path)
     {
-        return file_exists($path) && ($this->creationMode === 'generate' || !$this->fileIsUpdateable($path));
+        return file_exists($path) && !$this->fileIsUpdateable($path);
     }
 
     /**
@@ -172,7 +169,7 @@ class ModuleMaker extends CommandLineMaker
      */
     protected function fileIsUpdateable($path)
     {
-        return false;
+        return 'generate' !== $this->creationMode;
     }
 
     private function getModelName()
@@ -288,5 +285,18 @@ class ModuleMaker extends CommandLineMaker
     protected function getTrueFilePath(string $path) : string
     {
         return $path;
+    }
+
+    /**
+     * @param bool $success
+     */
+    private function displayCompletionMessage(bool $success): void
+    {
+        $keyword = 'generate' === $this->creationMode ? 'module' : 'modèle';
+        if ($success) {
+            $this->msg(ucfirst($keyword) . ' généré avec succès', 'success', false, true, true);
+        } else {
+            $this->msg('La génération du ' . $keyword . ' n\'a pus aller à son terme', 'error', false, true, true);
+        }
     }
 }

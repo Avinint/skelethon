@@ -37,7 +37,9 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function fileIsUpdateable($path)
     {
-        return strpos($path, '.yml');
+        $modes = ['addModel' =>'yml', 'addSelectAjax' => 'js'];
+        $fileExtension = is_array($modes[$this->creationMode]) ? implode('|', $modes[$this->creationMode])  : $modes[$this->creationMode];
+        return preg_match('/\.'.$fileExtension.'$/', $path);
     }
 
     /**

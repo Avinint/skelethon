@@ -6,13 +6,17 @@ namespace Core;
 
 trait CommandLineToolShelf
 {
-    public function msg(string $text, $type = '', $hasDisplayYesNo = false)
+    protected static $verbose;
+
+    public function msg(string $text, $type = '', $hasDisplayYesNo = false, $verboseCondition = true, $important = false)
     {
-        $displayYesNo = $hasDisplayYesNo ? ' ['.$this->highlight('O', 'success').'/'.$this->highlight('N', 'error').']' : '';
+        if ((self::$verbose && $verboseCondition) || empty($type) || $important) {
+            $displayYesNo = $hasDisplayYesNo ? ' ['.$this->highlight('O', 'success').'/'.$this->highlight('N', 'error').']' : '';
 
-        echo ($type? $this->frame(strtoupper($type), $type).' ' : '')  . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
+            echo ($type? $this->frame(strtoupper($type), $type).' ' : '')  . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
+        }
 
-        return (bool)$type;
+        return !empty($type);
     }
 
     public function displayList($list, $hl = '')
