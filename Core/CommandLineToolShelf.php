@@ -19,9 +19,9 @@ trait CommandLineToolShelf
         return !empty($type);
     }
 
-    public function displayList($list, $hl = '')
+    public function displayList($list, $hl = '', $delim1 = '', $delim2 = PHP_EOL)
     {
-        return implode(PHP_EOL, array_map(function($el) use ($hl) { if ($hl) {$el = $this->highlight($el, $hl);} return "\t$el";}, $list));
+        return implode($delim1, array_map(function($el) use ($hl, $delim2) { if ($hl) {$el = $this->highlight($el, $hl);} return "\t$el". $delim2;}, $list));
     }
 
     public function getColorFromType($type)

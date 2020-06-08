@@ -1,5 +1,6 @@
 <?php
 
+use Core\Config;
 use Core\ModuleMaker;
 
 class E2DModuleMaker extends ModuleMaker
@@ -10,9 +11,16 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function initializeModule($modelName): void
     {
-        $this->model = E2DModelMaker::create($modelName, $this);
+        $this->applyChoicesForAllModules = $this->askApplyChoiceForAllModules();
+        $this->model = E2DModelMaker::create($modelName, $this->name, $this->creationMode, $this->applyChoicesForAllModules );
         $this->template = $this->askTemplate();
         $this->addMenu();
+    }
+
+    protected function executeSpecificModes()
+    {
+        //if ('addSelectAjax' === $this->creationMode)
+        return $this->addSelectAjax();
     }
 
     /**
@@ -22,7 +30,6 @@ class E2DModuleMaker extends ModuleMaker
     protected function getTrueFilePath(string $path) : string
     {
         if (strpos($path, '.yml') === false) {
-            $controllerName = $this->creationMode === 'generate' ? $this->namespaceName : $this->model->getName();
             $path = str_replace(['CONTROLLER', 'MODEL', 'TABLE'], [$this->getControllerToken(), $this->model->getClassName(), $this->model->getName()], $path);
         }
 
@@ -37,9 +44,13 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function fileIsUpdateable($path)
     {
-        $modes = ['addModel' =>'yml', 'addSelectAjax' => 'js'];
-        $fileExtension = is_array($modes[$this->creationMode]) ? implode('|', $modes[$this->creationMode])  : $modes[$this->creationMode];
-        return preg_match('/\.'.$fileExtension.'$/', $path);
+        if ('generate' === $this->creationMode) {
+            return false;
+        }
+        $modes = ['addModel' =>['yml', 'js'], 'addSelectAjax' => 'js', ''];
+        return 'generate' !== $this->creationMode && preg_match('/\.'.(is_array($modes[$this->creationMode]) ?
+                    implode('|', $modes[$this->creationMode]) :
+                    $modes[$this->creationMode]).'$/', $path);
     }
 
     /**
@@ -63,7 +74,12 @@ class E2DModuleMaker extends ModuleMaker
         } elseif (strpos($templatePath, 'MODEL.class')) {
             $text = $this->generateModel($templatePath);
         } elseif (strpos($templatePath, '.js')) {
+            if ($this->creationMode === 'addModel' && strpos($templatePath, 'CONTROLLER.js')) {
+               [$message, $type] = $this->modifyJSFiles($templatePath, $path);
+               $this->msg($message, $type);
+            }
             $text = $this->generateJSFiles($templatePath);
+
         } elseif (strpos($templatePath, 'accueil_TABLE.html')) {
             $text = file_get_contents($this->getTrueTemplatePath($templatePath));
         } elseif (strpos($templatePath, 'liste_TABLE.html')) {
@@ -75,6 +91,7 @@ class E2DModuleMaker extends ModuleMaker
         } elseif (strpos($templatePath, 'recherche_TABLE.html')) {
             $text = $this->generateSearchView($templatePath);
         }
+
         return $text;
     }
 
@@ -144,7 +161,6 @@ class E2DModuleMaker extends ModuleMaker
             $templatePath = $this->getTrueTemplatePath($templatePath);
             if (file_exists($templatePath)) {
 
-            }
                 $enums = '';
                 $fields = $this->model->getViewFieldsByType('enum');
                 if (!empty($fields)) {
@@ -155,11 +171,16 @@ class E2DModuleMaker extends ModuleMaker
                         }
                     }
 
-                $template = file_get_contents($templatePath);
-                $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
-                    [$this->name, $this->model->getName(), $this->model->getClassName(), $this->namespaceName, $this->getControllerToken(), $this->getControllerToken(true), $enums], $template));
+                    $template = file_get_contents($templatePath);
+                    $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
+                        [$this->name, $this->model->getName(), $this->model->getClassName(), $this->namespaceName, $this->getControllerToken(), $this->getControllerToken(true), $enums], $template));
 
-                $config = array_replace_recursive($config, $newConfig);
+                    $baseJSFilePath = $this->name.'/JS/'.$this->namespaceName.'.js';
+                    array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['formulaires']['edition_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
+                    array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['simples']['accueil_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
+
+                    $config = array_replace_recursive($config, $newConfig);
+                }
             }
         }
 
@@ -383,15 +404,62 @@ class E2DModuleMaker extends ModuleMaker
                     $select2Text .= str_replace('NAME', $field['name'], $select2RechercheTemplate);
                     $select2EditText .= str_replace('NAME', $field['name'], $select2EditTemplate).PHP_EOL;
                 }
-                $select2Text .= implode('', $select2DefautTemplate);
+                $select2Text .= implode('', $select2DefautTemplate).PHP_EOL;
             }
             // [$select2Template, $selectClass] = $this->model->usesSelect2 ? [file_get_contents(str_replace('.', 'Select2.', $templatePath)), 'select2'] : ['', 'selectmenu'];
         }
 
-        $text = str_replace(['/*ACTION*/', 'mODULE', 'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2'],
-            [$actionMethodText, $this->name, $this->getControllerToken(), $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2Text], $text);
+        $selectAjaxText = '';
+        if ($this->model->usesSelectAjax && strpos($templatePath, 'Admin') > 0) {
+
+            if ($fields = $this->model->getViewFieldsByType('selectAjax')) {
+                $selectAjax = [];
+                foreach ($fields as $field) {
+                    $foreignClassName = $this->camelize($field['selectAjax']['table']);
+                    $label = $field['selectAjax']['label'];
+                    $selectAjaxCallText = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
+
+                    $select2Text .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], $selectAjaxCallText);
+                    $allowClear = $field['is_nullable'] ? 'true' : 'false';
+                    $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $allowClear], $selectAjaxCallText);
+
+                    $selectAjaxTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjax.', $selectedTemplatePath)));
+                    $selectAjax[] = str_replace(['MODEL', 'PK', 'TITRE', 'TABLE', 'ORDERBY'],
+                       [$foreignClassName, $field['column'], $label , $field['selectAjax']['table'], $field['column']], $selectAjaxTemp);
+                }
+                $selectAjaxText = PHP_EOL . implode(PHP_EOL, $selectAjax) . PHP_EOL;
+            }
+        }
+
+        $text = str_replace(['/*MULTIJS*/', '/*ACTION*/', 'mODULE', 'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2', 'SELECTAJAX'],
+            ['', $actionMethodText, $this->name, $this->getControllerToken(), $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2Text, $selectAjaxText], $text);
 
         return $text;
+    }
+
+    /**
+     * @param string $templatePath
+     * @return string|string[]
+     */
+    private function modifyJSFiles(string $templatePath, string $path)
+    {
+        $text = '';
+        $multiText = str_replace('MODEL', $this->model->getClassName(), file_get_contents($this->getTrueTemplatePath($templatePath, 'MultiFichier.')));
+
+
+        $filePath = $this->getTrueTemplatePath($path, $this->namespaceName, $this->model->getClassName());
+
+        if (file_exists($filePath)) {
+            $text = file_get_contents($filePath);
+            if (strpos($text, $this->model->getClassName()) === false) {
+                $text = substr_replace($text, $multiText, strpos($text, 'if'), 2);
+                return $this->saveFile($filePath, $text);
+            } else {
+                return ['Le fichier '.$this->highlight($filePath, 'info').' n\'est pas mis à jour', 'warning'];
+            }
+        }
+
+        return $this->saveFile($filePath);
     }
 
     /**
@@ -404,22 +472,22 @@ class E2DModuleMaker extends ModuleMaker
         $actionText = str_repeat("\x20", 16) . '<td class="centre">' . PHP_EOL;
 
         if (array_contains('edition', $this->model->getActions())) {
-            $actionBarTemplatePath = $this->getTrueTemplatePath(str_replace('.', '_actionbar.', $templatePath));
+            $actionBarTemplatePath = $this->getTrueTemplatePath($templatePath, '_actionbar.');
             $actionBarText = file_get_contents($actionBarTemplatePath);
         }
 
         if (array_contains('consultation', $this->model->getActions())) {
-            $consultationTemplatePath = $this->getTrueTemplatePath(str_replace('.', '_consultation.', $templatePath));
+            $consultationTemplatePath = $this->getTrueTemplatePath($templatePath, '_consultation.');
             $actionText .= file_get_contents($consultationTemplatePath);
         } else {
 
             if (array_contains('edition', $this->model->getActions())) {
-                $editionTemplatePath = $this->getTrueTemplatePath(str_replace('.', '_edition.', $templatePath));
+                $editionTemplatePath = $this->getTrueTemplatePath($templatePath, '_edition.');
                 $actionText .= file_get_contents($editionTemplatePath);
             }
 
             if (array_contains('suppression', $this->model->getActions())) {
-                $suppressionTemplatePath = $this->getTrueTemplatePath(str_replace('.', '_suppression.', $templatePath));
+                $suppressionTemplatePath = $this->getTrueTemplatePath($templatePath, '_suppression.');
                 $actionText .= file_get_contents($suppressionTemplatePath);
             }
         }
@@ -442,7 +510,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     private function generateConsultationView(string $templatePath)
     {
-        $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_field.', $templatePath)));
+        $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_field.'));
         $fieldText = [];
         foreach ($this->model->getViewFields() as $field) {
             $fieldText[] = str_replace(['LABEL', 'FIELD'], [$field['label'], $field['field']], $fieldTemplate);
@@ -464,25 +532,26 @@ class E2DModuleMaker extends ModuleMaker
         foreach ($this->model->getViewFields() as $field) {
             if (array_contains($field['type'], ['enum'])) {
                 if ($this->model->usesSelect2) {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_enum_select2.', $templatePath)));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum_select2.'));
                 } else {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_enum.', $templatePath)));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum.'));
                 }
             } elseif (array_contains($field['type'], ['bool'])) {
                 if ($this->model->usesSwitches) {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_bool_switch.', $templatePath)));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_bool_switch.'));
                 } else {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_bool_radio.', $templatePath)));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_bool_radio.'));
                 }
-
+            } elseif (array_contains($field['type'], ['selectAjax'])) {
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum_select2.'));
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_date.', $templatePath)));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_date.'));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_text.', $templatePath)));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_text.'));
             } elseif (array_contains($field['type'], ['float', 'decimal', 'tinyint', 'int', 'smallint', 'double'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_number.', $templatePath)));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_number.'));
             } else {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_string.', $templatePath)));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_string.'));
             }
 
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME', 'COLUMN', 'STEP'],
@@ -507,24 +576,26 @@ class E2DModuleMaker extends ModuleMaker
         foreach ($this->model->getViewFields() as $field) {
             if (array_contains($field['type'], ['enum'])) {
                 if ($this->model->usesSelect2) {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_enum_select2.', $templatePath)));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum_select2.'));
                 } else {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_enum.', $templatePath)));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum.'));
                 }
             } elseif (array_contains($field['type'], ['bool'])) {
                 if ($this->model->usesSwitches) {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_bool_switch.', $templatePath)));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_bool_switch.'));
                 } else {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_bool_radio.', $templatePath)));
+                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_bool_radio.'));
                 }
+            } elseif (array_contains($field['type'], ['selectAjax'])) {
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum_select2.'));
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_date.', $templatePath)));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_date.'));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_text.', $templatePath)));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_text.'));
             } elseif (array_contains($field['type'], ['float', 'decimal', 'int', 'smallint', 'tinyint', 'double'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_number.', $templatePath)));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_number.'));
             } else {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', '_string.', $templatePath)));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_string.'));
             }
 
             $defautOui = $field['default'] === '1' ? ' checked' : '';
@@ -610,6 +681,11 @@ class E2DModuleMaker extends ModuleMaker
             return $this->creationMode === 'generate' ? $this->namespaceName : $this->model->getClassName();
         }
 
+    }
+
+    private function addSelectAjax()
+    {
+        // Get fields that can become select ajax
     }
 
 }

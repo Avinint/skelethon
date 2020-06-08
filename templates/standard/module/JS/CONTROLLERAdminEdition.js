@@ -18,7 +18,7 @@
         oParams.eFormulaire = oModal.eModal.find('form');
         this.vChargeFormulaireData(oReponseJSON, oParams);
         oModal.eModal.find('.action_mODULE_btn_enregistre_edition_TABLE').addClass('variable_1_' + nIdElement);
-        SELECT2EDIT
+SELECT2EDIT
         oModal.oOpenModal();
         aInstancesCalques[oParams.szIdCalque] = oModal;
     };

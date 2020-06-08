@@ -61,7 +61,7 @@ class E2DField extends Field
         $aCriteresRecherche = [];
         $fieldName = "AND $this->alias.$this->column";
 
-        if (array_contains($this->type, array('tinyint', 'smallint', 'int', 'float', 'decimal', 'double'))) {
+        if (array_contains($this->type, array('tinyint', 'smallint', 'int', 'float', 'decimal', 'double', 'selectAjax'))) {
             $conditionEquals = $fieldName . ' = ' . $this->addNumberField($this->name, array_contains($this->type, ['smallint', 'int']));
             $aCriteresRecherche[] = $this->addNumberCriterion($this->name, $conditionEquals);
 
@@ -195,5 +195,13 @@ class E2DField extends Field
     protected function getFieldMapping()
     {
         return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
+    }
+
+    public static function changeToSelectAjax($columnName, $selectAjaxParams)
+    {
+        static::getFieldByColumn($columnName)->set('type', 'selectAjax');
+
+        static::getFieldByColumn($columnName)->set('selectAjax', $selectAjaxParams);
+
     }
 }

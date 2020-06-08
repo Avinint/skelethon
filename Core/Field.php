@@ -64,22 +64,33 @@ class Field
 
     public static function getViewFields($showId = false)
     {
-        return array_map(function ($field) {
-            $properties = [
-                'field' => $field->getFormattedName(),
-                'column' => $field->column,
-                'label' => $field->label,
-                'type' => $field->type,
-                'default' => $field->defaultValue,
-                'name' => $field->name,
-                'enum' => (isset($field->enum) ? $field->enum : null)
-            ];
+        return array_map(function (Field $field) {
+            return $field->getViewField();}, array_filter(self::$collection, function ($field) use ($showId) {return !$field->isPrimaryKey || $showId;}));
+    }
 
-            if (isset($field->step)) {
-                $properties['step'] = $field->step;
-            }
+    private function getViewField()
+    {
+        $properties =  [
+            'field' => $this->getFormattedName(),
+            'column' => $this->column,
+            'label' => $this->label,
+            'type' => $this->type,
+            'default' => $this->defaultValue,
+            'name' => $this->name,
+            'is_nullable' => $this->isNullable,
+            'enum' => (isset($this->enum) ? $this->enum : null)
+        ];
 
-            return $properties;}, array_filter(self::$collection, function ($field) use ($showId) {return !$field->isPrimaryKey || $showId;}));
+        if (isset($this->step)) {
+            $properties['step'] = $this->step;
+        }
+
+        // TODO transferer dans la partie E2D
+        if (isset($this->selectAjax)) {
+            $properties['selectAjax'] = $this->selectAjax;
+        }
+
+        return $properties;
     }
 
     public static function getSearchCriteria()
@@ -109,7 +120,7 @@ class Field
 
     public function isNumber()
     {
-        return array_contains($this->type, array('int', 'smallint', 'float', 'decimal', 'double'));
+        return array_contains($this->type, array('int', 'smallint', 'tinyint', 'float', 'decimal', 'double'));
     }
 
     public function isDate()
@@ -121,4 +132,22 @@ class Field
     {
         return $this->isDate() || $this->type === 'enum';
     }
+
+    protected static function getFieldByColumn($columnName)
+    {
+        return array_values(array_filter(self::$collection, function($field) use ($columnName) {
+            return $field->column === $columnName;
+        }))[0];
+    }
+
+    protected function set($field, $value)
+    {
+        $this->$field = $value;
+    }
+
+    public static function changeFieldType($columnName, $type)
+    {
+        static::getFieldByColumn($columnName)->set('type', $type);
+    }
+
 }

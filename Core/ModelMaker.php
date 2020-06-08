@@ -18,12 +18,12 @@ class ModelMaker extends BaseMaker
 
     protected $fieldClass;
 
-    protected function __construct($name, $module)
+    protected function __construct($module, $name, $mode)
     {
-        if (!is_dir('modules')) {
-            $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error');
-            throw new Exception();
-        }
+        parent::__construct($module, $name, $mode);
+
+
+        $this->creationMode = $mode;
 
         $this->module = $module;
         $this->name = $this->askName($name);
@@ -31,6 +31,7 @@ class ModelMaker extends BaseMaker
         
         $this->className = $this->conversionPascalCase($this->name);
         $this->actions = $this->askActions();
+
         $this->askSpecifics();
 
         $this->generate();
@@ -63,9 +64,11 @@ class ModelMaker extends BaseMaker
             }
 
             $this->addField($data);
-
-            $this->addModalTitle($data);
         }
+
+        $this->askModifySpecificData();
+
+        $this->addModalTitle($data);
     }
 
     private function addField($data)
@@ -106,7 +109,7 @@ class ModelMaker extends BaseMaker
         } else {
             foreach ($actionsDisponibles as $action) {
                 do {
-                    $reponse2 =  strtoupper(readline($this->msg('Voulez vous sélectionner l\'action "'. $action.'" ? [O/N]')));
+                    $reponse2 = strtoupper(readline($this->msg('Voulez vous sélectionner l\'action "'. $action.'" ? [O/N]')));
                 }
                 while (!in_array($reponse2 , ['N', 'O']));
 
@@ -263,11 +266,15 @@ class ModelMaker extends BaseMaker
     }
 
     /**
-     * Details spécifiques au projet
+     * Ask specific questions
      */
     protected function askSpecifics(): void
     {
-
+        // pose des questions spécifiques au projet
     }
 
+    protected function askModifySpecificData()
+    {
+        // modifie certains champs en fonction des choix de l'utilisateur aprèz intiialisation
+    }
 }

@@ -47,6 +47,5 @@
         oParams.szModuleChargeListe = 'TABLE';
         var eFormulaire = $('#zone_navigation_2').find('form');
 SELECT2
-
         this.vChargeEvenementsChampsRecherche('TABLE', oParams);
     }

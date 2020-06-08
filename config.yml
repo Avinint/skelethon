@@ -1,4 +1,7 @@
-#verbose: false
+---
 moduleMaker: E2DModuleMaker
-defaultTemplate: bruno2020
+
 updateMenu: true
+
+usesSelect: true
+

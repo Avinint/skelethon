@@ -10,19 +10,17 @@ class ModuleMaker extends BaseMaker
     protected $model;
     protected $namespaceName;
     protected $config;
+    protected $specificField;
 
-    protected function __construct($name, $modelName, $creationMode = 'generate')
+    protected function __construct($name, $modelName, $creationMode = 'generate', $specificField = '')
     {
-        if (!is_dir('modules')) {
-            $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
-            throw new Exception();
-        }
-
-        $this->config = Config::get();
+        parent::__construct($name, $modelName, $creationMode, $specificField);
 
         if (empty($name)) {
             $name = $this->askName();
         }
+
+        $this->specificField = $specificField;
 
         $this->name = $name;
         $this->namespaceName = $this->conversionPascalCase($this->name);
@@ -45,19 +43,23 @@ class ModuleMaker extends BaseMaker
         $this->initializeModule($modelName);
 
         $moduleStructure = Spyc::YAMLLoad(dirname(__DIR__) . DS. 'module.yml');
+
+        if (!array_contains($this->creationMode, ['generate', 'addModel'])) {
+            return $this->executeSpecificModes();
+        }
         $success = $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure);
 
         $configFields = array_map(function($field) {return $field['column'];}, array_values($this->model->getViewFields(true)));
-        Config::write($this->name, [
-                'template' => $this->template,
-                'models' => [ $this->model->getName() => ['fields' => $configFields]]
-            ]);
+//        Config::write($this->name, [
+//                'template' => $this->template,
+//                'models' => [ $this->model->getName() => ['fields' => $configFields]]
+//            ]);
+        // TODO gestion plus fine des champs comme pouvoir selectionner les champs qu'on souhaite utiliser dans l'appli et sauvegarder ou limiter les champs qui apparraissent dans les vues
 
         $this->displayCompletionMessage($success);
 
         return $success;
     }
-
 
     /**
      * Personnalisation du module (recommandé de surcharger cette méthode en fonction du projet)
@@ -66,7 +68,8 @@ class ModuleMaker extends BaseMaker
      */
     protected function initializeModule($modelName): void
     {
-        $this->model = ModelMaker::create($modelName, $this);
+        $this->model = ModelMaker::create($modelName, $this, $this->creationMode, $this->specificField);
+        $this->applyChoicesForAllModules = $this->askApplyChoiceForAllModules();
         $this->template = $this->askTemplate();
     }
 
@@ -85,9 +88,9 @@ class ModuleMaker extends BaseMaker
                 }
             } else {
                 // crée fichier
-                $message = $this->ensureFileExists($path.DS.$value);
-                $this->msg($message[0], $message[1]);
-                $result = $result && $message[1] !== 'error';
+                [$message, $type] = $this->ensureFileExists($path.DS.$value);
+                $this->msg($message, $type);
+                $result = $result && $type !== 'error';
             }
         }
 
@@ -139,21 +142,32 @@ class ModuleMaker extends BaseMaker
 
         $text = $this->generateFileContent($templatePath, $path);
 
+        return $this->saveFile($path, $text);
+    }
+
+    protected function saveFile($path, $text = false)
+    {
         $modifiable = $this->fileIsUpdateable($path) && file_exists($path);
         $modified = $modifiable && file_get_contents($path) !== $text;
 
-        $message = $modified || !$modifiable ? $this->createFile($path, $text, true) : '';
-        if (empty($message)) {
-            if ($modified) {
-                return [$this->highlight('Mise à jour', 'info') . ' du fichier: ' . $this->highlight($path), 'success'];
-            } elseif ($modifiable) {
-                return ['Le '. 'fichier ' . $this->highlight($path, 'info') . ' n\'est pas mis à jour', 'warning'];
-            } else {
-                return [$this->highlight('Création', 'info').' du fichier: '.$this->highlight($path), 'success'];
-            }
+        if ($text === false) {
+            $message = 'Fichier invalide';
         } else {
-            return [$message, 'error'];
+            $message = $modified || !$modifiable ? $this->createFile($path, $text, true) : '';
+            if (empty($message)) {
+                if ($modified) {
+                    $message = [$this->highlight('Mise à jour', 'info') . ' du fichier: ' . $this->highlight($path), 'success'];
+                } elseif ($modifiable) {
+                    $message = ['Le ' . 'fichier ' . $this->highlight($path, 'info') . ' n\'est pas mis à jour', 'warning'];
+                } else {
+                    $message = [$this->highlight('Création', 'info') . ' du fichier: ' . $this->highlight($path), 'success'];
+                }
+
+                return $message;
+            }
         }
+
+        return [$message, 'error'];
     }
 
     protected function fileShouldNotbeCreated($path)
@@ -174,7 +188,6 @@ class ModuleMaker extends BaseMaker
 
     private function getModelName()
     {
-        // TODO regler CAMEL CASE conversions
         $model = readline($this->msg('Veuillez renseigner le nom du modèle :'.
             PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module ['.$this->name.']'));
         if (!$model) {
@@ -197,28 +210,17 @@ class ModuleMaker extends BaseMaker
     protected function askTemplate()
     {
         $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(__DIR__) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
-        if (count($templates) === 1) {
-            return $templates[0];
-        } elseif (count($templates) > 1) {
-            $moduleConfig = Config::get($this->name);
 
-            if (count($moduleConfig) > 0 && isset($moduleConfig['template']) && array_contains($moduleConfig['template'], $templates)) {
-                $template = Config::get($this->name)['template'];
-            } elseif (count($this->config) > 0 && isset($this->config['defaultTemplate']) && array_contains($this->config['defaultTemplate'], $templates)) {
-                $template = $this->config['defaultTemplate'];
-            } else {
-                $template = $this->prompt('Choisir un template dans la liste suivante:'.PHP_EOL.$this->displayList($templates, 'info') .
-                    PHP_EOL.'En cas de chaine vide, Le template '. $this->frame('standard', 'success').' sera sélectionné par défaut.', array_merge($templates, ['']));
-                if ($template === '') {
-                    $template = 'standard';
-                }
-            }
-
-            return $template;
-        } else {
-            throw new \Exception("Pas de templates disponibles");
-        }
+        return $this->askConfig('template', $templates, 'askMultipleChoices', 'standard');
     }
+
+    protected function askApplyChoiceForAllModules()
+    {
+        $askChoice =  $this->prompt('Voulez-vous sauvegarder les choix sélectionnés pour les appliquer lors de la création de nouveaux modules? '
+            .PHP_EOL.'['.$this->highlight('o', 'success').'/'.$this->highlight('n', 'error').'] ou '.$this->highlight('réponse vide').' pour choisir au fur et à mesure', ['o', 'n', '']);
+        return empty($askChoice)  ?  null :  $askChoice === 'o';
+    }
+
 
     /**
      * @param $enumPath

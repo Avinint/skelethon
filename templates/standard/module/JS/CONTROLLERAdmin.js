@@ -27,5 +27,5 @@ function CONTROLLERAdmin()
         $('.btn_form_consultation', oLigne).addClass('variable_1_' + nIdElement);
 
         return oLigne;
-    };
+    };SELECTAJAX
 };

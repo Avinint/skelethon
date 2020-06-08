@@ -6,8 +6,9 @@ class ModuleMakerCommand
 {
     public function __construct($arguments)
     {
-        Config::create(\dirname(__DIR__) . DS . 'config.yml');
-        $moduleMaker = Config::get()['moduleMaker'];
+        Config::create();
+        $moduleMaker = Config::get('main', 'moduleMaker');
+
         [$action, $module, $model] = $arguments;
         if (!array_contains($action, ['module', 'modele'])) {
             $this->displayErrorMessage();
@@ -22,6 +23,10 @@ class ModuleMakerCommand
             case 'modele':
                 $moduleMaker::create($module, $model, 'addModel');
                 break;
+
+//            case 'select:ajax':
+//                $moduleMaker::create($module, $model, 'addSelectAjax');
+//                break;
         }
     }
 
