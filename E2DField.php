@@ -10,12 +10,15 @@ class E2DField extends Field
     {
         parent::__construct($type, $name, $columnName, $defaultValue, $alias, $params);
 
-        $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'double', 'bool'));
+        $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'double', 'bool', 'enum', 'selectAjax'));
     }
 
     protected function getFormattedName()
     {
         if ($this->formatted) {
+            if ($this->type === 'selectAjax') {
+                return str_replace('nId', '', 's'.$this->name);
+            }
             return $this->name.'Format';
         }
 
@@ -25,6 +28,9 @@ class E2DField extends Field
     protected function getFormattedColumn()
     {
         if ($this->formatted) {
+            if ($this->type === 'selectAjax') {
+                return str_replace('id_', '', $this->name);
+            }
             return $this->column.'_format';
         }
 
@@ -38,6 +44,7 @@ class E2DField extends Field
     {
         $indent = str_repeat("\x20", 20);
         $lines = [];
+
         $lines[] = "{$indent}$this->alias.$this->column";
         if ($this->isPrimaryKey) {
             $lines[] =  "{$indent}$this->alias.$this->column nIdElement";;
@@ -51,6 +58,18 @@ class E2DField extends Field
             $lines[] = "{$indent}REPLACE($this->alias.$this->column, \'.\', \',\') AS {$this->getFormattedName()}";
         } elseif ('bool' === $this->type) {
             $lines[] = "$indent(CASE WHEN $this->alias.$this->column = 1 THEN \'oui\' ELSE \'non\' END) AS {$this->getFormattedName()}";
+        } elseif ("enum" === $this->type) {
+            $module = self::$module;
+            $model = self::$model;
+            $lines[] = $indent."' . \$this->sFormateValeurChampConf('$module', '$model', '$this->column', '{$this->getFormattedName()}') . '";
+        } elseif ('selectAjax' === $this->type) {
+            $lines[] = str_replace(['FKALIAS', 'LABEL', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
+                [$this->selectAjax['alias'], $this->selectAjax['label'], $this->selectAjax['table'], $this->selectAjax['pk'], $this->alias, $this->getFormattedName()],
+                $indent.'(
+                        SELECT FKALIAS.LABEL
+                        FROM FKTABLE FKALIAS
+                        WHERE FKALIAS.PK = ALIAS.PK
+                    ) AS FIELD');
         }
 
         return implode(','.PHP_EOL, $lines);
@@ -202,6 +221,7 @@ class E2DField extends Field
         static::getFieldByColumn($columnName)->set('type', 'selectAjax');
 
         static::getFieldByColumn($columnName)->set('selectAjax', $selectAjaxParams);
+        static::getFieldByColumn($columnName)->set('formatted', true);
 
     }
 }

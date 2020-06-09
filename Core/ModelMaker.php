@@ -22,11 +22,10 @@ class ModelMaker extends BaseMaker
     {
         parent::__construct($module, $name, $mode);
 
-
         $this->creationMode = $mode;
 
-        $this->module = $module;
-        $this->name = $this->askName($name);
+        $this->module = Field::$module = $module;
+        $this->name = Field::$model = $this->askName($name);
         $this->table = $this->getDbTable();
         
         $this->className = $this->conversionPascalCase($this->name);

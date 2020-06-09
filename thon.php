@@ -35,4 +35,18 @@ function array_contains($needle, array $haystack, bool $all = false, $has_nested
     return isset(array_flip($haystack)[$needle]);
 }
 
+function str_replace_first($search, $replace, $subject)
+{
+    if (strpos($subject,  $search) !== false) {
+        return substr_replace($subject, $replace, strpos($subject,  $search), strlen($search));
+    }
+    return $subject;
+}
 
+function str_replace_last($search, $replace, $subject)
+{
+    if (strrpos($subject,  $search) !== false) {
+        return substr_replace($subject, $replace, strrpos($subject,  $search), strlen($search));
+    }
+    return $subject;
+}

@@ -5,13 +5,19 @@ namespace Core;
 class Field
 {
     protected static $collection = [];
+    public static $module;
+    public static $model;
 
     protected $type;
     protected $name;
     protected $column;
     protected $alias;
     protected $label;
+    protected $isNullable;
     protected $defaultValue;
+
+    protected $maxLength;
+    protected $isPrimaryKey;
 
     /**
      * Field constructor.
@@ -37,7 +43,7 @@ class Field
         $this->isPrimaryKey = isset($params['pk']) && (true === $params['pk']);
         $this->isNullable = isset($params['is_nullable']) && ($params['is_nullable']);
         $this->maxLength = isset($params['maxlength']) ? ($params['maxlength']) : null;
-        $this->step = isset($params['step']) ? ($params['step']) : null;
+        //$this->step = isset($params['step']) ? ($params['step']) : null;
 
         self::$collection[] = $this;
     }
@@ -56,6 +62,9 @@ class Field
 
     protected function labelize($name = '')
     {
+        if (strpos($name, 'id_') === 0) {
+            $name = str_replace('id_', '', $name);
+        }
         $name = strtolower(str_replace('-', '_', $name));
         $name = ucfirst(str_replace('_', ' ', $name));
 

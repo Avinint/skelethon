@@ -88,7 +88,7 @@ class BaseMaker
     protected function getTrueTemplatePath($templatePath, $replace = '', $search = '.')
     {
         if (!empty($replace)) {
-            $templatePath = str_replace($search, $replace, $templatePath);
+            $templatePath = str_replace_first($search, $replace, $templatePath);
         }
 
         if (!file_exists($templatePath)) {

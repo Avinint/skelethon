@@ -66,9 +66,7 @@ class MODEL extends Bdd
                 $szChamps = "
                ";
             } else {
-                $szChamps = '
-CHAMPS_SELECT
-                ';
+                $szChamps = CHAMPS_SELECT;
             }
         } else {
             $szChamps = '
@@ -106,6 +104,7 @@ CHAMPS_SELECT
             }
             $sRequete .= ' ORDER BY '.$szOrderBy.' ';
         }
+        //var_dump($sRequete);
 
         return $sRequete;
     }
@@ -233,4 +232,33 @@ CHAMPS_SELECT
 
      	return $bRetour;
      }
+
+    /**
+     * Affiche un "case when" d'un champ afin de le formater à partir de conf.yml
+     *
+     * @param string $sModule
+     * @param string $sParam
+     * @param string $sNomChamp
+     * @param string $sNomChampFormate
+     * @return string
+     * @throws \ReflectionException
+     */
+    private function sFormateValeurChampConf(string $sModule, string $sClasse, string $sNomChamp, string $sNomChampFormate) : string
+    {
+        $aListeValeurs = $this->szGetParametreModule($sModule, 'aListe-'.$sClasse.'-'.$sNomChamp);
+        $sRequete =
+                    "(
+                        CASE";
+
+                foreach( $aListeValeurs as $sValeur => $sLibelle) {
+                    $sRequete .=  "
+                            WHEN $sNomChamp = '$sValeur'
+                            THEN  '{$this->szTraduire($sLibelle)}'";
+                }
+                $sRequete .=  "
+                        END
+                    ) AS $sNomChampFormate";
+
+        return $sRequete;
+    }
 }

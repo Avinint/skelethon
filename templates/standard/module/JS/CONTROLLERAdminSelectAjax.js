@@ -9,7 +9,7 @@
      */
     this.vTransformeSelectMODEL = function(eSelect, bAllowClear)
     {
-        var aChamps = ['PK', 'TITRE'];
+        var aChamps = ['PK', 'LABEL'];
 
         var oParamsSelect = {
             eSelect2: eSelect,

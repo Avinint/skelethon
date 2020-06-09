@@ -23,6 +23,7 @@ class ModuleMaker extends BaseMaker
         $this->specificField = $specificField;
 
         $this->name = $name;
+
         $this->namespaceName = $this->conversionPascalCase($this->name);
         $this->creationMode = $creationMode;
         $this->generate($modelName);

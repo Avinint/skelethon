@@ -169,13 +169,27 @@ class E2DModelMaker extends ModelMaker
             }
 
             if ($primaryKeyExists) {
-                return ['table' => $childTable, 'pk' => $field['column'], 'label' => $displayField];
+                $alias = strtoupper(substr_replace($childTable, '', 3));
+                return ['table' => $childTable, 'pk' => $field['column'], 'label' => $displayField, 'alias' => $alias];
             } else {
                 return false;
             }
         }
 
         return false;
+    }
+
+    /**
+     * @return array
+     */
+    public function getSqlSelectFields(): string
+    {
+        $indent = str_repeat("\x20", 16);
+        $fields =  '\''.PHP_EOL. parent::getSqlSelectFields().PHP_EOL.$indent.'\'';
+
+        $fields = str_replace_last(' . \''.PHP_EOL.$indent.'\'', '', $fields);
+
+        return $fields;
     }
 
     protected function askModifySpecificData()

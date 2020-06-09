@@ -273,9 +273,9 @@ class E2DModuleMaker extends ModuleMaker
 
                 } elseif (array_contains($field['type'], ['float', 'double', 'decimal'])) {
                     $exceptions['aFloats'][] = $field['name'];
-                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[2]);
+                    $fieldsText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], file($fieldTemplatePath)[2]);
                 } else {
-                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
+                    $fieldsText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], file($fieldTemplatePath)[0]);
                 }
             }
 
@@ -401,8 +401,8 @@ class E2DModuleMaker extends ModuleMaker
 
                 foreach ($fields as $field) {
 
-                    $select2Text .= str_replace('NAME', $field['name'], $select2RechercheTemplate);
-                    $select2EditText .= str_replace('NAME', $field['name'], $select2EditTemplate).PHP_EOL;
+                    $select2Text .= str_replace(['NAME'], [$field['name']], $select2RechercheTemplate);
+                    $select2EditText .= str_replace(['NAME'], [$field['name']], $select2EditTemplate).PHP_EOL;
                 }
                 $select2Text .= implode('', $select2DefautTemplate).PHP_EOL;
             }
@@ -415,16 +415,17 @@ class E2DModuleMaker extends ModuleMaker
             if ($fields = $this->model->getViewFieldsByType('selectAjax')) {
                 $selectAjax = [];
                 foreach ($fields as $field) {
-                    $foreignClassName = $this->camelize($field['selectAjax']['table']);
+                    $foreignClassName = $this->conversionPascalCase($field['selectAjax']['table']);
                     $label = $field['selectAjax']['label'];
-                    $selectAjaxCallText = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
+                    $selectAjaxCallEditText = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
+                    $ajaxSearchText = file($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
 
-                    $select2Text .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], $selectAjaxCallText);
+                    $select2Text .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], implode('', array_slice($ajaxSearchText, 0, 2)));
                     $allowClear = $field['is_nullable'] ? 'true' : 'false';
-                    $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $allowClear], $selectAjaxCallText);
+                    $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'FIELD', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $field['field'], $allowClear], $selectAjaxCallEditText);
 
                     $selectAjaxTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjax.', $selectedTemplatePath)));
-                    $selectAjax[] = str_replace(['MODEL', 'PK', 'TITRE', 'TABLE', 'ORDERBY'],
+                    $selectAjax[] = str_replace(['MODEL', 'PK', 'LABEL', 'TABLE', 'ORDERBY'],
                        [$foreignClassName, $field['column'], $label , $field['selectAjax']['table'], $field['column']], $selectAjaxTemp);
                 }
                 $selectAjaxText = PHP_EOL . implode(PHP_EOL, $selectAjax) . PHP_EOL;
@@ -452,7 +453,7 @@ class E2DModuleMaker extends ModuleMaker
         if (file_exists($filePath)) {
             $text = file_get_contents($filePath);
             if (strpos($text, $this->model->getClassName()) === false) {
-                $text = substr_replace($text, $multiText, strpos($text, 'if'), 2);
+                $text = str_replace_first('if', $multiText, $text);
                 return $this->saveFile($filePath, $text);
             } else {
                 return ['Le fichier '.$this->highlight($filePath, 'info').' n\'est pas mis à jour', 'warning'];
