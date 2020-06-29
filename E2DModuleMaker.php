@@ -11,7 +11,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function initializeModule($modelName): void
     {
-        $this->applyChoicesForAllModules = $this->askApplyChoiceForAllModules();
+        $this->applyChoicesForAllModules = $this->config['memorizeChoices'] ?? $this->askApplyChoiceForAllModules();
         $this->model = E2DModelMaker::create($modelName, $this->name, $this->creationMode, $this->applyChoicesForAllModules );
         $this->template = $this->askTemplate();
         $this->addMenu();

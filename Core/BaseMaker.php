@@ -77,8 +77,6 @@ class BaseMaker
         }
     }
 
-
-
     /**
      * Remplace le chemin du template choisi par le chemin du template standard s'il n'y a pas de template personnalisé
      *
@@ -104,13 +102,17 @@ class BaseMaker
      * @param $selection
      * @param $moduleConfig
      */
-    protected function saveChoiceInConfig(string $key, $selection): void
+    protected function saveChoiceInConfig(string $key, $selection, $model = ''): void
     {
-        $applyChoiceToAllModules = $this->applyChoicesForAllModules ?? $this->prompt('Voulez vous appliquer ce choix à tous les modules créés à l\'avenir?', ['o', 'n']) === 'o';
-        if ($applyChoiceToAllModules) {
-            $this->config->set($key, $selection);
+        if (empty($model)) {
+            $applyChoiceToAllModules = $this->applyChoicesForAllModules ?? $this->prompt('Voulez vous appliquer ce choix à tous les modules créés à l\'avenir?', ['o', 'n']) === 'o';
+            if ($applyChoiceToAllModules) {
+                $this->config->set($key, $selection);
+            }
+            $this->moduleConfig->set($key, $selection);
+        } else {
+            $this->moduleConfig->setForModel($model, $key, $selection);
         }
-        $this->moduleConfig->set($key, $selection);
     }
 
     /**

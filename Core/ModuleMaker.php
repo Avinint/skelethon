@@ -219,6 +219,8 @@ class ModuleMaker extends BaseMaker
     {
         $askChoice =  $this->prompt('Voulez-vous sauvegarder les choix sélectionnés pour les appliquer lors de la création de nouveaux modules? '
             .PHP_EOL.'['.$this->highlight('o', 'success').'/'.$this->highlight('n', 'error').'] ou '.$this->highlight('réponse vide').' pour choisir au fur et à mesure', ['o', 'n', '']);
+
+        $this->config->set('memorizeChoices', !empty($askChoice) && $askChoice === 'o');
         return empty($askChoice)  ?  null :  $askChoice === 'o';
     }
 

@@ -10,7 +10,7 @@ class E2DModelMaker extends ModelMaker
 
     protected function __construct($module, $name, $fieldClass = 'Core\Field',  $applyChoicesForAllModules = '')
     {
-        $this->fieldClass = 'E2DField';
+        $this->fieldClass = $fieldClass;
         $this->applyChoicesForAllModules = $applyChoicesForAllModules;
         parent::__construct($name, $module, $fieldClass);
 
@@ -50,24 +50,26 @@ class E2DModelMaker extends ModelMaker
 
     private function askMulti()
     {
-        $useMulti = $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']);
+        $useMulti = $this->moduleConfig['models'][$this->name]['usesMulti'] ?? $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']) === 'o';
+        $this->saveChoiceInConfig('usesMulti', $useMulti, $this->name);
 
         return $useMulti === 'o';
     }
 
     private function askSwitches()
     {
-        $usesSwitches = $this->prompt('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', ['o', 'n']);
+        $usesSwitches = $this->moduleConfig['models'][$this->name]['usesSwitches'] ?? $this->prompt('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', ['o', 'n']) === 'o';
+        $this->saveChoiceInConfig('usesSwitches', $usesSwitches, $this->name);
 
-        return $usesSwitches === 'o';
+        return $usesSwitches;
     }
 
     private function askSelect2()
     {
-        $useSelect2 = $this->prompt('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', ['o', 'n']);
-        $this->saveChoiceInConfig('usesSelect', $useSelect2 === 'o');
+        $useSelect2 = $this->moduleConfig['models'][$this->name]['usesSelect2'] ?? $this->prompt('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', ['o', 'n']) === 'o';
+        $this->saveChoiceInConfig('usesSelect2', $useSelect2, $this->name);
 
-        return  $useSelect2 === 'o';
+        return  $useSelect2;
     }
 
     private function askSelectAjax()

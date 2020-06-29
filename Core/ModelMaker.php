@@ -5,10 +5,10 @@ namespace Core;
 class ModelMaker extends BaseMaker
 {
     use Database;
-    private $name;
-    private $className;
+    protected $name;
+    protected $className;
     public $actions;
-    private $module;
+    protected $module;
     private $table = [];
     private $mappingChamps = [];
     protected $primaryKey;
@@ -98,27 +98,34 @@ class ModelMaker extends BaseMaker
 
     private function askActions()
     {
-        $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
-        $actions = [];
 
-        $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? ('. implode(', ', array_map([$this, 'highlight'], $actionsDisponibles, array_fill(0, 4, 'info'))).')', ['o', 'n']);
+        if ( !isset($this->moduleConfig['models'][$this->name]['actions'])) {
+            $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
+            $actions = [];
+            $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? (' . implode(', ', array_map([$this, 'highlight'], $actionsDisponibles, array_fill(0, 4, 'info'))) . ')', ['o', 'n']);
 
-        if ('o' === $reponse1) {
-            $actions = $actionsDisponibles;
-        } else {
-            foreach ($actionsDisponibles as $action) {
-                do {
-                    $reponse2 = strtoupper(readline($this->msg('Voulez vous sélectionner l\'action "'. $action.'" ? [O/N]')));
-                }
-                while (!in_array($reponse2 , ['N', 'O']));
+            if ('o' === $reponse1) {
+                $actions = $actionsDisponibles;
+            } else {
+                foreach ($actionsDisponibles as $action) {
+                    do {
+                        $reponse2 = strtoupper(readline($this->msg('Voulez vous sélectionner l\'action "' . $action . '" ? [O/N]')));
+                    } while (!in_array($reponse2, ['N', 'O']));
 
-                if ('O' === $reponse2) {
-                    $actions[] = $action;
+                    if ('O' === $reponse2) {
+                        $actions[] = $action;
+                    }
                 }
             }
-        }
 
-        array_unshift($actions, 'accueil');
+            array_unshift($actions, 'accueil');
+
+            if (!empty($actions)) {
+                $this->saveChoiceInConfig('actions', $actions, $this->name);
+            }
+        } else {
+            return $this->moduleConfig['models'][$this->name]['actions'];
+        }
 
         return $actions;
     }

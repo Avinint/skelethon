@@ -44,8 +44,21 @@ class Config implements ArrayAccess, Countable
     public function set($field = '', $value = null)
     {
         if (isset($value)) {
-            self::$configs[$this->module]->data[$field] = $value;
+            self::$configs[$this->module][$field] = $value;
         }
+        $this->write();
+    }
+
+    public function setForModel($model, $field = '', $value = null)
+    {
+        if (isset($value)) {
+            if (!isset($this->data['models'][$model])) {
+                $this->data['models'][$model] = [];
+            }
+
+            $this->data['models'][$model][$field] = $value;
+        }
+
         $this->write();
     }
 
@@ -60,7 +73,7 @@ class Config implements ArrayAccess, Countable
 
     public function write()
     {
-        $this->createFile($this->path, Spyc::YAMLDump($this->data), true);
+        $this->createFile($this->path, Spyc::YAMLDump($this->data, 4, 40, true), true);
     }
 
     private function getPath($module = '')
