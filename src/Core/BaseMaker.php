@@ -8,33 +8,29 @@ class BaseMaker
 
     const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[1;32m", 'White' => "\e[1;37m", 'Blue' => "\e[1;36m"];
 
-    protected static $_instance;
+    protected $config;
+    protected $moduleConfig;
+
+//    public function __construct(string $module, string $model, string $creationMode = 'generate', $params = [])
+//    {
+//
+//
+//        $this->config = Config::create();
+//        $this->moduleConfig = Config::create($module);
+//        static::$verbose = $this->config['verbose'] ?? true;
+//
+//    }
 
     /**
-     * @param string $name
-     * @param $arg2
-     * @return static
+     * @param array $params
      */
-    public static function create(string $module, $model, $creationMode = 'generate', $specificField = '')
+    protected function setConfig(array $params): void
     {
-        if (is_null(static :: $_instance)) {
-            static::$verbose = Config::create() ['verbose'] ?? true ;
-            static::$_instance = new static($module, $model, $creationMode, $specificField);
+        if (!isset($params['config']) || !isset($params['moduleConfig'])) {
+            throw new \InvalidArgumentException("Fichiers config manquants");
         }
-
-        return self::$_instance;
-    }
-
-    protected function __construct(string $module, string $model, string $creationMode = 'generate', $specificField = '')
-    {
-
-        if (!is_dir('modules')) {
-            $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
-            throw new Exception();
-        }
-
-        $this->config = Config::create();
-        $this->moduleConfig = Config::create($module);
+        $this->config = $params['config'];
+        $this->moduleConfig = $params['moduleConfig'];
     }
 
     public function prompt($msg, $validValues = [], $keepCase = false)
@@ -56,6 +52,17 @@ class BaseMaker
         return $result;
     }
 
+    /**
+     * L'application donne des choix aux utilisateurs, les réponses sont stockées en config, permet a l'application de ne pas redemander une information déja stockée
+     *
+     * @param string $key
+     * @param array $choices
+     * @param $function
+     * @param bool $defaultValue
+     * @param bool $multiple
+     * @return mixed
+     * @throws \Exception
+     */
     protected function askConfig(string $key, array $choices, $function, $defaultValue = false, $multiple = false)
     {
         if (count($choices) === 1) {

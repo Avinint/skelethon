@@ -2,11 +2,15 @@
 
 namespace Core;
 
-class ModelMaker extends BaseMaker
+abstract class ModelMaker extends BaseMaker
 {
-    use Database;
     protected $name;
     protected $className;
+    protected $tableName;
+    /**
+     * @var DatabaseAccess
+     */
+    protected $databaseAccess;
     public $actions;
     protected $module;
     private $table = [];
@@ -18,22 +22,26 @@ class ModelMaker extends BaseMaker
 
     protected $fieldClass;
 
-    protected function __construct($module, $name, $mode)
+
+    public function __construct($module, $name, $mode, array $params = [])
     {
-        parent::__construct($module, $name, $mode);
+        //parent::__construct($module, $name, $mode);
+        $this->setConfig($params);
 
         $this->creationMode = $mode;
 
         $this->module = Field::$module = $module;
         $this->name = Field::$model = $this->askName($name);
-        $this->table = $this->getDbTable();
-        
-        $this->className = $this->conversionPascalCase($this->name);
+
+        $this->tableName = $this->moduleConfig['models'][$this->name]['table'] ?? $this->name;
+
+        $this->setClassName($this->name);
+
         $this->actions = $this->askActions();
 
         $this->askSpecifics();
 
-        $this->generate();
+       // $this->generate();
     }
 
     private function askName($name = '')
@@ -52,7 +60,7 @@ class ModelMaker extends BaseMaker
         return $name;
     }
 
-    private function generate()
+    public function generate()
     {
         $this->alias = strtoupper(substr(str_replace('_', '', $this->name), 0, 3));
 
@@ -98,7 +106,6 @@ class ModelMaker extends BaseMaker
 
     private function askActions()
     {
-
         if ( !isset($this->moduleConfig['models'][$this->name]['actions'])) {
             $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
             $actions = [];
@@ -128,14 +135,6 @@ class ModelMaker extends BaseMaker
         }
 
         return $actions;
-    }
-
-    /**
-     *  initialiser l'accès à la base de données
-     */
-    protected function setDbParams()
-    {
-        // initialiser la base de données en fonction du fichier config du projet ou la main
     }
 
     public function getName() : string
@@ -254,33 +253,58 @@ class ModelMaker extends BaseMaker
     }
 
 
-    protected function getDbTable(): array
+    public function setDbTable(): void
     {
-        $this->setDbParams();
-        $tables = $this->aListeTables();
-        if (!isset($tables[$this->name])) {
+        $tables = $this->databaseAccess->aListeTables();
+        if (!isset($tables[$this->tableName])) {
             $this->msg('Erreur: Il faut créer la table \'' . $this->name . '\' avant de générer le code', 'error');
             die();
         }
-        return $tables[$this->name];
+        $this->table = $tables[$this->tableName];
     }
 
     public function getTitre() : string
     {
-
         return 'Mes '.$this->labelize($this->name).'s';
     }
 
     /**
      * Ask specific questions
      */
-    protected function askSpecifics(): void
+    abstract protected function askSpecifics(): void;
+    // pose des questions spécifiques au projet
+
+
+    abstract protected function askModifySpecificData();
+
+    /**
+     * @return DatabaseAccess
+     */
+    public function getDatabaseAccess(): DatabaseAccessInterface
     {
-        // pose des questions spécifiques au projet
+        return $this->databaseAccess;
     }
 
-    protected function askModifySpecificData()
+    /**
+     * @param DatabaseAccess $databaseAccess
+     */
+    public function setDatabaseAccess(DatabaseAccessInterface $databaseAccess): void
     {
-        // modifie certains champs en fonction des choix de l'utilisateur aprèz intiialisation
+        $this->databaseAccess = $databaseAccess;
     }
+    // modifie certains champs en fonction des choix de l'utilisateur aprèz intiialisation`
+    private function setClassName(string $name)
+    {
+        if ($suffix = $this->moduleConfig['suffix'] ?? '') {
+            $name = str_replace_first($suffix, '', $name);
+        }
+
+        $this->className = $this->conversionPascalCase($name);
+    }/**
+ * @return string
+ */public function getTableName(): string
+{
+    return $this->tableName;
+}
+
 }

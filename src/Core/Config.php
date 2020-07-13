@@ -22,25 +22,18 @@ class Config implements ArrayAccess, Countable
     }
 
     /**
-     * @param string $module
      * @param string $field
-     * @return Config|string|null
+     * @return array|mixed|null
      */
-    public static function get($module = 'main', $field = '')
+    public function get(string $field = '')
     {
-        $config = self::$configs[$module];
-        return !empty($field) ? $config[$field] ?? null : $config;
+        return !empty($field) ? ($this->data[$field] ?? null) : $this->data;
     }
 
-//    public static function set($module = 'main', $field = '', $value = '')
-//    {
-//        if (isset($value)) {
-//            self::$configs[$module]->data[$field] = $value;
-//
-//            self::$configs[$module]->write();
-//        }
-//    }
-
+    /**
+     * @param string $field
+     * @param null $value
+     */
     public function set($field = '', $value = null)
     {
         if (isset($value)) {
@@ -62,14 +55,14 @@ class Config implements ArrayAccess, Countable
         $this->write();
     }
 
-    public static function create($module = 'main')
-    {
-        if (!isset(static::$configs[$module])) {
-            static::$configs[$module] = new static($module);
-        }
-        
-        return static::$configs[$module];
-    }
+//    public static function create($module = 'main')
+//    {
+//        if (!isset(static::$configs[$module])) {
+//            static::$configs[$module] = new static($module);
+//        }
+//
+//        return static::$configs[$module];
+//    }
 
     public function write()
     {
@@ -78,7 +71,7 @@ class Config implements ArrayAccess, Countable
 
     private function getPath($module = '')
     {
-        return dirname(__DIR__) .DS .($module !== 'main' ? $module. '_' : '').'config.yml';
+        return dirname(dirname(__DIR__)) .DS .($module !== 'main' ? $module. '_' : '').'config.yml';
     }
 
     public function offsetSet($offset, $value) {
@@ -97,9 +90,9 @@ class Config implements ArrayAccess, Countable
         unset($this->data[$offset]);
     }
 
-    public function offsetGet($offset) {
+    public function offsetGet($offset = null) {
         if ($offset === null) {
-            return isset($this->data);
+            return $this->data;
         }
         return isset($this->data[$offset]) ? $this->data[$offset] : null;
     }

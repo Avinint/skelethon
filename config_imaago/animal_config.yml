@@ -1,0 +1,32 @@
+models:
+    humain:
+        fields:
+            - id_humain
+            - prenom
+            - nom
+            - age
+            - id_commune
+            - profession
+            - note
+        actions:
+            - accueil
+            - recherche
+            - edition
+            - suppression
+            - consultation
+        usesMulti: true
+        usesSelect2: true
+        usesSwitches: true
+    animal:
+        usesSelect2: true
+        usesMulti: true
+        usesSwwitches: true
+        usesSwitches: true
+        actions:
+            - accueil
+            - recherche
+            - edition
+            - suppression
+
+template: standard
+

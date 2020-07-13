@@ -5,15 +5,37 @@ use Core\ModuleMaker;
 
 class E2DModuleMaker extends ModuleMaker
 {
+    protected $menuPath;
+
+    /**
+     * @param mixed $menuPath
+     */
+    public function setMenuPath($menuPath): void
+    {
+        $this->menuPath = $menuPath;
+    }
+
+
     /**
      * @param $modelName
      * @throws \Exception
      */
-    protected function initializeModule($modelName): void
+    public function initializeModule($modelName, $params): void
     {
         $this->applyChoicesForAllModules = $this->config['memorizeChoices'] ?? $this->askApplyChoiceForAllModules();
-        $this->model = E2DModelMaker::create($modelName, $this->name, $this->creationMode, $this->applyChoicesForAllModules );
+        $this->model->applyChoicesForAllModules = $this->applyChoicesForAllModules;
+//        $this->model = new E2DModelMaker($modelName, $this->name, $this->creationMode, [
+//            'config' => $this->config,
+//            'moduleConfig' => $this->moduleConfig,
+//            'applyChoicesForAllModules' => $this->applyChoicesForAllModules
+//        ]);
+
+//        $this->model->setDbParams();
+//        $this->model->setDbTable();
+
+
         $this->template = $this->askTemplate();
+        $this->setMenuPath($params['menuPath']);
         $this->addMenu();
     }
 
@@ -30,7 +52,7 @@ class E2DModuleMaker extends ModuleMaker
     protected function getTrueFilePath(string $path) : string
     {
         if (strpos($path, '.yml') === false) {
-            $path = str_replace(['CONTROLLER', 'MODEL', 'TABLE'], [$this->getControllerToken(), $this->model->getClassName(), $this->model->getName()], $path);
+            $path = str_replace(['CONTROLLER', 'MODEL', 'TABLE'], [$this->getControllerName(), $this->model->getClassName(), $this->model->getName()], $path);
         }
 
         return $path;
@@ -124,6 +146,7 @@ class E2DModuleMaker extends ModuleMaker
             $modelName = $this->model->getClassName() ;
             $fields = $this->model->getViewFieldsByType('enum');
 
+
             if (!empty($fields)) {
                 foreach ($fields as $field) {
                     $enums .= PHP_EOL."aListe-{$this->model->getName()}-{$field['column']}:".PHP_EOL;
@@ -135,7 +158,7 @@ class E2DModuleMaker extends ModuleMaker
         }
 
         $text = str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
-            [$this->name, $this->model->getName(), $modelName, $this->namespaceName, $this->getControllerToken(), $this->getControllerToken(true), $enums], $text);
+            [$this->name, $this->model->getName(), $modelName, $this->namespaceName, $this->getControllerName(), $this->getControllerName(true), $enums], $text);
 
         return $text;
     }
@@ -152,7 +175,7 @@ class E2DModuleMaker extends ModuleMaker
                         file_get_contents(str_replace($action, 'multi', $templatePerActionPath)) : '');
 
                     $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'cONTROLLER', 'MODEL'],
-                        [$this->name, $this->model->getName(), $this->getControllerToken(true), ''], $template));
+                        [$this->name, $this->model->getName(), $this->getControllerName(true), ''], $template));
                     $config = array_replace_recursive($config, $newConfig);
                 }
             }
@@ -173,7 +196,7 @@ class E2DModuleMaker extends ModuleMaker
 
                     $template = file_get_contents($templatePath);
                     $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
-                        [$this->name, $this->model->getName(), $this->model->getClassName(), $this->namespaceName, $this->getControllerToken(), $this->getControllerToken(true), $enums], $template));
+                        [$this->name, $this->model->getName(), $this->model->getClassName(), $this->namespaceName, $this->getControllerName(), $this->getControllerName(true), $enums], $template));
 
                     $baseJSFilePath = $this->name.'/JS/'.$this->namespaceName.'.js';
                     array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['formulaires']['edition_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
@@ -302,7 +325,7 @@ class E2DModuleMaker extends ModuleMaker
             $text .= file_get_contents($templatePath);
             $concurrentText = $this->model->usesMultiCalques ? file_get_contents(str_replace('Action.', 'ActionMulti.', $templatePath)): '';
             $text = str_replace(['MODULE', 'CONTROLLER', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
-                [$this->namespaceName, $this->getControllerToken(), $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
+                [$this->namespaceName, $this->getControllerName(), $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
         }
 
         return $text;
@@ -319,7 +342,7 @@ class E2DModuleMaker extends ModuleMaker
             $this->objQpModele->find(\'#zone_navigation_2\')->html($oContenu->find(\'body\')->html());' : '';
 
             $text = str_replace('//RECHERCHE', $recherche, $text);
-            $text = str_replace(['MODULE', 'CONTROLLER', 'mODULE', 'TABLE'], [$this->namespaceName, $this->getControllerToken(), $this->name, $this->model->getName()], $text);
+            $text = str_replace(['MODULE', 'CONTROLLER', 'mODULE', 'TABLE'], [$this->namespaceName, $this->getControllerName(), $this->name, $this->model->getName()], $text);
         }
 
         return $text;
@@ -336,10 +359,11 @@ class E2DModuleMaker extends ModuleMaker
             $text = file_get_contents($templatePath);
         }
 
+
         $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//CHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', '//RECHERCHE', '//VALIDATION'], [
             $this->namespaceName,
             $this->model->getClassName(),
-            $this->model->getName(),
+            $this->model->getTableName(),
             $this->model->getAlias(),
             $this->model->getPrimaryKey(), $this->model->getIdField(),
             $this->model->getAttributes(), $this->model->getModalTitle(),
@@ -433,7 +457,7 @@ class E2DModuleMaker extends ModuleMaker
         }
 
         $text = str_replace(['/*MULTIJS*/', '/*ACTION*/', 'mODULE', 'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2', 'SELECTAJAX'],
-            ['', $actionMethodText, $this->name, $this->getControllerToken(), $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2Text, $selectAjaxText], $text);
+            ['', $actionMethodText, $this->name, $this->getControllerName(), $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2Text, $selectAjaxText], $text);
 
         return $text;
     }
@@ -500,7 +524,7 @@ class E2DModuleMaker extends ModuleMaker
         }
         $text = file_get_contents($this->getTrueTemplatePath($templatePath));
         $text = str_replace(['ACTION_BAR', 'CALLBACKLIGNE', 'cONTROLLER', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'TABLE', 'NUMCOL'],
-            [$actionBarText, $callbackLigne, $this->getControllerToken(true), $this->model->getClassname(), $this->model->getTableHeaders(),
+            [$actionBarText, $callbackLigne, $this->getControllerName(true), $this->model->getClassname(), $this->model->getTableHeaders(),
                 $actionText, $this->model->getTableColumns(), $this->name, $this->model->GetName(), $this->model->getColumnNumber()], $text);
         return $text;
     }
@@ -594,7 +618,9 @@ class E2DModuleMaker extends ModuleMaker
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_text.'));
             } elseif (array_contains($field['type'], ['float', 'decimal', 'int', 'smallint', 'tinyint', 'double'])) {
+
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_number.'));
+
             } else {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_string.'));
             }
@@ -604,6 +630,8 @@ class E2DModuleMaker extends ModuleMaker
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'NAME', 'COLUMN', 'STEP', 'DEFAUT_OUI', 'DEFAUT_NON'],
                 [$field['label'], $field['field'], $field['type'], $field['default'], $field['name'], $field['column'],
                     (isset($field['step']) ? ' step="'.$field['step'].'"' : ''), $defautOui, $defautNon], $fieldTemplate);
+
+
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($templatePath));
@@ -633,13 +661,12 @@ class E2DModuleMaker extends ModuleMaker
         if (isset($this->config['updateMenu']) && !$this->config['updateMenu']) {
             return;
         }
-        $menuPath = 'config/menu.yml';
-        if (file_exists($menuPath)) {
-            $menu = Spyc::YAMLLoad($menuPath);
 
-        } else {
-            $menu = [];
+        if (!file_exists($this->menuPath)) {
+            return;
         }
+
+        $menu = Spyc::YAMLLoad($this->menuPath);
 
         $subMenu = $this->getSubMenu();
 
@@ -650,11 +677,11 @@ class E2DModuleMaker extends ModuleMaker
 
             if (!isset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()])) {
                 $menu = Spyc::YAMLDump(array_merge_recursive($menu, $subMenu), false, 0, true);
-                $this->createFile($menuPath, $menu, true);
+                $this->createFile($this->menuPath, $menu, true);
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
-            $this->createFile($menuPath, $menu, true);
+            $this->createFile($$this->menuPath, $menu, true);
         }
     }
 
@@ -665,16 +692,16 @@ class E2DModuleMaker extends ModuleMaker
      */
     private function getSubMenu(): array
     {
-        $template = file_exists(__DIR__ . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
+        $template = file_exists(dirname(__DIR__) . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
         $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
             $this->model->getTitre();
 
         return Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
             [$this->name, $this->model->getName(), $label],
-            file_get_contents(__DIR__ . DS . 'templates' . DS . $template . DS . 'menu.yml')));
+            file_get_contents(dirname(__DIR__) . DS . 'templates' . DS . $template . DS . 'menu.yml')));
     }
 
-    private function getControllerToken($snakeCase = false): string
+    private function getControllerName($snakeCase = false): string
     {
         if ($snakeCase) {
             return $this->creationMode === 'generate' ? $this->name : $this->model->getName();

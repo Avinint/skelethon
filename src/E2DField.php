@@ -19,7 +19,7 @@ class E2DField extends Field
             if ($this->type === 'selectAjax') {
                 return str_replace('nId', '', 's'.$this->name);
             }
-            return $this->name.'Format';
+            return $this->name.'Formate';
         }
 
         return $this->name;
@@ -31,7 +31,7 @@ class E2DField extends Field
             if ($this->type === 'selectAjax') {
                 return str_replace('id_', '', $this->name);
             }
-            return $this->column.'_format';
+            return $this->column.'_formate';
         }
 
         return $this->column;

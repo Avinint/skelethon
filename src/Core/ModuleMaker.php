@@ -4,32 +4,49 @@ namespace Core;
 
 use \Spyc;
 
-class ModuleMaker extends BaseMaker
+abstract class ModuleMaker extends BaseMaker
 {
     protected $name;
     protected $model;
     protected $namespaceName;
     protected $config;
     protected $specificField;
+    protected $modulePath;
 
-    protected function __construct($name, $modelName, $creationMode = 'generate', $specificField = '')
+    public function __construct(string $name, ModelMaker $model, $creationMode = 'generate', $params = [])
     {
-        parent::__construct($name, $modelName, $creationMode, $specificField);
+       $this->setConfig($params);
 
+       $this->setModulePath($params['modulePath'] ?? null);
+
+        static::$verbose = $this->config->get('verbose') ?? true;
         if (empty($name)) {
             $name = $this->askName();
         }
 
-        $this->specificField = $specificField;
+        // cPour les modes qui génèrent un champs précis
+        if (isset($params['specific_fields'])) {
+            $this->specificField = $params['specific_fields'];
+        }
 
-        $this->name = $name;
-
-        $this->namespaceName = $this->conversionPascalCase($this->name);
+        $this->setName($name);
         $this->creationMode = $creationMode;
-        $this->generate($modelName);
+        $this->model = $model;
+        $this->initializeModule($model, $params);
     }
 
-    public function generate($modelName)
+    /**
+     * @param string $name
+     */
+    public function setName(string $name): void
+    {
+        $this->name = $name;
+        $this->namespaceName = $this->conversionPascalCase($name);
+    }
+
+
+
+    public function generate()
     {
         if ('addModel' === $this->creationMode) {
             if (!is_dir('modules/'.$this->name)) {
@@ -41,9 +58,7 @@ class ModuleMaker extends BaseMaker
             return false;
         }
 
-        $this->initializeModule($modelName);
-
-        $moduleStructure = Spyc::YAMLLoad(dirname(__DIR__) . DS. 'module.yml');
+        $moduleStructure = Spyc::YAMLLoad(dirname(dirname(__DIR__)) . DS. 'module.yml');
 
         if (!array_contains($this->creationMode, ['generate', 'addModel'])) {
             return $this->executeSpecificModes();
@@ -67,11 +82,9 @@ class ModuleMaker extends BaseMaker
      * @param $modelName
      * @throws \Exception
      */
-    protected function initializeModule($modelName): void
+    protected function initializeModule($modelName, $params): void
     {
-        $this->model = ModelMaker::create($modelName, $this, $this->creationMode, $this->specificField);
-        $this->applyChoicesForAllModules = $this->askApplyChoiceForAllModules();
-        $this->template = $this->askTemplate();
+        $this->model->setDatabaseConnection(new Database());
     }
 
     function askName() : string
@@ -103,7 +116,7 @@ class ModuleMaker extends BaseMaker
      */
     private function addModule() : bool
     {
-        return $this->ensureDirExists('modules/'.$this->name);
+        return $this->ensureDirExists($this->modulePath);
     }
 
     /**
@@ -133,7 +146,7 @@ class ModuleMaker extends BaseMaker
     function ensureFileExists(string $path)
     {
         $commonPath = str_replace('modules'.DS.$this->name, '', $path);
-        $templatePath = dirname(__DIR__) . DS. 'templates' .DS.$this->template.DS.'module'.$commonPath;
+        $templatePath = dirname(dirname(__DIR__)) . DS. 'templates' .DS.$this->template.DS.'module'.$commonPath;
 
         $path = $this->getTrueFilePath($path);
 
@@ -210,7 +223,7 @@ class ModuleMaker extends BaseMaker
 
     protected function askTemplate()
     {
-        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(__DIR__) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
+        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
 
         return $this->askConfig('template', $templates, 'askMultipleChoices', 'standard');
     }
@@ -303,5 +316,13 @@ class ModuleMaker extends BaseMaker
         } else {
             $this->msg('La génération du ' . $keyword . ' n\'a pus aller à son terme', 'error', false, true, true);
         }
+    }
+
+    public function setModulePath($modulePath = null)
+    {
+        if (is_null($modulePath))
+            $modulePath = "modules/$this->name";
+
+        $this->modulePath = $modulePath;
     }
 }

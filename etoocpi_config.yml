@@ -1,0 +1,16 @@
+models:
+    etoocpiLocation:
+        table: eto_emsp_location
+        usesSelect2: true
+        usesMulti: false
+        usesSwitches: true
+        actions:
+            - accueil
+            - recherche
+            - edition
+            - suppression
+
+template: standard
+
+suffix: eto
+

@@ -8,27 +8,21 @@ class E2DModelMaker extends ModelMaker
 {
     private $modalTitle = [];
 
-    protected function __construct($module, $name, $fieldClass = 'Core\Field',  $applyChoicesForAllModules = '')
+    public function __construct($module, $name, $creationMode = 'generate',  array $params = [])
     {
-        $this->fieldClass = $fieldClass;
-        $this->applyChoicesForAllModules = $applyChoicesForAllModules;
-        parent::__construct($name, $module, $fieldClass);
+        $this->creationMode = $creationMode;
+        $this->fieldClass = E2DField::class;
+        $this->applyChoicesForAllModules = $params['applyChoicesForAllModules'];
+        parent::__construct($module, $name, $creationMode, $params);
 
     }
 
     /**
-     * initialiser l'accès à la base de données
+     * initialise l'accès à la base de données
      */
-    protected function setDbParams()
+    public function setDbParams()
     {
-        if (!isset($GLOBALS['aParamsAppli']) || !isset($GLOBALS['aParamsBdd'])) {
-            $text = str_replace('<?php', '',file_get_contents('surcharge_conf.php'));
-            eval($text);
-            $this->hostname = 'localhost';
-            $this->username = $GLOBALS['aParamsBdd']['utilisateur'];
-            $this->password = $GLOBALS['aParamsBdd']['mot_de_passe'];
-            $this->dBName = $GLOBALS['aParamsBdd']['base'];
-        }
+        $this->setDatabaseAccess(E2DDatabaseAccess::getDatabaseParams());
     }
 
     public function getTableHeaders()
@@ -74,7 +68,7 @@ class E2DModelMaker extends ModelMaker
 
     private function askSelectAjax()
     {
-        $filterIdSuffixes = Config::get('main', 'associations_start_with_id_only') ?? true;
+        $filterIdSuffixes = $this->config->get('associations_start_with_id_only') ?? true;
         $potentialFields = array_filter($this->getViewFieldsByType(['int', 'smallint', 'tinyint']), function($field) use ($filterIdSuffixes) {; return preg_match('/^id_[a-z]*/', $field['column']) || $filterIdSuffixes === false;});
 
         $this->usesSelectAjax = !empty($potentialFields) && ($this->creationMode === 'addSelectAjax' ||
