@@ -37,7 +37,7 @@
 
         $oElement = $this->oNew('MODEL');
 
-        $oElement->nIdMODEL = $nIdElement;
+        $oElement->IDFIELD = $nIdElement;
 
         //$aChamps = $this->aGetDonnees($oElementEXCEPTIONS);
         $aChamps = [CHAMPS];
