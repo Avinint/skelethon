@@ -3,7 +3,7 @@ html_edition_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         mode: edition_TABLE
 
 json_dynamisation_edition_TABLE:
@@ -11,7 +11,7 @@ json_dynamisation_edition_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: dynamisation_edition
         variables:
             - nIdElement
@@ -21,7 +21,7 @@ json_enregistre_edition_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: enregistre_edition
         variables:
             - nIdElement

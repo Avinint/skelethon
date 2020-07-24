@@ -1,3 +1,5 @@
 lib/
 .idea/
-etoocpi.yml
+vendor/
+config_imago/
+prof_config.yml

@@ -62,7 +62,7 @@ trait CommandLineToolShelf
     }
 
     // MODEL
-    protected function conversionPascalCase($name = '')
+    protected function pascalize($name = '')
     {
         $name = str_replace('-', '_', $name);
         $name = explode('_', $name);
@@ -77,8 +77,14 @@ trait CommandLineToolShelf
         return ucfirst(strtolower(str_replace(['-', '_'], ' ', $name)));
     }
 
-    protected function camelize($name = '')
+    protected function snakize($name = '')
     {
         return strtolower(str_replace(['-', ' '], '_', $name));
+    }
+
+    protected function urlize($name = '', $noHyphen = false)
+    {
+        $replace = $noHyphen ? '' : '-';
+        return strtolower(str_replace(['_', ' '], $replace, $name));
     }
 }

@@ -33,7 +33,9 @@ abstract class ModelMaker extends BaseMaker
         $this->module = Field::$module = $module;
         $this->name = Field::$model = $this->askName($name);
 
-        $this->tableName = $this->moduleConfig['models'][$this->name]['table'] ?? $this->name;
+        $this->askTableName();
+
+       // $this->tableName = $this->moduleConfig['models'][$this->name]['table'] ?? $this->name;
 
         $this->setClassName($this->name);
 
@@ -50,7 +52,7 @@ abstract class ModelMaker extends BaseMaker
         if ($name === '') {
             // TODO regler CAMEL CASE conversions
             $name = readline($this->msg('Veuillez renseigner en snake_case le nom de la '.$this->highlight('table').' correspondant au modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
-                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module->getName(), 'success').''));
+                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').''));
         }
 
         if ($name === '') {
@@ -60,9 +62,24 @@ abstract class ModelMaker extends BaseMaker
         return $name;
     }
 
+
+    private function askTableName()
+    {
+        $tableName = $this->moduleConfig['models'][$this->name]['tableName'] ?? readline($this->msg('Si le nom de la table en base est différente de '. $this->highlight($this->name, 'success'). ' entrer le nom de la table :').'');
+
+        if (empty($tableName)) {
+            $tableName = $this->name;
+        }
+        $this->moduleConfig->setForModel($this->name, 'tableName', $tableName);
+
+        $this->tableName = $tableName;
+    }
+
+
     public function generate()
     {
         $this->alias = strtoupper(substr(str_replace('_', '', $this->name), 0, 3));
+
 
         foreach ($this->table as $field => $data) {
             if ('PRI' === $data->Key) {
@@ -71,11 +88,13 @@ abstract class ModelMaker extends BaseMaker
             }
 
             $this->addField($data);
+
+            $this->addModalTitle($data);
         }
 
         $this->askModifySpecificData();
 
-        $this->addModalTitle($data);
+
     }
 
     private function addField($data)
@@ -299,12 +318,14 @@ abstract class ModelMaker extends BaseMaker
             $name = str_replace_first($suffix, '', $name);
         }
 
-        $this->className = $this->conversionPascalCase($name);
-    }/**
- * @return string
- */public function getTableName(): string
-{
-    return $this->tableName;
-}
+        $this->className = $this->pascalize($name);
+    }
+
+    /**
+     * @return string
+     */public function getTableName(): string
+    {
+        return $this->tableName;
+    }
 
 }

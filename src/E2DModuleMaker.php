@@ -20,7 +20,7 @@ class E2DModuleMaker extends ModuleMaker
      * @param $modelName
      * @throws \Exception
      */
-    public function initializeModule($modelName, $params): void
+    public function initializeModule($params): void
     {
         $this->applyChoicesForAllModules = $this->config['memorizeChoices'] ?? $this->askApplyChoiceForAllModules();
         $this->model->applyChoicesForAllModules = $this->applyChoicesForAllModules;
@@ -247,7 +247,7 @@ class E2DModuleMaker extends ModuleMaker
         $switchCaseList = [];
         $noRecherche = true;
         foreach ($this->model->actions as $action) {
-            $schemaMethodsPerActionPath = $this->getTrueTemplatePath(str_replace('Action.', 'Action' . $this->conversionPascalCase($action) . '.', $templatePath));
+            $schemaMethodsPerActionPath = $this->getTrueTemplatePath(str_replace('Action.', 'Action' . $this->pascalize($action) . '.', $templatePath));
             if (file_exists($schemaMethodsPerActionPath)) {
                 $methodText .= file_get_contents($schemaMethodsPerActionPath) . PHP_EOL;
             }
@@ -279,6 +279,7 @@ class E2DModuleMaker extends ModuleMaker
             $defaults = [];
             $allEnumEditLines = [];
             $allEnumSearchLines = [];
+            $exceptionText = '';
 
             $fields = $this->model->getViewFields();
             $fieldsText = '';
@@ -359,7 +360,6 @@ class E2DModuleMaker extends ModuleMaker
             $text = file_get_contents($templatePath);
         }
 
-
         $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//CHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', '//RECHERCHE', '//VALIDATION'], [
             $this->namespaceName,
             $this->model->getClassName(),
@@ -398,7 +398,7 @@ class E2DModuleMaker extends ModuleMaker
 
         $noRecherche = true;
         foreach ($this->model->actions as $action) {
-            $templatePerActionPath =  $this->getTrueTemplatePath(str_replace('.', $this->conversionPascalCase($action) . '.', $selectedTemplatePath));
+            $templatePerActionPath =  $this->getTrueTemplatePath(str_replace('.', $this->pascalize($action) . '.', $selectedTemplatePath));
             if (file_exists($templatePerActionPath)) {
                 $actionMethodText .= file_get_contents($templatePerActionPath);
             }
@@ -434,30 +434,38 @@ class E2DModuleMaker extends ModuleMaker
         }
 
         $selectAjaxText = '';
-        if ($this->model->usesSelectAjax && strpos($templatePath, 'Admin') > 0) {
+        $personalizeButtons = '';
+        if (strpos($templatePath, 'Admin') > 0) {
+            if (false) {
+           // if ($this->model->usesSelectAjax) {
 
-            if ($fields = $this->model->getViewFieldsByType('selectAjax')) {
-                $selectAjax = [];
-                foreach ($fields as $field) {
-                    $foreignClassName = $this->conversionPascalCase($field['selectAjax']['table']);
-                    $label = $field['selectAjax']['label'];
-                    $selectAjaxCallEditText = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
-                    $ajaxSearchText = file($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
+                if ($fields = $this->model->getViewFieldsByType('selectAjax')) {
+                    $selectAjax = [];
+                    foreach ($fields as $field) {
+                        $foreignClassName = $this->pascalize($field['selectAjax']['table']);
+                        $label = $field['selectAjax']['label'];
+                        $selectAjaxCallEditText = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
+                        $ajaxSearchText = file($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
 
-                    $select2Text .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], implode('', array_slice($ajaxSearchText, 0, 2)));
-                    $allowClear = $field['is_nullable'] ? 'true' : 'false';
-                    $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'FIELD', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $field['field'], $allowClear], $selectAjaxCallEditText);
+                        $select2Text .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], implode('', array_slice($ajaxSearchText, 0, 2)));
+                        $allowClear = $field['is_nullable'] ? 'true' : 'false';
+                        $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'FIELD', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $field['field'], $allowClear], $selectAjaxCallEditText);
 
-                    $selectAjaxTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjax.', $selectedTemplatePath)));
-                    $selectAjax[] = str_replace(['MODEL', 'PK', 'LABEL', 'TABLE', 'ORDERBY'],
-                       [$foreignClassName, $field['column'], $label , $field['selectAjax']['table'], $field['column']], $selectAjaxTemp);
+                        $selectAjaxTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjax.', $selectedTemplatePath)));
+                        $selectAjax[] = str_replace(['MODEL', 'PK', 'LABEL', 'TABLE', 'ORDERBY'],
+                            [$foreignClassName, $field['column'], $label, $field['selectAjax']['table'], $field['column']], $selectAjaxTemp);
+                    }
+                    $selectAjaxText = PHP_EOL . implode(PHP_EOL, $selectAjax) . PHP_EOL;
                 }
-                $selectAjaxText = PHP_EOL . implode(PHP_EOL, $selectAjax) . PHP_EOL;
             }
+
+            $personalizedButtonsTemplateSuffix = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton.' : 'NoConsultationButtons.';
+            $personalizeButtons = file_get_contents($this->getTrueTemplatePath(str_replace('.', $personalizedButtonsTemplateSuffix, $selectedTemplatePath)));
         }
 
-        $text = str_replace(['/*MULTIJS*/', '/*ACTION*/', 'mODULE', 'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2', 'SELECTAJAX'],
-            ['', $actionMethodText, $this->name, $this->getControllerName(), $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2Text, $selectAjaxText], $text);
+
+        $text = str_replace([ '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/', 'mODULE', 'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2', 'SELECTAJAX'],
+            [ $personalizeButtons, '', $actionMethodText, $this->name, $this->getControllerName(), $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2Text, $selectAjaxText], $text);
 
         return $text;
     }
@@ -616,7 +624,7 @@ class E2DModuleMaker extends ModuleMaker
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_date.'));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_text.'));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_string.'));
             } elseif (array_contains($field['type'], ['float', 'decimal', 'int', 'smallint', 'tinyint', 'double'])) {
 
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_number.'));
@@ -690,7 +698,7 @@ class E2DModuleMaker extends ModuleMaker
      *
      * @return array
      */
-    private function getSubMenu(): array
+    protected function getSubMenu(): array
     {
         $template = file_exists(dirname(__DIR__) . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
         $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :

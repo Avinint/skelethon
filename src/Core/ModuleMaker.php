@@ -15,9 +15,9 @@ abstract class ModuleMaker extends BaseMaker
 
     public function __construct(string $name, ModelMaker $model, $creationMode = 'generate', $params = [])
     {
-       $this->setConfig($params);
+        $this->setConfig($params);
 
-       $this->setModulePath($params['modulePath'] ?? null);
+        $this->setModulePath($params['modulePath'] ?? null);
 
         static::$verbose = $this->config->get('verbose') ?? true;
         if (empty($name)) {
@@ -32,7 +32,7 @@ abstract class ModuleMaker extends BaseMaker
         $this->setName($name);
         $this->creationMode = $creationMode;
         $this->model = $model;
-        $this->initializeModule($model, $params);
+        $this->initializeModule($params);
     }
 
     /**
@@ -41,7 +41,7 @@ abstract class ModuleMaker extends BaseMaker
     public function setName(string $name): void
     {
         $this->name = $name;
-        $this->namespaceName = $this->conversionPascalCase($name);
+        $this->namespaceName = $this->pascalize($name);
     }
 
 
@@ -82,7 +82,7 @@ abstract class ModuleMaker extends BaseMaker
      * @param $modelName
      * @throws \Exception
      */
-    protected function initializeModule($modelName, $params): void
+    protected function initializeModule($params): void
     {
         $this->model->setDatabaseConnection(new Database());
     }
@@ -149,6 +149,9 @@ abstract class ModuleMaker extends BaseMaker
         $templatePath = dirname(dirname(__DIR__)) . DS. 'templates' .DS.$this->template.DS.'module'.$commonPath;
 
         $path = $this->getTrueFilePath($path);
+       if (!array_contains('consultation', $this->model->getActions()) &&  strpos($templatePath, 'consultation_TABLE') !== false) {
+           return ['No consultation template file created', 'success'];
+       }
 
         if ($this->fileShouldNotbeCreated($path)) {
             return ['Le fichier ' . $this->highlight($path, 'info') . ' existe déja', 'warning'];
@@ -270,13 +273,15 @@ abstract class ModuleMaker extends BaseMaker
             }
         }
 
-
         $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
         $replacements = [$enum['name'], $this->name, $this->model->getName(), $enum['column'], $enum['default']];
 
         $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLine);
         $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));
-        $enumDefaults[] = str_replace($searches, $replacements, $enumDefault);
+        if ($enum['default']) {
+            $enumDefaults[] = str_replace($searches, $replacements, $enumDefault);
+        }
+
         //return $enumSearchLines;
     }
 

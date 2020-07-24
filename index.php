@@ -15,5 +15,15 @@ spl_autoload_register('autoloader');
 
 $argv = array_replace(array_fill(0, 5, ''), $argv);
 array_shift($argv);
+$type = array_shift($argv);
 
-new Core\ModuleMakerFactory($argv, E2DModuleMaker::class, E2DModelMaker::class, EtoDatabaseAccess::class);
+
+if ($type === 'eto')  {
+    new Core\ModuleMakerFactory($argv, EtoModuleMaker::class, E2DModelMaker::class, EtoDatabaseAccess::class);
+} elseif ($type === 'esm') {
+    new Core\ModuleMakerFactory($argv, E2DModuleMaker::class, E2DModelMaker::class, E2dDatabaseAccess::class);
+} elseif ($type === 'e2d') {
+    new Core\ModuleMakerFactory($argv, E2DModuleMaker::class, E2DModelMaker::class, E2dDatabaseAccess::class);
+} else {
+    throw new InvalidArgumentException('type d\'application incorrect');
+}

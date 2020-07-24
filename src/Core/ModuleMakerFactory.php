@@ -31,14 +31,13 @@ class ModuleMakerFactory
         switch($action)
         {
             case 'module':
-                $model = $this->buildModel($moduleName, $modelName, 'generate', $config, $moduleConfig);
                 /**
-                 * @var \E2DModelMaker
+                 * @var \EtoModelMaker $model
                  */
+                $model = $this->buildModel($moduleName, $modelName, 'generate', $config, $moduleConfig);
                 $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
                 $model->setDbTable();
                 $model->generate();
-
                 $maker = new $moduleMaker($moduleName, $model, 'generate', [
                     'config' => $config,
                     'moduleConfig' => $moduleConfig,
@@ -49,11 +48,29 @@ class ModuleMakerFactory
                 break;
             case 'modele':
                 $model = $this->buildModel($moduleName, $modelName, 'addModel', $config, $moduleConfig);
+                $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
+                $model->setDbTable();
+                $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'addModel', [
                     'config' => $config,
-                    'moduleConfig' => $moduleConfig
+                    'moduleConfig' => $moduleConfig,
+                    'menuPath' => 'config/menu.yml',
                 ]);
                 $maker->generate();
+                break;
+            /**
+             *  Ajoute un bouton d'action dans la vue liste
+             *  Ajoute une action et une route et une action du controlleur une callback js une vue
+             */
+            case 'action':
+                $model = $this->buildModel($moduleName, $modelName, 'addAction', $config, $moduleConfig);
+                $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
+                $maker = new $moduleMaker($moduleName, $model, 'action', [
+                    'config' => $config,
+                    'moduleConfig' => $moduleConfig,
+                    'menuPath' => 'config/menu.yml',
+                ]);
+                $maker->generateAction();
                 break;
 
 //            case 'select:ajax':

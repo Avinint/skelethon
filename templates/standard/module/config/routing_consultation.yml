@@ -3,7 +3,7 @@ html_consultation_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         mode: consultation_TABLE
 
 json_dynamisation_consultation_TABLE:
@@ -11,7 +11,7 @@ json_dynamisation_consultation_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: dynamisation_consultation
         variables:
             - nIdElement

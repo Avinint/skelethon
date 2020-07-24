@@ -3,7 +3,7 @@ html_accueil_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         mode: accueil_TABLE
 
 json_recherche_TABLE:
@@ -11,5 +11,5 @@ json_recherche_TABLE:
     route:
         zone: admin
         module: mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action: recherche

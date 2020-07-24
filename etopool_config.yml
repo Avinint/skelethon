@@ -1,0 +1,12 @@
+models:
+    pool:
+        tableName: eto_pool
+        actions:
+            - accueil
+            - recherche
+            - edition
+            - suppression
+        usesMulti: false
+        usesSelect2: true
+        usesSwitches: true
+

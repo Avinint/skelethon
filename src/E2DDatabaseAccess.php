@@ -64,7 +64,7 @@ class E2DDatabaseAccess extends DatabaseAccess
                             $oChamp->maxLength = $this->getMaxLength($sMaxLength);
                         }
                         break;
-
+                    case 'char':
                     case 'varchar':
                     case 'text':
                     case 'mediumtext':

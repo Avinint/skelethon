@@ -117,7 +117,7 @@ class E2DField extends Field
             $whereIEquals = $fieldName.' LIKE \'".addslashes($aRecherche[\''.$this->name.'\'])."\'';
 
             $aCriteresRecherche[] = $this->addStringCriterion($this->name, $whereIEquals);
-            $whereLike = $fieldName.' LIKE \'%".addslashes($aRecherche[\''.$this->name.'\'])."%\'';
+            $whereLike = $fieldName.' LIKE \'%".addslashes($aRecherche[\''.$this->name.'Partiel\'])."%\'';
             $aCriteresRecherche[] = $this->addStringCriterion($this->name.'Partiel', $whereLike);
         }
 

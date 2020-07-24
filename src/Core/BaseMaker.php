@@ -2,6 +2,8 @@
 
 namespace Core;
 
+use http\Exception\InvalidArgumentException;
+
 class BaseMaker
 {
     use CommandLineToolShelf, FileManager;
@@ -85,7 +87,7 @@ class BaseMaker
     }
 
     /**
-     * Remplace le chemin du template choisi par le chemin du template standard s'il n'y a pas de template personnalisé
+     * Remplace le chemin du template choisi par le chemin du template standard ou le template de fallback  s'il n'y a pas de template personnalisé
      *
      * @param $templatePath
      * @return string|string[]
@@ -93,13 +95,21 @@ class BaseMaker
     protected function getTrueTemplatePath($templatePath, $replace = '', $search = '.')
     {
         if (!empty($replace)) {
-            $templatePath = str_replace_first($search, $replace, $templatePath);
+            $templatePath = str_replace_last($search, $replace, $templatePath);
+        }
+
+        if (!file_exists($templatePath) && isset($this->fallBackTemplate)) {
+            // get fallback template ($this->>template)  returns gettrutemplate (next template)
+            $templatePath = str_replace($this->template, $this->fallBackTemplate, $templatePath);
         }
 
         if (!file_exists($templatePath)) {
             $templatePath = str_replace($this->template, 'standard', $templatePath);
         }
 
+//        if (!file_exists($templatePath)) {
+//            throw new \Exception("Fichier manquant : $templatePath");
+//        }
 
         return $templatePath;
     }

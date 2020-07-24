@@ -1,0 +1,20 @@
+models:
+    hotel:
+        tableName: esm_hotel
+        actions:
+            - accueil
+            - recherche
+            - edition
+        usesMulti: false
+        usesSelect2: true
+        usesSwitches: true
+    salle:
+        tableName: esm_salle
+        actions:
+            - accueil
+            - recherche
+            - edition
+        usesMulti: false
+        usesSelect2: true
+        usesSwitches: true
+template: standard

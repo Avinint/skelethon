@@ -3,5 +3,5 @@ json_dynamisation_recherche_TABLE:
     route:
         zone:       admin
         module:     mODULE
-        controller: TABLE
+        controller: cONTROLLER
         action:     dynamisation_recherche

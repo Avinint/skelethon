@@ -21,6 +21,9 @@ class MODEL extends Bdd
     {
         parent::__construct();
 
+        $this->sNomTable = 'TABLE';
+        $this->sNomCle = 'PK';
+
         $this->aMappingChamps = array(
 //CHAMPS
         );
@@ -151,7 +154,7 @@ class MODEL extends Bdd
      *
      * @return void
      */
-    public function bInsert($aChamps = array())
+    public function bInsert($aChamps = array(), $aChampsNull = [])
     {
     $bRetour = false;
 
@@ -181,7 +184,7 @@ class MODEL extends Bdd
     *
     * @return void
     */
-    public function bUpdate($aChamps = array())
+    public function bUpdate($aChamps = array(), $aChampsNull = [])
     {
         $bRetour = false;
 

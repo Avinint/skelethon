@@ -6,3 +6,4 @@ usesSelect: true
 
 memorizeChoices: true
 
+template: standard

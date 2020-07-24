@@ -10,7 +10,7 @@ models:
             - edition
             - suppression
 
-template: standard
+template: etotem
 
 suffix: eto
 
