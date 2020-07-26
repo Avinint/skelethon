@@ -1,5 +1,6 @@
 <?php
 
+namespace E2D;
 
 use Core\DatabaseAccess;
 

@@ -25,7 +25,7 @@ class MODEL extends Bdd
         $this->sNomCle = 'PK';
 
         $this->aMappingChamps = array(
-//CHAMPS
+//MAPPINGCHAMPS
         );
 //TITRELIBELLE
         $this->vInitialiseProprietes($nIdElement);

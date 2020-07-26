@@ -1,6 +1,9 @@
 <?php
 
+namespace E2D;
+
 use Core\Config;
+use \Spyc;
 use Core\ModuleMaker;
 
 class E2DModuleMaker extends ModuleMaker
@@ -12,9 +15,8 @@ class E2DModuleMaker extends ModuleMaker
      */
     public function setMenuPath($menuPath): void
     {
-        $this->menuPath = $menuPath;
+        $this->menuPath = getcwd() .DS. $menuPath;
     }
-
 
     /**
      * @param $modelName
@@ -24,15 +26,6 @@ class E2DModuleMaker extends ModuleMaker
     {
         $this->applyChoicesForAllModules = $this->config['memorizeChoices'] ?? $this->askApplyChoiceForAllModules();
         $this->model->applyChoicesForAllModules = $this->applyChoicesForAllModules;
-//        $this->model = new E2DModelMaker($modelName, $this->name, $this->creationMode, [
-//            'config' => $this->config,
-//            'moduleConfig' => $this->moduleConfig,
-//            'applyChoicesForAllModules' => $this->applyChoicesForAllModules
-//        ]);
-
-//        $this->model->setDbParams();
-//        $this->model->setDbTable();
-
 
         $this->template = $this->askTemplate();
         $this->setMenuPath($params['menuPath']);
@@ -219,33 +212,11 @@ class E2DModuleMaker extends ModuleMaker
      */
     private function generateActionController(string $templatePath)
     {
-        $switchCases = [
-            'recherche' => 'case \'dynamisation_recherche\':
-                    $aRetour = $this->aDynamisationRecherche();
-                    break;
-                ',
-            'edition' => 'case \'dynamisation_edition\':
-                    $aRetour = $this->aDynamisationEdition($nIdElement);
-                    break;
-                
-                case \'enregistre_edition\':
-                    $aRetour = $this->aEnregistreEdition($nIdElement);
-                    break;
-                ',
-            'suppression' => 'case \'suppression\':
-                    $aRetour = $this->aSuppression($nIdElement);
-                    break;
-                ',
-            'consultation' => 'case \'dynamisation_consultation\':
-                    $aRetour = $this->aDynamisationConsultation($nIdElement);
-                    break;
-                ',
-        ];
-
         $text = '';
         $methodText = '';
-        $switchCaseList = [];
         $noRecherche = true;
+        $switchCaseList = [file_get_contents($this->getTrueTemplatePath(str_replace('Action.', 'ActionSwitchCaseAccueil.', $templatePath)))];
+
         foreach ($this->model->actions as $action) {
             $schemaMethodsPerActionPath = $this->getTrueTemplatePath(str_replace('Action.', 'Action' . $this->pascalize($action) . '.', $templatePath));
             if (file_exists($schemaMethodsPerActionPath)) {
@@ -253,7 +224,7 @@ class E2DModuleMaker extends ModuleMaker
             }
 
             if ($action !== 'accueil') {
-                $switchCaseList[] = '                ' . $switchCases[$action];
+                $switchCaseList[] =  file_get_contents($this->getTrueTemplatePath(str_replace('Action.', 'ActionSwitchCase' . $this->pascalize($action) . '.', $templatePath)));
             }
 
             if ($action === 'recherche') {
@@ -283,24 +254,9 @@ class E2DModuleMaker extends ModuleMaker
 
             $fields = $this->model->getViewFields();
             $fieldsText = '';
+
             foreach ($fields as $field) {
-                if ($field['type'] === 'bool') {
-                    $this->handleControllerBooleanField($field, $exceptions, $defaults);
-                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
-
-                } elseif (array_contains($field['type'], ['date', 'datetime'])) {
-                    $exceptions['aDates'][] = $field['name'];
-                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[1]);
-                } elseif ($field['type'] === 'enum') {
-                    $this->handleControllerEnumField($enumPath, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
-                    $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
-
-                } elseif (array_contains($field['type'], ['float', 'double', 'decimal'])) {
-                    $exceptions['aFloats'][] = $field['name'];
-                    $fieldsText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], file($fieldTemplatePath)[2]);
-                } else {
-                    $fieldsText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], file($fieldTemplatePath)[0]);
-                }
+                $this->handleControllerField($field, $exceptions, $defaults, $fieldTemplatePath, $fieldsText, $enumPath, $allEnumEditLines, $allEnumSearchLines);
             }
 
             if (!empty($fieldsText)) {
@@ -353,14 +309,14 @@ class E2DModuleMaker extends ModuleMaker
      * @param string $templatePath
      * @return string|string[]
      */
-    private function generateModel(string $templatePath)
+    protected function generateModel(string $templatePath)
     {
         $text = '';
         if (file_exists($templatePath = $this->getTrueTemplatePath($templatePath))) {
             $text = file_get_contents($templatePath);
         }
 
-        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//CHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', '//RECHERCHE', '//VALIDATION'], [
+        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', '//RECHERCHE', '//VALIDATION'], [
             $this->namespaceName,
             $this->model->getClassName(),
             $this->model->getTableName(),
@@ -388,7 +344,7 @@ class E2DModuleMaker extends ModuleMaker
 
         $multiText = '';
         $actionMethodText = '';
-        if (array_contains(['edition', 'consultation'], $this->model->actions, ARRAY_ANY)) {
+        if (array_contains_array(['edition', 'consultation'], $this->model->actions, ARRAY_ANY)) {
             if ($this->model->usesMultiCalques) {
                 $multiText = " + '_' + nIdElement";
             } else {
@@ -527,7 +483,7 @@ class E2DModuleMaker extends ModuleMaker
 
         $actionText .= PHP_EOL . str_repeat("\x20", 16) . '</td>';
         $callbackLigne = '';
-        if (array_contains(['consultation', 'edition', 'suppression'], $this->model->getActions())) {
+        if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY)) {
             $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";
         }
         $text = file_get_contents($this->getTrueTemplatePath($templatePath));
@@ -675,11 +631,10 @@ class E2DModuleMaker extends ModuleMaker
         }
 
         $menu = Spyc::YAMLLoad($this->menuPath);
-
         $subMenu = $this->getSubMenu();
 
         if (!empty($menu)) {
-            if (isset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()]) && !array_contains($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()], $subMenu['admin'][$this->name]['html_accueil_'.$this->model->getName()], false, true)) {
+            if (isset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()]) && !array_contains_array($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()], $subMenu['admin'][$this->name]['html_accueil_'.$this->model->getName()], ARRAY_ALL, true)) {
                 unset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()]);
             }
 
@@ -700,13 +655,12 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function getSubMenu(): array
     {
-        $template = file_exists(dirname(__DIR__) . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
+        $template = file_exists(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
         $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
             $this->model->getTitre();
 
         return Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
-            [$this->name, $this->model->getName(), $label],
-            file_get_contents(dirname(__DIR__) . DS . 'templates' . DS . $template . DS . 'menu.yml')));
+            [$this->name, $this->model->getName(), $label], file_get_contents(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $template . DS . 'menu.yml')));
     }
 
     private function getControllerName($snakeCase = false): string
@@ -722,6 +676,51 @@ class E2DModuleMaker extends ModuleMaker
     private function addSelectAjax()
     {
         // Get fields that can become select ajax
+    }
+
+    /**
+     * @param $field
+     * @param array $exceptions
+     * @param array $defaults
+     * @param $fieldTemplatePath
+     * @param string $fieldsText
+     * @param $enumPath
+     * @param array $allEnumEditLines
+     * @param array $allEnumSearchLines
+     */
+    private function handleControllerField($field, array &$exceptions, array &$defaults, $fieldTemplatePath, string &$fieldsText, $enumPath, array &$allEnumEditLines, array &$allEnumSearchLines): void
+    {
+        if ($field['type'] === 'bool') {
+            $this->handleControllerBooleanField($field, $exceptions, $defaults);
+            $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
+
+        } elseif (array_contains($field['type'], ['date', 'datetime'])) {
+            $exceptions['aDates'][] = $field['name'];
+            $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[1]);
+        } elseif ($field['type'] === 'enum') {
+            $this->handleControllerEnumField($enumPath, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
+            $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
+        } elseif (array_contains($field['type'], ['int', 'smallint', 'tinyint', 'bigint'])) {
+            //  CONCERNE ESM EXTRAIRE DANS SOUS METHODE POUR HERITAGE ESM
+            $fieldsText .= $this->generateControllerIntegerField($field, $fieldTemplatePath);
+
+        } elseif (array_contains($field['type'], ['float', 'double', 'decimal'])) {
+            $exceptions['aFloats'][] = $field['name'];
+            $fieldsText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], file($fieldTemplatePath)[2]);
+        } else {
+            $fieldsText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], file($fieldTemplatePath)[0]);
+        }
+    }
+
+    /**
+     * @param $field
+     * @param $fieldTemplatePath
+     * @param string $fieldsText
+     * @return string
+     */
+    protected function generateControllerIntegerField($field, $fieldTemplatePath): string
+    {
+        return str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
     }
 
 }

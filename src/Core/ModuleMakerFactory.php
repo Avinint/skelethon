@@ -8,7 +8,7 @@ class ModuleMakerFactory
     private $moduleMaker;
     private $modelMaker;
 
-    public function __construct($arguments, $moduleMaker, $modelMaker, $databaseAccess)
+    public function __construct($arguments, $moduleMaker, $modelMaker, $fieldClass, $databaseAccess)
     {
         $this->moduleMaker = $moduleMaker;
         $this->modelMaker = $modelMaker;
@@ -31,10 +31,7 @@ class ModuleMakerFactory
         switch($action)
         {
             case 'module':
-                /**
-                 * @var \EtoModelMaker $model
-                 */
-                $model = $this->buildModel($moduleName, $modelName, 'generate', $config, $moduleConfig);
+                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'generate', $config, $moduleConfig);
                 $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
                 $model->setDbTable();
                 $model->generate();
@@ -44,10 +41,9 @@ class ModuleMakerFactory
                     'menuPath' => 'config/menu.yml',
                 ]);
                 $maker->generate();
-                //generateModule($argv[2]);
                 break;
             case 'modele':
-                $model = $this->buildModel($moduleName, $modelName, 'addModel', $config, $moduleConfig);
+                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addModel', $config, $moduleConfig);
                 $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
                 $model->setDbTable();
                 $model->generate();
@@ -63,9 +59,9 @@ class ModuleMakerFactory
              *  Ajoute une action et une route et une action du controlleur une callback js une vue
              */
             case 'action':
-                $model = $this->buildModel($moduleName, $modelName, 'addAction', $config, $moduleConfig);
+                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addAction', $config, $moduleConfig);
                 $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
-                $maker = new $moduleMaker($moduleName, $model, 'action', [
+                $maker = new $moduleMaker($fieldClass, $moduleName, $model, 'action', [
                     'config' => $config,
                     'moduleConfig' => $moduleConfig,
                     'menuPath' => 'config/menu.yml',
@@ -80,7 +76,7 @@ class ModuleMakerFactory
 
     }
 
-    public function buildModel($moduleName, $modelName, $creationMode, $config, $moduleConfig)
+    public function buildModel($moduleName, $modelName,$fieldClass,  $creationMode, $config, $moduleConfig)
     {
         $params = [
             'config' => $config,
@@ -89,7 +85,7 @@ class ModuleMakerFactory
         ];
         $params['applyChoicesForAllModules'] = !isset($config['memorizeChoices']) || $config['memorizeChoices'];
 
-        return new $this->modelMaker($moduleName, $modelName, $creationMode, $params);
+        return new $this->modelMaker($moduleName, $modelName, $fieldClass, $creationMode, $params);
     }
 
 

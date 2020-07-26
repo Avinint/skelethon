@@ -31,10 +31,6 @@ class CONTROLLERAdminAction extends UndeadBrain
             }
 
             switch ($szAction) {
-
-                case 'recherche':
-                    $aRetour = $this->aRechercheElements();
-                    break;
 //CASE
             }
 //MULTI

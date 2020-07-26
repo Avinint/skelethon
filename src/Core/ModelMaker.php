@@ -23,12 +23,14 @@ abstract class ModelMaker extends BaseMaker
     protected $fieldClass;
 
 
-    public function __construct($module, $name, $mode, array $params = [])
+    public function __construct($fieldClass, $module, $name, $mode, array $params = [])
     {
         //parent::__construct($module, $name, $mode);
         $this->setConfig($params);
 
         $this->creationMode = $mode;
+
+        $this->fieldClass = $fieldClass;
 
         $this->module = Field::$module = $module;
         $this->name = Field::$model = $this->askName($name);

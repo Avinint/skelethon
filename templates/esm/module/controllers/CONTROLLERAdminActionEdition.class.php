@@ -38,14 +38,12 @@
         $oElement = $this->oNew('MODEL');
 
         $oElement->IDFIELD = $nIdElement;
-
-        $aChamps = [CHAMPS];
-
+        CHAMPS
         if ($nIdElement > 0) {
-            $aRetour['bSucces'] = $oElement->bUpdate($aChamps);
+            $aRetour['bSucces'] = $oElement->bUpdate();
             $aRetour['bModif'] = true;
         } else {
-            $aRetour['bSucces'] = $oElement->bInsert($aChamps);
+            $aRetour['bSucces'] = $oElement->bInsert();
         }
 
         if ($aRetour['bSucces'] === false) {

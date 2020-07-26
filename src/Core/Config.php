@@ -30,6 +30,14 @@ class Config implements ArrayAccess, Countable
         return !empty($field) ? ($this->data[$field] ?? null) : $this->data;
     }
 
+    public function getFromModel($model, string $field)
+    {
+        if (isset($this->data['models'][$model][$field])) {
+            return $this->data['models'][$model][$field];
+        }
+        return null ;
+    }
+
     /**
      * @param string $field
      * @param null $value

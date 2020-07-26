@@ -1,5 +1,7 @@
 <?php
 
+namespace E2D;
+
 use Core\Config;
 use Core\Field;
 use Core\ModelMaker;
@@ -8,12 +10,11 @@ class E2DModelMaker extends ModelMaker
 {
     private $modalTitle = [];
 
-    public function __construct($module, $name, $creationMode = 'generate',  array $params = [])
+    public function __construct($fieldClass, $module, $name, $creationMode = 'generate',  array $params = [])
     {
         $this->creationMode = $creationMode;
-        $this->fieldClass = E2DField::class;
         $this->applyChoicesForAllModules = $params['applyChoicesForAllModules'];
-        parent::__construct($module, $name, $creationMode, $params);
+        parent::__construct($fieldClass, $module, $name, $creationMode, $params);
 
     }
 
@@ -71,8 +72,17 @@ class E2DModelMaker extends ModelMaker
         $filterIdSuffixes = $this->config->get('associations_start_with_id_only') ?? true;
         $potentialFields = array_filter($this->getViewFieldsByType(['int', 'smallint', 'tinyint']), function($field) use ($filterIdSuffixes) {; return preg_match('/^id_[a-z]*/', $field['column']) || $filterIdSuffixes === false;});
 
-        $this->usesSelectAjax = !empty($potentialFields) && ($this->creationMode === 'addSelectAjax' ||
-            $this->prompt('Voulez-vous transformer des champs en selects Ajax ?', ['o', 'n']) === 'o') ;
+        $ajaxFields = $this->config->get('ajaxFields');
+        if (is_array($ajaxFields)) {
+            $potentialFields =array_diff($potentialFields, $ajaxFields) ;
+        }
+
+
+        $this->usesSelectAjax =
+            ($this->moduleConfig->getFromModel($this->name, 'usesAjaxFields') ?? true)
+            &&  (!empty($potentialFields) && $this->prompt('Voulez-vous transformer des champs en selects Ajax ?', ['o', 'n']) === 'o')
+        ;
+
 
         if ($this->usesSelectAjax) {
             $askConvertAll = false;
@@ -89,10 +99,17 @@ class E2DModelMaker extends ModelMaker
                         $this->msg('Champ invalide comme clé étrangère', 'error');
                     } else {
                         $this->fieldClass::changeToSelectAjax($field['column'], $selectAjaxFieldData);
+
+                        $this->moduleConfig['models'][$this->name]['ajaxFields'][] = $field['column'];
                     }
 
                 }
             }
+
+
+        } else {
+
+            $this->moduleConfig->setForModel($this->name, 'usesAjaxFields', false);
         }
     }
 
@@ -115,6 +132,8 @@ class E2DModelMaker extends ModelMaker
             }
         }
     }
+
+// MEtTRE DANS DATABASEACCESS
 
     private function getDataForSelectAjaxField($field)
     {

@@ -1,5 +1,7 @@
 <?php
 
+namespace E2D;
+
 use Core\Field;
 
 class E2DField extends Field

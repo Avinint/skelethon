@@ -21,6 +21,9 @@ class MODEL extends Bdd
     {
         parent::__construct();
 
+        $this->sNomTable = 'TABLE';
+        $this->sNomCle = 'PK';
+
         $this->aMappingChamps = array(
 //MAPPINGCHAMPS
         );
@@ -66,9 +69,7 @@ class MODEL extends Bdd
                 $szChamps = "
                ";
             } else {
-                $szChamps = '
-CHAMPS_SELECT
-                ';
+                $szChamps = CHAMPS_SELECT;
             }
         } else {
             $szChamps = '
@@ -106,6 +107,7 @@ CHAMPS_SELECT
             }
             $sRequete .= ' ORDER BY '.$szOrderBy.' ';
         }
+        //var_dump($sRequete);
 
         return $sRequete;
     }
@@ -152,13 +154,16 @@ CHAMPS_SELECT
      *
      * @return void
      */
-    public function bInsert($aChamps = array())
+    public function bInsert($aChamps = array(), $aChampsNull = [])
     {
     $bRetour = false;
 
     $sRequete = '
-        INSERT INTO TABLE
-        SET '.$this->sFormateChampsRequeteEdition($aChamps);
+        INSERT INTO TABLE (
+INSERTCOLUMNS
+        ) VALUES (
+INSERTVALUES
+        )';
 
     // echo \"<pre>$sRequete</pre>\";
     // exit;
@@ -176,28 +181,36 @@ CHAMPS_SELECT
     }
 
     /**
-    * Mise à jour d'un élément.
-    *
-    * @param  array   Champs concernés par l'édition.
-    *
-    * @return void
-    */
-    public function bUpdate($aChamps = array())
+     * Mise à jour d'un élément.
+     *
+     * @return void
+     */
+    public function bUpdate($aChamps = array(), $aChampsNull = array())
     {
         $bRetour = false;
 
+        // Mise à jour de l'utilisateur permettant de se connecter.
+        $bSucces = parent::bUpdate();
+
+        if ($bSucces === false) {
+            return false;
+        }
+
         $sRequete = '
-            UPDATE TABLE SET 
-            '.$this->sFormateChampsRequeteEdition($aChamps).' 
-            WHERE PK = '.$this->IDFIELD;
+			UPDATE TABLE SET 
+EDITCHAMPS
+			WHERE PK = \''.$this->IDFIELD.'\'
+		';
 
         // echo "<pre>$sRequete</pre>";
         // exit;
 
         $rLien = $this->rConnexion->query($sRequete);
+
         if ($rLien) {
             $bRetour = true;
-            //$this->bSetLog('update_TABLE', $this->IDFIELD);
+            $this->bSetLog('update_mODEL', $this->IDFIELD);
+
         } else {
             $this->sMessagePDO = $this->rConnexion->sMessagePDO;
         }
@@ -235,24 +248,31 @@ CHAMPS_SELECT
      }
 
     /**
-     * Retourne la liste des attributs de l'objet
+     * Affiche un "case when" d'un champ afin de le formater à partir de conf.yml
      *
-     * @return array   Liste attributs
+     * @param string $sModule
+     * @param string $sParam
+     * @param string $sNomChamp
+     * @param string $sNomChampFormate
+     * @return string
+     * @throws \ReflectionException
      */
-    public function aGetChamps()
+    private function sFormateValeurChampConf(string $sModule, string $sClasse, string $sNomChamp, string $sNomChampFormate) : string
     {
-        return $this->aMappingChamps;
+        $aListeValeurs = $this->szGetParametreModule($sModule, 'aListe-'.$sClasse.'-'.$sNomChamp);
+        $sRequete =
+                    "(
+                        CASE";
+
+                foreach( $aListeValeurs as $sValeur => $sLibelle) {
+                    $sRequete .=  "
+                            WHEN $sNomChamp = '$sValeur'
+                            THEN  '{$this->szTraduire($sLibelle)}'";
+                }
+                $sRequete .=  "
+                        END
+                    ) AS $sNomChampFormate";
+
+        return $sRequete;
     }
-
-    /**
-     * Retourne la liste des colonnes de la table correspondant à la classe
-     *
-     * @return array   Liste colonnes
-     */
-    public function aGetColonnes()
-    {
-        return array_flip($this->aGetChamps());
-    }
-
-
 }

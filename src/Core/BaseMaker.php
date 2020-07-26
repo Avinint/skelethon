@@ -13,16 +13,6 @@ class BaseMaker
     protected $config;
     protected $moduleConfig;
 
-//    public function __construct(string $module, string $model, string $creationMode = 'generate', $params = [])
-//    {
-//
-//
-//        $this->config = Config::create();
-//        $this->moduleConfig = Config::create($module);
-//        static::$verbose = $this->config['verbose'] ?? true;
-//
-//    }
-
     /**
      * @param array $params
      */
