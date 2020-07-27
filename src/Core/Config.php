@@ -4,31 +4,58 @@ namespace Core;
 
 use ArrayAccess;
 use Countable;
+use http\Exception\InvalidArgumentException;
 use \Spyc ;
 
 class Config implements ArrayAccess, Countable
 {
-    use FileManager;
 
-    private static $configs = [];
     private $path;
     private $data;
+    private $currentModel;
+    protected $fileManager;
 
-    public function __construct($module)
+    /**
+     * @return mixed
+     */
+    public function getFileManager()
     {
-        $this->path = $this->getPath($module);
-        $this->module = $module;
-        $this->data = file_exists($this->path) ? Spyc::YAMLLoad($this->path) : [];
+        return $this->fileManager;
     }
 
     /**
-     * @param string $field
-     * @return array|mixed|null
+     * @param FileManager|null $fileManager
      */
-    public function get(string $field = '')
+    public function setFileManager(?FileManager $fileManager): void
     {
-        return !empty($field) ? ($this->data[$field] ?? null) : $this->data;
+        if ($fileManager === null) {
+            $this->fileManager = new FileManager();
+        } else {
+            $this->fileManager = $fileManager;
+        }
     }
+
+
+    public function __construct($module, $model, FileManager $fileManager = null)
+    {
+        $this->module = $module;
+        $this->currentModel = $model;
+        $this->data = $this->getData();
+        $this->setFileManager($fileManager);
+    }
+
+    /**
+     * @param string $currentModel
+     */
+    public function setCurrentModel(string $currentModel): void
+    {
+        $this->currentModel = $currentModel;
+    }
+
+//    public function getFields(string $fieldName)
+//    {
+//        if (isset($this->data['']))
+//    }
 
     public function getFromModel($model, string $field)
     {
@@ -42,26 +69,63 @@ class Config implements ArrayAccess, Countable
      * @param string $field
      * @param null $value
      */
-    public function set($field = '', $value = null)
+    public function set($field, $value = null, $model = null, $setForAll = false)
     {
         if (isset($value)) {
-            self::$configs[$this->module][$field] = $value;
-        }
-        $this->write();
-    }
-
-    public function setForModel($model, $field = '', $value = null)
-    {
-        if (isset($value)) {
-            if (!isset($this->data['models'][$model])) {
-                $this->data['models'][$model] = [];
+            if ($setForAll) {
+                $this->data[$field] = $value;
+                $this->write();
+            } else {
+                if (isset($model)) {
+                    $this->data['modules'][$this->module]['models'][$model][$field] = $value;
+                } else {
+                    $this->data['modules'][$this->module][$field] = $value;
+                }
+                $this->write($this->module);
             }
 
-            $this->data['models'][$model][$field] = $value;
+        } else {
+            $this->unsetParam($setForAll, $field, $model);
         }
-
-        $this->write();
     }
+
+    /**
+     * @param $field
+     * @param $value
+     * @param null $model
+     * @param bool $setForAll
+     */
+    public function addTo($field, $value, $model  = null, $setForAll = false): void
+    {
+
+        if ($setForAll && is_array($this->data[$field])) {
+            $this->data[$field][] = $value;
+            return;
+        } else {
+            if (isset($model) && is_array($this->data['modules'][$this->module]['models'][$model][$field])) {
+                $this->data['modules'][$this->module]['models'][$model][$field][] = $value;
+                return;
+            } elseif (is_array($this->data['modules'][$this->module][$field] )) {
+                $this->data['modules'][$this->module][$field][] = $value;
+                return;
+            }
+        }
+        throw new InvalidArgumentException("Le parametre de configuration selectionné doit être un tableau");
+    }
+
+
+//    public function setForModel($model, $field = '', $value = null)
+//    {
+//        if (isset($value)) {
+//            if (!isset($this->data['models'][$model])) {
+//                $this->data['models'][$model] = [];
+//            }
+//
+//            $this->data['models'][$model][$field] = $value;
+//        }
+//
+//        $this->write();
+//    }
 
 //    public static function create($module = 'main')
 //    {
@@ -72,12 +136,23 @@ class Config implements ArrayAccess, Countable
 //        return static::$configs[$module];
 //    }
 
-    public function write()
+    public function write($module = '')
     {
-        $this->createFile($this->path, Spyc::YAMLDump($this->data, 4, 40, true), true);
+        $moduleData = $this->data['modules'][$module];
+
+        if ($module) {
+            $data = $moduleData;
+            $path = str_replace('config', $module.'_config', $this->path);
+        } else {
+            $data = $this->data;
+            unset($data['modules']);
+            $path = $this->path;
+        }
+
+        $this->fileManager->createFile($path, Spyc::YAMLDump($data, 4, 40, true), true);
     }
 
-    private function getPath($module = '')
+    private function getPath($module = 'main')
     {
         return dirname(dirname(__DIR__)) .DS .($module !== 'main' ? $module. '_' : '').'config.yml';
     }
@@ -108,5 +183,80 @@ class Config implements ArrayAccess, Countable
     public function count()
     {
         return count($this->data);
+    }
+
+    /**
+     * @param string $field
+     * @return array|mixed|null
+     */
+    public function get(string $field)
+    {
+        if (isset($this->data[$field])) {
+            return $this->data[$field];
+        }
+
+        return $this->getValueFromModuleConfig($field);
+    }
+
+    /**
+     * @param string $field
+     * @return mixed|null
+     */
+    private function getValueFromModuleConfig(string $field)
+    {
+        if (isset($this->data['modules'][$this->module][$field])) {
+            return $this->data['modules'][$this->module][$field];
+        }
+        return $this->getValueFromModelConfig($field);
+    }
+
+    /**
+     * @param string $field
+     * @return mixed|null
+     */
+    private function getValueFromModelConfig(string $field)
+    {
+        if (isset($this->currentModel) && isset($this->data['modules'][$this->module]['models'][$this->currentModel][$field])) {
+            return $this->data['modules'][$this->module]['models'][$this->currentModel][$field];
+        }
+
+        return null;
+    }
+
+    public function has(string $field)
+    {
+        return $this->get($field) === null;
+    }
+
+    /**
+     * @param bool $setForAll
+     * @param string $field
+     * @param $model
+     */
+    private function unsetParam(bool $setForAll, string $field, $model): void
+    {
+        if ($setForAll) {
+            unset($this->data[$field]);
+            $this->write();
+        } else {
+            if (isset($model)) {
+                unset($this->data['modules'][$this->module]['models'][$model][$field]);
+            } else {
+                unset($this->data['modules'][$this->module][$field]);
+            }
+            $this->write($this->module);
+        }
+    }
+
+    protected function getData(): array
+    {
+        $this->path = $this->getPath();
+        $modulePath = $this->getPath($this->module);
+
+        $data = file_exists($this->path) ? Spyc::YAMLLoad($this->path) : [];
+        $moduleData = file_exists($modulePath) ? Spyc::YAMLLoad($modulePath) : [];
+        $data['modules'][$this->module] = $moduleData;
+
+        return $data;
     }
 }

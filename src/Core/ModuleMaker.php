@@ -12,11 +12,12 @@ abstract class ModuleMaker extends BaseMaker
     protected $config;
     protected $specificField;
     protected $modulePath;
+    protected $fileManager;
 
-    public function __construct(string $name, ModelMaker $model, $creationMode = 'generate', $params = [])
+    public function __construct(string $name, ModelMaker $model, $creationMode = 'generate', $params = [], FileManager $fileManager = null)
     {
+        parent::__construct($fileManager);
         $this->setConfig($params);
-
         $this->setModulePath($params['modulePath'] ?? null);
 
         static::$verbose = $this->config->get('verbose') ?? true;
@@ -170,7 +171,7 @@ abstract class ModuleMaker extends BaseMaker
         if ($text === false) {
             $message = 'Fichier invalide';
         } else {
-            $message = $modified || !$modifiable ? $this->createFile($path, $text, true) : '';
+            $message = $modified || !$modifiable ? $this->fileManager->createFile($path, $text, true) : '';
             if (empty($message)) {
                 if ($modified) {
                     $message = [$this->highlight('Mise à jour', 'info') . ' du fichier: ' . $this->highlight($path), 'success'];

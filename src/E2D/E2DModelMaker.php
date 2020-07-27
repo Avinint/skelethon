@@ -45,7 +45,7 @@ class E2DModelMaker extends ModelMaker
 
     private function askMulti()
     {
-        $useMulti = $this->moduleConfig['models'][$this->name]['usesMulti'] ?? $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']) === 'o';
+        $useMulti = $this->config->get('usesMulti') ?? $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']) === 'o';
         $this->saveChoiceInConfig('usesMulti', $useMulti, $this->name);
 
         return $useMulti === 'o';
@@ -53,7 +53,7 @@ class E2DModelMaker extends ModelMaker
 
     private function askSwitches()
     {
-        $usesSwitches = $this->moduleConfig['models'][$this->name]['usesSwitches'] ?? $this->prompt('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', ['o', 'n']) === 'o';
+        $usesSwitches = $this->config->get('usesSwitches') ?? $this->prompt('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', ['o', 'n']) === 'o';
         $this->saveChoiceInConfig('usesSwitches', $usesSwitches, $this->name);
 
         return $usesSwitches;
@@ -61,7 +61,7 @@ class E2DModelMaker extends ModelMaker
 
     private function askSelect2()
     {
-        $useSelect2 = $this->moduleConfig['models'][$this->name]['usesSelect2'] ?? $this->prompt('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', ['o', 'n']) === 'o';
+        $useSelect2 = $this->config->get('usesSelect2') ?? $this->prompt('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', ['o', 'n']) === 'o';
         $this->saveChoiceInConfig('usesSelect2', $useSelect2, $this->name);
 
         return  $useSelect2;
@@ -79,7 +79,7 @@ class E2DModelMaker extends ModelMaker
 
 
         $this->usesSelectAjax =
-            ($this->moduleConfig->getFromModel($this->name, 'usesAjaxFields') ?? true)
+            ($this->config->get('usesAjaxFields') ?? true)
             &&  (!empty($potentialFields) && $this->prompt('Voulez-vous transformer des champs en selects Ajax ?', ['o', 'n']) === 'o')
         ;
 
@@ -100,16 +100,14 @@ class E2DModelMaker extends ModelMaker
                     } else {
                         $this->fieldClass::changeToSelectAjax($field['column'], $selectAjaxFieldData);
 
-                        $this->moduleConfig['models'][$this->name]['ajaxFields'][] = $field['column'];
+                        $this->config->addTo('ajaxFields',  $field['column'], $this->name);
                     }
 
                 }
             }
 
-
         } else {
-
-            $this->moduleConfig->setForModel($this->name, 'usesAjaxFields', false);
+            $this->config->set('usesAjaxFields', false, $this->name);
         }
     }
 

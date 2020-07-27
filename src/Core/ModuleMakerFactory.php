@@ -23,33 +23,31 @@ class ModuleMakerFactory
             $this->displayHelpPage();
         }
 
-        $config = new Config('main');
-        $moduleConfig = new Config($moduleName);
+        $config = new Config($moduleName, $modelName);
+//        $moduleConfig = new Config($moduleName);
 
 
 
         switch($action)
         {
             case 'module':
-                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'generate', $config, $moduleConfig);
+                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'generate', $config);
                 $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
                 $model->setDbTable();
                 $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'generate', [
                     'config' => $config,
-                    'moduleConfig' => $moduleConfig,
                     'menuPath' => 'config/menu.yml',
                 ]);
                 $maker->generate();
                 break;
             case 'modele':
-                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addModel', $config, $moduleConfig);
+                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addModel', $config);
                 $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
                 $model->setDbTable();
                 $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'addModel', [
                     'config' => $config,
-                    'moduleConfig' => $moduleConfig,
                     'menuPath' => 'config/menu.yml',
                 ]);
                 $maker->generate();
@@ -59,11 +57,10 @@ class ModuleMakerFactory
              *  Ajoute une action et une route et une action du controlleur une callback js une vue
              */
             case 'action':
-                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addAction', $config, $moduleConfig);
+                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addAction', $config);
                 $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
                 $maker = new $moduleMaker($fieldClass, $moduleName, $model, 'action', [
                     'config' => $config,
-                    'moduleConfig' => $moduleConfig,
                     'menuPath' => 'config/menu.yml',
                 ]);
                 $maker->generateAction();
@@ -76,11 +73,10 @@ class ModuleMakerFactory
 
     }
 
-    public function buildModel($moduleName, $modelName,$fieldClass,  $creationMode, $config, $moduleConfig)
+    public function buildModel($moduleName, $modelName,$fieldClass,  $creationMode, $config )
     {
         $params = [
             'config' => $config,
-            'moduleConfig' => $moduleConfig,
             'applyChoicesForAllModules' => $config['memorize']
         ];
         $params['applyChoicesForAllModules'] = !isset($config['memorizeChoices']) || $config['memorizeChoices'];

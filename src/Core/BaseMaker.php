@@ -6,23 +6,50 @@ use http\Exception\InvalidArgumentException;
 
 class BaseMaker
 {
-    use CommandLineToolShelf, FileManager;
+    use CommandLineToolShelf;
 
     const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[1;32m", 'White' => "\e[1;37m", 'Blue' => "\e[1;36m"];
 
+    /** @var Config $this->config */
     protected $config;
-    protected $moduleConfig;
+    protected $fileManager;
+
+    /**
+     * @return mixed
+     */
+    public function getFileManager()
+    {
+        return $this->fileManager;
+    }
+
+    /**
+     * @param mixed $fileManager
+     */
+    public function setFileManager(?FileManager $fileManager): void
+    {
+        if ($fileManager === null) {
+            $this->fileManager = new FileManager();
+        } else {
+            $this->fileManager = $fileManager;
+        }
+    }
+
+    public function __construct(FileManager $fileManager = null)
+    {
+        $this->setFileManager($fileManager);
+    }
+
+
 
     /**
      * @param array $params
      */
     protected function setConfig(array $params): void
     {
-        if (!isset($params['config']) || !isset($params['moduleConfig'])) {
+        if (!isset($params['config'])) {
             throw new \InvalidArgumentException("Fichiers config manquants");
         }
         $this->config = $params['config'];
-        $this->moduleConfig = $params['moduleConfig'];
     }
 
     public function prompt($msg, $validValues = [], $keepCase = false)
@@ -60,10 +87,8 @@ class BaseMaker
         if (count($choices) === 1) {
             return $choices[0];
         } elseif (count($choices) > 1) {
-            if (count($this->moduleConfig ) > 0 && isset($this->moduleConfig[$key]) && array_contains($this->moduleConfig[$key], $choices)) {
-                $selection = $this->moduleConfig[$key];
-            } elseif (count($this->config) > 0 && isset($this->config[$key]) && array_contains($this->config[$key], $choices)) {
-                $selection = $this->config[$key];
+            if ($this->config->get($key) !== null && array_contains($this->config->get($key), $choices)) {
+                $selection = $this->config->get($key);
             } else {
                 $selection = $this->$function($key, $choices, $defaultValue);
 
@@ -107,18 +132,18 @@ class BaseMaker
     /**
      * @param string $key
      * @param $selection
-     * @param $moduleConfig
+     * @param string $model
      */
     protected function saveChoiceInConfig(string $key, $selection, $model = ''): void
     {
         if (empty($model)) {
             $applyChoiceToAllModules = $this->applyChoicesForAllModules ?? $this->prompt('Voulez vous appliquer ce choix à tous les modules créés à l\'avenir?', ['o', 'n']) === 'o';
             if ($applyChoiceToAllModules) {
-                $this->config->set($key, $selection);
+                $this->config->set($key, $selection, '', true);
             }
-            $this->moduleConfig->set($key, $selection);
+            $this->config->set($key, $selection);
         } else {
-            $this->moduleConfig->setForModel($model, $key, $selection);
+            $this->config->set($key, $selection, $model);
         }
     }
 

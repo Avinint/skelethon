@@ -23,36 +23,27 @@ abstract class ModelMaker extends BaseMaker
     protected $fieldClass;
 
 
-    public function __construct($fieldClass, $module, $name, $mode, array $params = [])
+    public function __construct($fieldClass, $module, $name, $mode, array $params = [], FileManager $fileManager = null)
     {
-        //parent::__construct($module, $name, $mode);
+        parent::__construct($fileManager);
         $this->setConfig($params);
-
         $this->creationMode = $mode;
-
         $this->fieldClass = $fieldClass;
-
         $this->module = Field::$module = $module;
         $this->name = Field::$model = $this->askName($name);
 
         $this->askTableName();
-
-       // $this->tableName = $this->moduleConfig['models'][$this->name]['table'] ?? $this->name;
-
         $this->setClassName($this->name);
 
         $this->actions = $this->askActions();
 
         $this->askSpecifics();
-
-       // $this->generate();
     }
 
     private function askName($name = '')
     {
         echo PHP_EOL;
         if ($name === '') {
-            // TODO regler CAMEL CASE conversions
             $name = readline($this->msg('Veuillez renseigner en snake_case le nom de la '.$this->highlight('table').' correspondant au modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
                 PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').''));
         }
@@ -67,12 +58,12 @@ abstract class ModelMaker extends BaseMaker
 
     private function askTableName()
     {
-        $tableName = $this->moduleConfig['models'][$this->name]['tableName'] ?? readline($this->msg('Si le nom de la table en base est différente de '. $this->highlight($this->name, 'success'). ' entrer le nom de la table :').'');
+        $tableName = $this->config->get('tableName') ?? readline($this->msg('Si le nom de la table en base est différente de '. $this->highlight($this->name, 'success'). ' entrer le nom de la table :').'');
 
         if (empty($tableName)) {
             $tableName = $this->name;
         }
-        $this->moduleConfig->setForModel($this->name, 'tableName', $tableName);
+        $this->config->set('tableName', $tableName, $this->name);
 
         $this->tableName = $tableName;
     }
@@ -127,7 +118,9 @@ abstract class ModelMaker extends BaseMaker
 
     private function askActions()
     {
-        if ( !isset($this->moduleConfig['models'][$this->name]['actions'])) {
+        if (!$this->config->has('actions')) {
+            return $this->config->get('actions');
+        } else {
             $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
             $actions = [];
             $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? (' . implode(', ', array_map([$this, 'highlight'], $actionsDisponibles, array_fill(0, 4, 'info'))) . ')', ['o', 'n']);
@@ -151,11 +144,9 @@ abstract class ModelMaker extends BaseMaker
             if (!empty($actions)) {
                 $this->saveChoiceInConfig('actions', $actions, $this->name);
             }
-        } else {
-            return $this->moduleConfig['models'][$this->name]['actions'];
-        }
 
-        return $actions;
+            return $actions;
+        }
     }
 
     public function getName() : string
@@ -313,11 +304,11 @@ abstract class ModelMaker extends BaseMaker
     {
         $this->databaseAccess = $databaseAccess;
     }
-    // modifie certains champs en fonction des choix de l'utilisateur aprèz intiialisation`
+    // modifie certains champs en fonction des choix de l'utilisateur aprèz intiialisation
     private function setClassName(string $name)
     {
-        if ($suffix = $this->moduleConfig['suffix'] ?? '') {
-            $name = str_replace_first($suffix, '', $name);
+        if ($prefix = $this->config->get('prefix') ?? '') {
+            $name = str_replace_first($prefix, '', $name);
         }
 
         $this->className = $this->pascalize($name);

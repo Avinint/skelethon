@@ -15,13 +15,13 @@ class FunctionTest extends TestCase
 
     public function testArrayContainsAnyElementFromOtherArray()
     {
-        $this->assertTrue(array_contains([1, 2, 3], [2, 3, 4]));
+        $this->assertTrue(array_contains([1, 2, 3], [2, 3, 4], true));
     }
 
     public function testArrayContainsAllElementsFromOtherArray()
     {
-        $this->assertFalse(array_contains([1, 2, 3], [2, 3, 4], true));
-        $this->assertTrue(array_contains([1, 2, 3], [1, 2, 3, 4], true));
+        $this->assertFalse(array_contains([1, 2, 3], [2, 3, 4]));
+        $this->assertTrue(array_contains([1, 2, 3], [1, 2, 3, 4]));
     }
 
     public function testArrayIsContainedInNestedArray()

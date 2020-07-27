@@ -3,7 +3,7 @@
          verbose="true">
 	<testsuites>
 		<testsuite name="Test suite">
-			<directory>tests</directory>
+			<directory suffix="ConfigTest.php">tests</directory>
 		</testsuite>                    
     </testsuites>    
 </phpunit>

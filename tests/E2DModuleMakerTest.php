@@ -61,7 +61,7 @@ application:
 //        $dbAccess->shouldReceive('aListeTables')
 //        ->once()->andReturn([]);
 
-        $model = Mockery::mock('E2DModelMaker');
+        $model = Mockery::mock(E2D\E2DModelMaker::class);
 //        $model->shouldReceive('setDbParams')
 //        ->once();
 //
@@ -103,7 +103,7 @@ application:
 //            'moduleConfig' => $moduleConfig,
 //        ]);
 
-        $moduleMaker = new E2DModuleMaker('animal', $model, 'generate', [
+        $moduleMaker = new E2D\E2DModuleMaker('animal', $model, 'generate', [
             'config' => $config,
             'moduleConfig' => $moduleConfig,
             'menuPath' =>  vfsStream::url('root/config/menu.yml'),

@@ -3,9 +3,9 @@
 
 namespace Core;
 
-trait FileManager
+class FileManager
 {
-    protected function createFile($path, $text = '', $write = false)
+    public function createFile($path, $text = '', $write = false)
     {
         $errorMessage = [];
         $mode = $write ? 'w' : 'a';
