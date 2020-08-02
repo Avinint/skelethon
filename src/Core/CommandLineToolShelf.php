@@ -4,16 +4,17 @@
 namespace Core;
 
 
-trait CommandLineToolShelf
+class CommandLineToolShelf
 {
+    const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[1;32m", 'White' => "\e[1;37m", 'Blue' => "\e[1;36m"];
+
     protected static $verbose;
 
-    public function msg(string $text, $type = '', $hasDisplayYesNo = false, $verboseCondition = true, $important = false)
-    {
+    public static function msg(string $text, $type = '', $hasDisplayYesNo = false, $verboseCondition = true, $important = false)
+    {;
         if ((self::$verbose && $verboseCondition) || empty($type) || $important) {
-            $displayYesNo = $hasDisplayYesNo ? ' ['.$this->highlight('O', 'success').'/'.$this->highlight('N', 'error').']' : '';
-
-            echo ($type? $this->frame(strtoupper($type), $type).' ' : '')  . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
+            $displayYesNo = $hasDisplayYesNo ? ' ['.static::highlight('O', 'success').'/'.static::highlight('N', 'error').']' : '';
+            echo ($type? static::frame(strtoupper($type), $type).' ' : '')  . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
         }
 
         return !empty($type);
@@ -24,7 +25,7 @@ trait CommandLineToolShelf
         return implode($delim1, array_map(function($el) use ($hl, $delim2) { if ($hl) {$el = $this->highlight($el, $hl);} return "\t$el". $delim2;}, $list));
     }
 
-    public function getColorFromType($type)
+    private static function getColorFromType($type)
     {
         switch ($type) {
             case 'error':
@@ -47,16 +48,52 @@ trait CommandLineToolShelf
         return $color;
     }
 
-    public function frame($text, $type)
+    public function prompt($msg, $validValues = [], $keepCase = false)
     {
-        $color = $this->getColorFromType($type);
+        echo PHP_EOL;
+        $result = '';
+        if (empty($validValues)) {
+            while($result === '' || $result === null) {
+                $result = readline($this->msg($msg));
+            }
+        } else {
+            $result = false;
+            while (!array_contains($result, $validValues)) {
+                $tempResult = readline($this->msg($msg, '', $validValues === ['o', 'n']));
+                $result = $keepCase ? $result : strtolower($tempResult);
+            }
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param bool $defaultValue
+     * @param string $key
+     * @param array $choices
+     * @return bool|string
+     */
+    protected function askMultipleChoices(string $key, array $choices, $defaultValue = false, $reference  = '')
+    {
+        $msgDefault = $defaultValue !== false ? PHP_EOL . 'En cas de chaine vide, Le ' . $key . ' ' . $this->frame($defaultValue, 'success') . ' sera sélectionné par défaut.' : '';
+        $texteReference  = empty($reference) ? '' : ' ('.$reference.') ';
+        $selection = $this->prompt('Choisir un/e ' . $key . ' dans la liste suivante'. $texteReference.' :' . PHP_EOL . $this->displayList($choices, 'info') . $msgDefault, array_merge($choices, ['']));
+        if ($defaultValue !== false && $selection === '') {
+            $selection = $defaultValue ;
+        }
+        return $selection;
+    }
+
+    public static function frame($text, $type)
+    {
+        $color = static::getColorFromType($type);
 
         return self::Color['White'] . '[' . $color . $text . self::Color['White'] . ']' ;
     }
 
-    public function highlight($text, $type = 'warning')
+    public static function highlight($text, $type = 'warning')
     {
-        $color = $this->getColorFromType($type);
+        $color = static::getColorFromType($type);
 
         return $color.$text.self::Color['White'];
     }

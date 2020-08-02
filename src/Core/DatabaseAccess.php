@@ -45,13 +45,15 @@ abstract class DatabaseAccess implements DatabaseAccessInterface
         return $this->pdo;
     }
 
-    public function query($statement, $class = null, $one = false)
+    public function query($statement, $class = null, $one = false, $array = false)
     {
         $data = null;
 
         $req = $this->getPDO()->query($statement);
-        if (is_null($class)){
+        if (is_null($class)) {
             $req->setFetchMode(PDO::FETCH_OBJ);
+        } elseif($array) {
+            $req->setFetchMode(PDO::FETCH_ASSOC);
         } else {
             $req->setFetchMode(PDO::FETCH_CLASS, $class);
         }
@@ -136,6 +138,15 @@ abstract class DatabaseAccess implements DatabaseAccessInterface
         return null;
     }
 
-    abstract public function aListeTables();
+    /**
+     * @return string
+     */
+    public function getDBName(): string
+    {
+        return $this->dBName;
+    }
 
+
+
+    abstract public function getTableList();
 }

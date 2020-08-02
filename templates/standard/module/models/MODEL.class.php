@@ -63,14 +63,7 @@ class MODEL extends Bdd
     public function szGetSelect($aRecherche = array(), $szOrderBy = '', $bModeCount = false, $nStart = 0, $nNbElements = 20, $sGroupBy = '', $sContexte = '')
     {
         if ($bModeCount === false) {
-            if ($sContexte != '' && in_array($sContexte, ['']) === true) {
-                // Champs à récupérer selon le contexte
-                // passé en paramètres.
-                $szChamps = "
-               ";
-            } else {
-                $szChamps = CHAMPS_SELECT;
-            }
+            $szChamps = CHAMPS_SELECT;
         } else {
             $szChamps = '
                 COUNT(*) AS nNbElements
@@ -82,7 +75,7 @@ class MODEL extends Bdd
             FROM
             (
                 SELECT '.$szChamps.'
-                FROM TABLE ALIAS';
+                FROM TABLE ALIASLEFTJOINS';
         if ($sContexte !== '' && in_array($sContexte, ['']) === true) {
             // Jointures à effectuer selon le contexte
             // passé en paramètres.

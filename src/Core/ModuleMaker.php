@@ -45,8 +45,6 @@ abstract class ModuleMaker extends BaseMaker
         $this->namespaceName = $this->pascalize($name);
     }
 
-
-
     public function generate()
     {
         if ('addModel' === $this->creationMode) {
@@ -230,15 +228,6 @@ abstract class ModuleMaker extends BaseMaker
         $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
 
         return $this->askConfig('template', $templates, 'askMultipleChoices', 'standard');
-    }
-
-    protected function askApplyChoiceForAllModules()
-    {
-        $askChoice =  $this->prompt('Voulez-vous sauvegarder les choix sélectionnés pour les appliquer lors de la création de nouveaux modules? '
-            .PHP_EOL.'['.$this->highlight('o', 'success').'/'.$this->highlight('n', 'error').'] ou '.$this->highlight('réponse vide').' pour choisir au fur et à mesure', ['o', 'n', '']);
-
-        $this->config->set('memorizeChoices', !empty($askChoice) && $askChoice === 'o');
-        return empty($askChoice)  ?  null :  $askChoice === 'o';
     }
 
 

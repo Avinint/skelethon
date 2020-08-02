@@ -65,13 +65,26 @@ class E2DField extends Field
             $model = self::$model;
             $lines[] = $indent."' . \$this->sFormateValeurChampConf('$module', '$model', '$this->column', '{$this->getFormattedName()}') . '";
         } elseif ('selectAjax' === $this->type) {
-            $lines[] = str_replace(['FKALIAS', 'LABEL', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
-                [$this->selectAjax['alias'], $this->selectAjax['label'], $this->selectAjax['table'], $this->selectAjax['pk'], $this->alias, $this->getFormattedName()],
-                $indent.'(
-                        SELECT FKALIAS.LABEL
-                        FROM FKTABLE FKALIAS
-                        WHERE FKALIAS.PK = ALIAS.PK
-                    ) AS FIELD');
+            $strategy = $this->selectAjax['strategy'] ?? 'joins';
+            if ($strategy === 'nested') {
+                $template = '(
+                        SELECT LABEL
+                        FROM FKTABLE
+                        WHERE PK = ALIAS.PK
+                    ) AS FIELD';
+            } else {
+                if (is_array($this->selectAjax['label'])) {
+                   ;$template = 'LABEL CONCATALIAS';
+                } else {
+
+                    $template = 'FKALIAS.LABEL';
+                }
+            }
+
+            //$alias = $this->selectAjax['alias'] !== '' ?  $this->selectAjax['alias'].'.' : '';
+            $lines[] = str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
+                [$this->selectAjax['alias'], $this->selectAjax['label'], $this->selectAjax['concatAlias'], $this->selectAjax['table'], $this->selectAjax['pk'], $this->alias, $this->getFormattedName()],
+                $indent.$template);
         }
 
         return implode(','.PHP_EOL, $lines);
@@ -222,8 +235,42 @@ class E2DField extends Field
     {
         static::getFieldByColumn($columnName)->set('type', 'selectAjax');
 
+        if(is_array($selectAjaxParams['label'])) {
+            $selectAjaxParams['label'] = static::generateConcatenatedColumn(
+                $selectAjaxParams['label'],
+                $selectAjaxParams['alias']
+            );
+        }
+
         static::getFieldByColumn($columnName)->set('selectAjax', $selectAjaxParams);
         static::getFieldByColumn($columnName)->set('formatted', true);
 
+    }
+
+    /**
+     * Transforme un champ clé étrangère en select2 Ajax
+     * @param $properties
+     */
+    protected function handleAssociations(&$properties)
+    {
+        if (isset($this->selectAjax)) {
+            $properties['selectAjax'] = $this->selectAjax;
+        }
+    }
+
+    /**
+     * @param array $column
+     * @param string $alias
+     * @return string
+     */
+    protected static function generateConcatenatedColumn(array $column, $alias = ''): string
+    {
+        if ($alias !== '') {
+            $alias = $alias. '.';
+
+            $column = array_map(function($part) use ($alias) {return $alias.$part;}, $column);
+            var_dump($column);
+        }
+        return "CONCAT_WS(\' \', " . implode(", ",  $column) . ')';
     }
 }

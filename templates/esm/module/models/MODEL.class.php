@@ -82,7 +82,8 @@ class MODEL extends Bdd
             FROM
             (
                 SELECT '.$szChamps.'
-                FROM TABLE ALIAS';
+                FROM TABLE ALIASLEFTJOINS';
+
         if ($sContexte !== '' && in_array($sContexte, ['']) === true) {
             // Jointures à effectuer selon le contexte
             // passé en paramètres.

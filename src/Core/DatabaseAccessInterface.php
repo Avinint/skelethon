@@ -6,6 +6,6 @@ namespace Core;
 
 interface DatabaseAccessInterface
 {
-    public function aListeTables();
+    public function getTableList();
     
 }

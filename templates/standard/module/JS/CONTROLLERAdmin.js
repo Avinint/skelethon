@@ -19,7 +19,7 @@ function CONTROLLERAdmin()
             nIdElement = oReponseJSON.nIdElement;
         }
 
-        /*PERSONALIZEBUTTONS*/
+/*PERSONALIZEBUTTONS*/
 
         return eLigne;
     };SELECTAJAX

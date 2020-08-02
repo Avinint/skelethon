@@ -1,6 +1,2 @@
-               // inutilisé
-                , (
-                    SELECT CONCAT(FKALIAS.label)
-                    FROM FKTABLE FKALIAS
-                    WHERE FKALIAS.COLUMN = ALIAS.COLUMN
-                ) AS FIELD
+                LEFT JOIN FKTABLE FKALIAS
+                ON ALIAS.FK = FKALIAS.FK

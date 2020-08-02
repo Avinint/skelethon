@@ -2,13 +2,11 @@
 
 namespace Core;
 
+use APP\Core\Lib\Interne\PHP\PHPMailerAdapter;
 use http\Exception\InvalidArgumentException;
 
-class BaseMaker
+abstract class BaseMaker extends CommandLineToolShelf
 {
-    use CommandLineToolShelf;
-
-    const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[1;32m", 'White' => "\e[1;37m", 'Blue' => "\e[1;36m"];
 
     /** @var Config $this->config */
     protected $config;
@@ -52,24 +50,7 @@ class BaseMaker
         $this->config = $params['config'];
     }
 
-    public function prompt($msg, $validValues = [], $keepCase = false)
-    {
-        echo PHP_EOL;
-        $result = '';
-        if (empty($validValues)) {
-            while($result === '' || $result === null) {
-                $result = readline($this->msg($msg));
-            }
-        } else {
-            $result = false;
-            while (!array_contains($result, $validValues)) {
-                $tempResult = readline($this->msg($msg, '', $validValues === ['o', 'n']));
-                $result = $keepCase ? $result : strtolower($tempResult);
-            }
-        }
 
-        return $result;
-    }
 
     /**
      * L'application donne des choix aux utilisateurs, les réponses sont stockées en config, permet a l'application de ne pas redemander une information déja stockée
@@ -114,6 +95,7 @@ class BaseMaker
         }
 
         if (!file_exists($templatePath) && isset($this->fallBackTemplate)) {
+
             // get fallback template ($this->>template)  returns gettrutemplate (next template)
             $templatePath = str_replace($this->template, $this->fallBackTemplate, $templatePath);
         }
@@ -131,7 +113,7 @@ class BaseMaker
 
     /**
      * @param string $key
-     * @param $selection
+     * @param $selection    
      * @param string $model
      */
     protected function saveChoiceInConfig(string $key, $selection, $model = ''): void
@@ -148,20 +130,21 @@ class BaseMaker
     }
 
     /**
-     * @param bool $defaultValue
-     * @param string $key
-     * @param array $choices
-     * @return bool|string
+     * @return bool|null
+     *
+     * * TODO comparer a ce qui y a dans saveChoiceInConfig
+     *
+     *
      */
-    protected function askMultipleChoices(string $key, array $choices, $defaultValue = false)
+    protected function askApplyChoiceForAllModules()
     {
-        $msgDefault = $defaultValue !== false ? PHP_EOL . 'En cas de chaine vide, Le ' . $key . ' ' . $this->frame($defaultValue, 'success') . ' sera sélectionné par défaut.' : '';
+        $askChoice =  $this->prompt('Voulez-vous sauvegarder les choix sélectionnés pour les appliquer lors de la création de nouveaux modules? '
+            .PHP_EOL.'['.$this->highlight('o', 'success').'/'.$this->highlight('n', 'error').'] ou '.$this->highlight('réponse vide').' pour choisir au fur et à mesure', ['o', 'n', '']);
 
-        $selection = $this->prompt('Choisir un ' . $key . ' dans la liste suivante:' . PHP_EOL . $this->displayList($choices, 'info') . $msgDefault, array_merge($choices, ['']));
-        if ($defaultValue !== false && $selection === '') {
-            $selection = $defaultValue;
-        }
-        return $selection;
+        $this->config->set('memorizeChoices', !empty($askChoice) && $askChoice === 'o');
+        return empty($askChoice)  ?  null :  $askChoice === 'o';
     }
+
+
 
 }

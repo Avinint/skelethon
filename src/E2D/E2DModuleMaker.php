@@ -160,6 +160,7 @@ class E2DModuleMaker extends ModuleMaker
     {
         $config = Spyc::YAMLLoad($path);
 
+
         if (strpos($templatePath, 'conf.yml') === false ) {
             foreach ($this->model->actions as $action) {
                 $templatePerActionPath = $this->getTrueTemplatePath(str_replace('.', '_' . $action . '.', $templatePath));
@@ -174,6 +175,7 @@ class E2DModuleMaker extends ModuleMaker
             }
 
         } else {
+
             $templatePath = $this->getTrueTemplatePath($templatePath);
             if (file_exists($templatePath)) {
 
@@ -181,27 +183,29 @@ class E2DModuleMaker extends ModuleMaker
                 $fields = $this->model->getViewFieldsByType('enum');
                 if (!empty($fields)) {
                     foreach ($fields as $field) {
-                        $enums .= PHP_EOL."aListe-{$this->model->getName()}-{$field['column']}:".PHP_EOL;
+                        $enums .= PHP_EOL . "aListe-{$this->model->getName()}-{$field['column']}:" . PHP_EOL;
                         foreach ($field['enum'] as $value) {
-                            $enums .= str_repeat("\x20", 4)."$value: {$this->labelize($value)}".PHP_EOL;
+                            $enums .= str_repeat("\x20", 4) . "$value: {$this->labelize($value)}" . PHP_EOL;
                         }
                     }
-
-                    $template = file_get_contents($templatePath);
-                    $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
-                        [$this->name, $this->model->getName(), $this->model->getClassName(), $this->namespaceName, $this->getControllerName(), $this->getControllerName(true), $enums], $template));
-
-                    $baseJSFilePath = $this->name.'/JS/'.$this->namespaceName.'.js';
-                    array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['formulaires']['edition_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
-                    array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['simples']['accueil_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
-
-                    $config = array_replace_recursive($config, $newConfig);
                 }
             }
+
+
+            $template = file_get_contents($templatePath);
+
+            $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
+                [$this->name, $this->model->getName(), $this->model->getClassName(), $this->namespaceName, $this->getControllerName(), $this->getControllerName(true), $enums], $template));
+
+            $baseJSFilePath = $this->name.'/JS/'.$this->getControllerName().'.js';
+            array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['formulaires']['edition_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
+            array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['simples']['accueil_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
+
+            $config = array_replace_recursive($config, $newConfig);
         }
 
-        //$text = str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'ENUMS'], [$this->name, $this->model->getName(), $modelName, $this->namespaceName, $enums], $text);
         $text = Spyc::YAMLDump($config, false, 0, true);
+        //$text = str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'ENUMS'], [$this->name, $this->model->getName(), $this->getControllerName(), $this->namespaceName, $enums], $text);
 
         return $text;
     }
@@ -312,18 +316,20 @@ class E2DModuleMaker extends ModuleMaker
     protected function generateModel(string $templatePath)
     {
         $text = '';
+
         if (file_exists($templatePath = $this->getTrueTemplatePath($templatePath))) {
             $text = file_get_contents($templatePath);
         }
 
-        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', '//RECHERCHE', '//VALIDATION'], [
+        $joinTemplate = file_get_contents($this->getTrueTemplatePath(str_replace_first('.', 'Joins.', $templatePath)));
+        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', 'LEFTJOINS', '//RECHERCHE', '//VALIDATION'], [
             $this->namespaceName,
             $this->model->getClassName(),
             $this->model->getTableName(),
             $this->model->getAlias(),
             $this->model->getPrimaryKey(), $this->model->getIdField(),
             $this->model->getAttributes(), $this->model->getModalTitle(),
-            $this->model->getSqlSelectFields(),
+            $this->model->getSqlSelectFields(), $this->model->getJoins($joinTemplate),
             $this->model->getSearchCriteria(),
             $this->model->getValidationCriteria()], $text);
 
@@ -369,7 +375,7 @@ class E2DModuleMaker extends ModuleMaker
             $actionMethodText = $noRechercheText.$actionMethodText;
         }
 
-        $select2Text = PHP_EOL;
+        $select2SearchText = PHP_EOL;
         $select2EditText = '';
         if ($fields = $this->model->getViewFieldsByType('enum')) {
             if ($this->model->usesSelect2 && strpos($templatePath, 'Admin') > 0) {
@@ -381,39 +387,49 @@ class E2DModuleMaker extends ModuleMaker
 
                 foreach ($fields as $field) {
 
-                    $select2Text .= str_replace(['NAME'], [$field['name']], $select2RechercheTemplate);
+                    $select2SearchText .= str_replace(['NAME'], [$field['name']], $select2RechercheTemplate);
                     $select2EditText .= str_replace(['NAME'], [$field['name']], $select2EditTemplate).PHP_EOL;
                 }
-                $select2Text .= implode('', $select2DefautTemplate).PHP_EOL;
+                $select2SearchText .= implode('', $select2DefautTemplate).PHP_EOL;
             }
             // [$select2Template, $selectClass] = $this->model->usesSelect2 ? [file_get_contents(str_replace('.', 'Select2.', $templatePath)), 'select2'] : ['', 'selectmenu'];
         }
 
-        $selectAjaxText = '';
+        $selectAjaxDefinitionText = '';
         $personalizeButtons = '';
         if (strpos($templatePath, 'Admin') > 0) {
-            if (false) {
-           // if ($this->model->usesSelectAjax) {
+           if ($this->model->usesSelectAjax) {
 
                 if ($fields = $this->model->getViewFieldsByType('selectAjax')) {
-                    $selectAjax = [];
+
+                    $selectAjaxDefinition = [];
                     foreach ($fields as $field) {
                         $foreignClassName = $this->pascalize($field['selectAjax']['table']);
                         $label = $field['selectAjax']['label'];
-                        $selectAjaxCallEditText = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
-                        $ajaxSearchText = file($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxCall.', $selectedTemplatePath)));
+                        if (is_array($label)) {
+                            $label = $this->generateConcatenatedColumn($label);
+                        }
 
-                        $select2Text .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], implode('', array_slice($ajaxSearchText, 0, 2)));
+                        $ajaxSearchTextTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'RechercheSelectAjaxCall.', $selectedTemplatePath)));
+                        $select2SearchText .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], $ajaxSearchTextTemp);
                         $allowClear = $field['is_nullable'] ? 'true' : 'false';
-                        $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'FIELD', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $field['field'], $allowClear], $selectAjaxCallEditText);
 
-                        $selectAjaxTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjax.', $selectedTemplatePath)));
-                        $selectAjax[] = str_replace(['MODEL', 'PK', 'LABEL', 'TABLE', 'ORDERBY'],
-                            [$foreignClassName, $field['column'], $label, $field['selectAjax']['table'], $field['column']], $selectAjaxTemp);
+                        $selectAjaxCallEditTextTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'EditionSelectAjaxCall.', $selectedTemplatePath)));
+
+
+                        $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'FIELD', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $field['field'], $allowClear], $selectAjaxCallEditTextTemp);
+
+                        $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxDefinition.', $selectedTemplatePath)));
+                        $selectAjaxDefinition[] = str_replace(['MODEL', 'PK', 'LABEL', 'TABLE', 'ORDERBY'],
+                            [$foreignClassName, $field['column'], $label, $field['selectAjax']['table'], $field['column']], $selectAjaxDefinitionTemp);
                     }
-                    $selectAjaxText = PHP_EOL . implode(PHP_EOL, $selectAjax) . PHP_EOL;
+
+                    $selectAjaxDefinitionText = PHP_EOL . implode(PHP_EOL, $selectAjaxDefinition) . PHP_EOL;
+
+
                 }
             }
+
 
             $personalizedButtonsTemplateSuffix = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton.' : 'NoConsultationButtons.';
             $personalizeButtons = file_get_contents($this->getTrueTemplatePath(str_replace('.', $personalizedButtonsTemplateSuffix, $selectedTemplatePath)));
@@ -421,7 +437,7 @@ class E2DModuleMaker extends ModuleMaker
 
 
         $text = str_replace([ '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/', 'mODULE', 'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2', 'SELECTAJAX'],
-            [ $personalizeButtons, '', $actionMethodText, $this->name, $this->getControllerName(), $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2Text, $selectAjaxText], $text);
+            [ $personalizeButtons, '', $actionMethodText, $this->name, $this->getControllerName(), $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2SearchText, $selectAjaxDefinitionText], $text);
 
         return $text;
     }
@@ -532,7 +548,7 @@ class E2DModuleMaker extends ModuleMaker
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_bool_radio.'));
                 }
             } elseif (array_contains($field['type'], ['selectAjax'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum_select2.'));
+                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum_select_ajax.'));
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_date.'));
             } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
@@ -640,7 +656,7 @@ class E2DModuleMaker extends ModuleMaker
 
             if (!isset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()])) {
                 $menu = Spyc::YAMLDump(array_merge_recursive($menu, $subMenu), false, 0, true);
-                $this->createFile($this->menuPath, $menu, true);
+                $this->fileManager->createFile($this->menuPath, $menu, true);
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
@@ -722,5 +738,7 @@ class E2DModuleMaker extends ModuleMaker
     {
         return str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
     }
+
+
 
 }

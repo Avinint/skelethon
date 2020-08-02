@@ -10,6 +10,11 @@ class ESMField extends E2DField
     {
         if ($this->isDate()) {
             return "$this->column = '.\$this->$this->name.'";
+        } elseif ($this->isInteger()) {
+            if ($this->isNullable()) {
+                return "$this->column = '.addslashes(\$this->$this->name ?? 'NULL').'";
+            }
+            return "$this->column = '.addslashes(\$this->$this->name).'";
         }
         return "$this->column = \''.addslashes(\$this->$this->name).'\'";
     }
@@ -23,6 +28,12 @@ class ESMField extends E2DField
     {
         if ($this->isDate()) {
             return "'.\$this->$this->name.'";
+
+        } elseif ($this->isInteger()) {
+            if ($this->isNullable()) {
+                return "'.addslashes(\$this->$this->name ?? 'NULL').'";
+            }
+            return "'.addslashes(\$this->$this->name).'";
         }
 
         return  "\''.addslashes(\$this->$this->name).'\'";

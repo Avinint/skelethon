@@ -3,6 +3,8 @@
 namespace Core;
 
 
+use E2D\E2DModelMaker;
+
 class ModuleMakerFactory
 {
     private $moduleMaker;
@@ -10,11 +12,12 @@ class ModuleMakerFactory
 
     public function __construct($arguments, $moduleMaker, $modelMaker, $fieldClass, $databaseAccess)
     {
+        $this->databaseAccess = $databaseAccess;
         $this->moduleMaker = $moduleMaker;
         $this->modelMaker = $modelMaker;
 
         if (!is_dir('modules')) {
-            $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
+            ModuleMaker::msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
             die();
         }
 
@@ -32,8 +35,6 @@ class ModuleMakerFactory
         {
             case 'module':
                 $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'generate', $config);
-                $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
-                $model->setDbTable();
                 $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'generate', [
                     'config' => $config,
@@ -43,8 +44,7 @@ class ModuleMakerFactory
                 break;
             case 'modele':
                 $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addModel', $config);
-                $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
-                $model->setDbTable();
+                ;
                 $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'addModel', [
                     'config' => $config,
@@ -73,15 +73,24 @@ class ModuleMakerFactory
 
     }
 
-    public function buildModel($moduleName, $modelName,$fieldClass,  $creationMode, $config )
+    public function buildModel($moduleName, $modelName,$fieldClass,  $creationMode, $config)
     {
         $params = [
             'config' => $config,
-            'applyChoicesForAllModules' => $config['memorize']
+            'applyChoicesForAllModules' => $config['memorize'],
         ];
         $params['applyChoicesForAllModules'] = !isset($config['memorizeChoices']) || $config['memorizeChoices'];
 
-        return new $this->modelMaker($moduleName, $modelName, $fieldClass, $creationMode, $params);
+        /**
+         * @var E2DModelMaker $model
+         */
+        $model =  new $this->modelMaker($moduleName, $modelName, $fieldClass, $creationMode, $params);
+
+        $model->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
+        $model->setDbTable();
+
+
+        return $model;
     }
 
 

@@ -83,7 +83,6 @@ class Config implements ArrayAccess, Countable
                 }
                 $this->write($this->module);
             }
-
         } else {
             $this->unsetParam($setForAll, $field, $model);
         }
@@ -95,7 +94,7 @@ class Config implements ArrayAccess, Countable
      * @param null $model
      * @param bool $setForAll
      */
-    public function addTo($field, $value, $model  = null, $setForAll = false): void
+    public function addTo($field, $key, $value, $model  = null, $setForAll = false): void
     {
 
         if ($setForAll && is_array($this->data[$field])) {
@@ -103,10 +102,12 @@ class Config implements ArrayAccess, Countable
             return;
         } else {
             if (isset($model) && is_array($this->data['modules'][$this->module]['models'][$model][$field])) {
-                $this->data['modules'][$this->module]['models'][$model][$field][] = $value;
+                $this->data['modules'][$this->module]['models'][$model][$field][$key] = $value;
+                $this->write($this->module);
                 return;
             } elseif (is_array($this->data['modules'][$this->module][$field] )) {
-                $this->data['modules'][$this->module][$field][] = $value;
+                $this->data['modules'][$this->module][$field][$key] = $value;
+                $this->write($this->module);
                 return;
             }
         }
@@ -189,8 +190,11 @@ class Config implements ArrayAccess, Countable
      * @param string $field
      * @return array|mixed|null
      */
-    public function get(string $field)
+    public function get(string $field, string $model = null)
     {
+        if (isset($model)) {
+            return $this->getValueFromModelConfig($field);
+        }
         if (isset($this->data[$field])) {
             return $this->data[$field];
         }
@@ -223,9 +227,13 @@ class Config implements ArrayAccess, Countable
         return null;
     }
 
-    public function has(string $field)
+    public function has(string $field, $model = null)
     {
-        return $this->get($field) === null;
+        if (isset($model)) {
+            $this->getValueFromModelConfig($field);
+        }
+
+        return $this->get($field) !== null;
     }
 
     /**

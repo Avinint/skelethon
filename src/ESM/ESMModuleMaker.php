@@ -39,7 +39,7 @@ class ESMModuleMaker extends E2DModuleMaker
 
             if (!isset($menu[$this->name]['html_accueil_'.$this->model->getName()])) {
                 $menu = Spyc::YAMLDump(array_merge_recursive($menu, $subMenu), false, 0, true);
-                $this->createFile($this->menuPath, $menu, true);
+                $this->fileManager->createFile($this->menuPath, $menu, true);
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
@@ -58,14 +58,15 @@ class ESMModuleMaker extends E2DModuleMaker
             $text = file_get_contents($templatePath);
         }
 
-        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', '//RECHERCHE', '//VALIDATION', 'EDITCHAMPS', 'INSERTCOLUMNS', 'INSERTVALUES'], [
+        $joinTemplate = file_get_contents($this->getTrueTemplatePath(str_replace_first('.', 'Joins.', $templatePath)));
+        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', 'LEFTJOINS', '//RECHERCHE', '//VALIDATION', 'EDITCHAMPS', 'INSERTCOLUMNS', 'INSERTVALUES'], [
             $this->namespaceName,
             $this->model->getClassName(),
             $this->model->getTableName(),
             $this->model->getAlias(),
             $this->model->getPrimaryKey(), $this->model->getIdField(),
             $this->model->getAttributes(), $this->model->getModalTitle(),
-            $this->model->getSqlSelectFields(),
+            $this->model->getSqlSelectFields(), $this->model->getJoins($joinTemplate),
             $this->model->getSearchCriteria(),
             $this->model->getValidationCriteria(), $this->model->getEditFields(),
             $this->model->getInsertColumns(),$this->model->getInsertValues()], $text);

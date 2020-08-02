@@ -6,9 +6,10 @@ use Core\DatabaseAccess;
 
 class E2DDatabaseAccess extends DatabaseAccess
 {
+    private $tables = [];
+
     public static function getDatabaseParams()
     {
-
         if (!isset($GLOBALS['aParamsAppli']) || !isset($GLOBALS['aParamsBdd'])) {
             $text = str_replace('<?php', '',file_get_contents('surcharge_conf.php'));
 
@@ -22,93 +23,111 @@ class E2DDatabaseAccess extends DatabaseAccess
         );
     }
 
-    public function aListeTables()
+    public function getTable(string $tableName)
     {
-        $aTables = array();
+        return $this->getTableList()[$tableName] ?? null;
+    }
 
-        $sRequete = "SHOW tables FROM `$this->dBName`";
+    /**
+     * @param $tableName
+     * @return array
+     */
+    public function getSimilarTableList($tableName)
+    {
+        $sRequete = 'SHOW tables FROM `' . $this->getDBName(). '` LIKE \'%'.$tableName.'%\'';
+        $tables = array_map(function ($row) use ($tableName) {return $row->{'Tables_in_'.$this->getDBName(). ' (%'.$tableName.'%)'};}, $this->query($sRequete));
+        return $tables;
+    }
 
-        $aResultats = $this->query($sRequete);
+    public function getTableList()
+    {
+        if (empty($this->tables)) {
 
-        $sCle = 'Tables_in_'.$this->dBName;
-        foreach ($aResultats as $oTable) {
-            $aTables[$oTable->$sCle] = array();
+            $sRequete = "SHOW tables FROM `$this->dBName`";
 
-            $sRequete = "SHOW columns FROM ".$oTable->$sCle;
             $aResultats = $this->query($sRequete);
 
-            foreach ($aResultats as $oChamp) {
-                $aType = explode('(', $oChamp->Type);
-                $oChamp->sType = array_shift($aType);
-                $sMaxLength = array_shift($aType);
+            $sCle = 'Tables_in_'.$this->dBName;
+            foreach ($aResultats as $oTable) {
+                $sNomTable = $oTable->$sCle;
+                $this->tables[$sNomTable] = array();
 
-                $aNom = explode('_', $oChamp->Field);
-                $aNom = array_map('ucfirst', $aNom);
-                $sNom = implode('', $aNom);
+                $sRequete = "SHOW columns FROM ".$sNomTable;
+                $aResultats = $this->query($sRequete);
 
-                switch ($oChamp->sType) {
-                    case 'tinyint':
-                        if ($sMaxLength != '') {
-                            $oChamp->maxLength = $this->getMaxLength($sMaxLength);
-                        }
-                        if (1 === $oChamp->maxLength) {
-                            $oChamp->sType = 'bool';
-                            $oChamp->sChamp = 'b'.$sNom;
-                        } else {
+                foreach ($aResultats as $oChamp) {
+                    $aType = explode('(', $oChamp->Type);
+                    $oChamp->sType = array_shift($aType);
+                    $sMaxLength = array_shift($aType);
+
+                    $aNom = explode('_', $oChamp->Field);
+                    $aNom = array_map('ucfirst', $aNom);
+                    $sNom = implode('', $aNom);
+
+                    switch ($oChamp->sType) {
+                        case 'tinyint':
+                            if ($sMaxLength != '') {
+                                $oChamp->maxLength = $this->getMaxLength($sMaxLength);
+                            }
+                            if (1 === $oChamp->maxLength) {
+                                $oChamp->sType = 'bool';
+                                $oChamp->sChamp = 'b'.$sNom;
+                            } else {
+                                $oChamp->sChamp = 'n'.$sNom;
+                            }
+                            break;
+                        case 'int':
+                        case 'smallint':
                             $oChamp->sChamp = 'n'.$sNom;
-                        }
-                        break;
-                    case 'int':
-                    case 'smallint':
-                        $oChamp->sChamp = 'n'.$sNom;
-                        if ($sMaxLength != '') {
-                            $oChamp->maxLength = $this->getMaxLength($sMaxLength);
-                        }
-                        break;
-                    case 'char':
-                    case 'varchar':
-                    case 'text':
-                    case 'mediumtext':
-                    case 'longtext':
-                        $oChamp->sChamp = 's'.$sNom;
-                        if ($sMaxLength != '') {
-                            $oChamp->maxLength = $this->getMaxLength($sMaxLength);
-                        }
-                        break;
+                            if ($sMaxLength != '') {
+                                $oChamp->maxLength = $this->getMaxLength($sMaxLength);
+                            }
+                            break;
+                        case 'char':
+                        case 'varchar':
+                        case 'text':
+                        case 'mediumtext':
+                        case 'longtext':
+                            $oChamp->sChamp = 's'.$sNom;
+                            if ($sMaxLength != '') {
+                                $oChamp->maxLength = $this->getMaxLength($sMaxLength);
+                            }
+                            break;
 
-                    case 'enum':
-                        $oChamp->sChamp = 's'.$sNom;
-                        break;
+                        case 'enum':
+                            $oChamp->sChamp = 's'.$sNom;
+                            break;
 
-                    case 'datetime':
-                        $oChamp->sChamp = 'dt'.$sNom;
-                        break;
+                        case 'datetime':
+                            $oChamp->sChamp = 'dt'.$sNom;
+                            break;
 
-                    case 'time':
-                        $oChamp->sChamp = 't'.$sNom;
-                        break;
+                        case 'time':
+                            $oChamp->sChamp = 't'.$sNom;
+                            break;
 
-                    case 'date':
-                        $oChamp->sChamp = 'd'.$sNom;
-                        break;
+                        case 'date':
+                            $oChamp->sChamp = 'd'.$sNom;
+                            break;
 
-                    case 'decimal':
-                    case 'float':
-                    case 'double':
-                        $oChamp->sChamp = 'f'.$sNom;
-                        if ($sMaxLength != '') {
-                            $oChamp->maxLength = $this->getMaxLength($sMaxLength);
-                            $oChamp->step = $this->getStep($sMaxLength);
-                        }
-                        break;
+                        case 'decimal':
+                        case 'float':
+                        case 'double':
+                            $oChamp->sChamp = 'f'.$sNom;
+                            if ($sMaxLength != '') {
+                                $oChamp->maxLength = $this->getMaxLength($sMaxLength);
+                                $oChamp->step = $this->getStep($sMaxLength);
+                            }
+                            break;
+                    }
+
+                    $this->tables[$sNomTable][$oChamp->Field] = $oChamp;
                 }
 
-                $aTables[$oTable->$sCle][$oChamp->Field] = $oChamp;
             }
-
         }
-        // echo "<pre>".print_r($aTables, true)."</pre>";
 
-        return $aTables;
+        // echo "<pre>".print_r($aTables, true)."</pre>";
+        return $this->tables;;
     }
 }

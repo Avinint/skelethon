@@ -27,12 +27,12 @@ abstract class ModelMaker extends BaseMaker
     {
         parent::__construct($fileManager);
         $this->setConfig($params);
+        static::$verbose = $this->config->get('verbose') ?? true;
         $this->creationMode = $mode;
         $this->fieldClass = $fieldClass;
         $this->module = Field::$module = $module;
         $this->name = Field::$model = $this->askName($name);
 
-        $this->askTableName();
         $this->setClassName($this->name);
 
         $this->actions = $this->askActions();
@@ -60,10 +60,11 @@ abstract class ModelMaker extends BaseMaker
     {
         $tableName = $this->config->get('tableName') ?? readline($this->msg('Si le nom de la table en base est différente de '. $this->highlight($this->name, 'success'). ' entrer le nom de la table :').'');
 
-        if (empty($tableName)) {
-            $tableName = $this->name;
+        if (empty($tableName)) $tableName = $this->name;
+
+        if (!$this->config->has('tableName')) {
+            $this->config->set('tableName', $tableName, $this->name);
         }
-        $this->config->set('tableName', $tableName, $this->name);
 
         $this->tableName = $tableName;
     }
@@ -71,8 +72,7 @@ abstract class ModelMaker extends BaseMaker
 
     public function generate()
     {
-        $this->alias = strtoupper(substr(str_replace('_', '', $this->name), 0, 3));
-
+        $this->alias =  $this->generateAlias($this->tableName);
 
         foreach ($this->table as $field => $data) {
             if ('PRI' === $data->Key) {
@@ -118,7 +118,7 @@ abstract class ModelMaker extends BaseMaker
 
     private function askActions()
     {
-        if (!$this->config->has('actions')) {
+        if (    $this->config->has('actions')) {
             return $this->config->get('actions');
         } else {
             $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
@@ -267,12 +267,14 @@ abstract class ModelMaker extends BaseMaker
 
     public function setDbTable(): void
     {
-        $tables = $this->databaseAccess->aListeTables();
-        if (!isset($tables[$this->tableName])) {
+        $this->askTableName();
+        $table = $this->databaseAccess->getTable($this->tableName);
+        if (null === $table) {
             $this->msg('Erreur: Il faut créer la table \'' . $this->name . '\' avant de générer le code', 'error');
+            $this->config->set('tableName', null, $this->name);
             die();
         }
-        $this->table = $tables[$this->tableName];
+        $this->table = $table;
     }
 
     public function getTitre() : string
@@ -316,9 +318,15 @@ abstract class ModelMaker extends BaseMaker
 
     /**
      * @return string
-     */public function getTableName(): string
+     */
+    public function getTableName(): string
     {
         return $this->tableName;
+    }
+
+    protected function generateAlias(string $alias): string
+    {
+       return strtoupper(substr(str_replace('_', '', $this->table), 0, 3));
     }
 
 }

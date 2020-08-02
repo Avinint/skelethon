@@ -2,7 +2,7 @@
 
 namespace Core;
 
-class Field
+abstract class Field
 {
     protected static $collection = [];
     public static $module;
@@ -94,10 +94,10 @@ class Field
             $properties['step'] = $this->step;
         }
 
-        // TODO transferer dans la partie E2D
-        if (isset($this->selectAjax)) {
-            $properties['selectAjax'] = $this->selectAjax;
-        }
+        /**
+         * @hook Ajouter des propriétés associant le champ à une autre table (clé étrangère)
+         */
+        $this->handleAssociations($properties);
 
         return $properties;
     }
@@ -129,7 +129,12 @@ class Field
 
     public function isNumber()
     {
-        return array_contains($this->type, array('int', 'smallint', 'tinyint', 'float', 'decimal', 'double'));
+        return array_contains($this->type, array('int', 'smallint', 'tinyint', 'bigint', 'selectAjax', 'float', 'decimal', 'double'));
+    }
+
+    public function isInteger()
+    {
+        return array_contains($this->type, array('int', 'smallint', 'tinyint', 'bigint', 'selectAjax'));
     }
 
     public function isDate()
@@ -159,4 +164,10 @@ class Field
         static::getFieldByColumn($columnName)->set('type', $type);
     }
 
+    public function isNullable()
+    {
+        return $this->isNullable;
+    }
+
+    abstract protected function handleAssociations(&$properties);
 }
