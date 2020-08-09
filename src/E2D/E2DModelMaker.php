@@ -67,29 +67,29 @@ class E2DModelMaker extends ModelMaker
         return  $useSelect2;
     }
 
-    private function askSelectAjax()
+    private function askAddOneToManyField()
     {
-        $this->usesSelectAjax = $this->config->get('usesSelectAjax', $this->name);
-        $ajaxFields = $this->config->get('ajaxFields', $this->name) ?? [];
+        $this->hasOneRelations = $this->config->get('hasOneRelations', $this->name);
+        $ajaxFields = $this->config->get('oneToMany', $this->name) ?? [];
         $potentialFields = $this->getPotentialFields($ajaxFields);
 
-        if ($this->usesSelectAjax ?? true) {
+        if ($this->hasOneRelations ?? true) {
 
             $gotPotential = !empty($potentialFields);
-            $needToAsk = is_null($this->usesSelectAjax) && ($gotPotential || !empty($ajaxFields));
+            $needToAsk = is_null($this->hasOneRelations) && ($gotPotential || !empty($ajaxFields));
 
             if ($needToAsk) {
-                $this->usesSelectAjax = $this->prompt('Voulez-vous transformer des champs en selects Ajax ?', ['o', 'n']) === 'o';
-                $this->config->set('usesSelectAjax', $this->usesSelectAjax, $this->name);
+                $this->hasOneRelations = $this->prompt('Voulez-vous transformer des champs en selects Ajax ?', ['o', 'n']) === 'o';
+                $this->config->set('hasOneRelations', $this->hasOneRelations, $this->name);
             }
 
-            if ($this->usesSelectAjax) {
+            if ($this->hasOneRelations) {
                 if ($gotPotential) {
-                    $this->convertToSelectAjaxField($potentialFields);
+                    $this->convertToOneToManyFields($potentialFields);
                 }
 
                 foreach ($ajaxFields as $column => $field ) {
-                    $this->fieldClass::changeToSelectAjax($column, $field);
+                    $this->fieldClass::changeToOneToManyField($column, $field);
                 }
             }
 
@@ -116,7 +116,7 @@ class E2DModelMaker extends ModelMaker
         }
     }
 
-    private function getDataForSelectAjaxField($field)
+    private function getDataForOneToManyField($field)
     {
         $childTable = str_replace('id_', '', $field['column']);
         $tables = $this->databaseAccess->getSimilarTableList($childTable);
@@ -188,7 +188,7 @@ class E2DModelMaker extends ModelMaker
 
     protected function askModifySpecificData()
     {
-        $this->askSelectAjax();
+        $this->askAddOneToManyField();
     }
 
     /**
@@ -207,17 +207,17 @@ class E2DModelMaker extends ModelMaker
 
     /**
      * @param $field
-     * @param array $selectAjaxFieldData
+     * @param array $OneToManyFieldData
      */
-    private function generateSelectAjaxField($field, array $selectAjaxFieldData): void
+    private function generateOneToManyField($field, array $OneToManyFieldData): void
     {
-        $this->fieldClass::changeToSelectAjax($field, $selectAjaxFieldData);
-        if (!$this->config->has('ajaxFields', $this->name)) {
-            $this->config->set('ajaxFields', [], $this->name);
+        $this->fieldClass::changeToOneToManyField($field, $OneToManyFieldData);
+        if (!$this->config->has('oneToMany', $this->name)) {
+            $this->config->set('oneToMany', [], $this->name);
         }
-        //$this->config->set('usesAjaxFields', true);
+        //$this->config->set('hasOneRelations', true);
 
-        $this->config->addTo('ajaxFields', $field, $selectAjaxFieldData , $this->name);
+        $this->config->addTo('oneToMany', $field, $OneToManyFieldData , $this->name);
     }
 
     /**
@@ -269,19 +269,19 @@ class E2DModelMaker extends ModelMaker
      * @param array $potentialFields
      *
      */
-    private function convertToSelectAjaxField(array $potentialFields)
+    private function convertToOneToManyFields(array $potentialFields)
     {
         $listNames = implode('', array_map(function ($field) {
             return $this->highlight($field['name'], 'info') . PHP_EOL;
         }, $potentialFields));
         $askConvertAll = $this->prompt('Voulez-vous convertir tous les champs suivants :' . PHP_EOL . $listNames . 'en Select Ajax ?', ['o', 'n']) === 'o';
         foreach ($potentialFields as &$field) {
-            $selectAjaxFieldData = $this->getDataForSelectAjaxField($field);
-            if ($selectAjaxFieldData === false) {
+            $OneToManyFieldData = $this->getDataForOneToManyField($field);
+            if ($OneToManyFieldData === false) {
                 $this->msg('Champ invalide comme clé étrangère', 'error');
             } else {
                 if ($askConvertAll || $this->prompt('Voulez-vous convertir le champ ' . $this->highlight($field['name']) . ' en Select Ajax ?', ['o', 'n']) === 'o') {
-                    $this->generateSelectAjaxField($field['column'], $selectAjaxFieldData);
+                    $this->generateOneToManyField($field['column'], $OneToManyFieldData);
                 }
             }
         }
@@ -293,9 +293,10 @@ class E2DModelMaker extends ModelMaker
      */
     protected function generateAlias(string $alias): string
     {
-
-        if (strpos($alias, $this->config->get('prefix')) === 0) {
-            $alias = str_replace($this->config->get('prefix') . '_', '', $alias);
+        if ($this->config->has('prefix')) {
+            if (strpos($alias, $this->config->get('prefix')) === 0) {
+                $alias = str_replace($this->config->get('prefix') . '_', '', $alias);
+            }
         }
 
         if (strpos($alias, '_') < 2) {
@@ -315,19 +316,13 @@ class E2DModelMaker extends ModelMaker
     {
         $joinText = '';
 //        $joins = [];
-        $joinList = $this->config->get('ajaxFields');
+        $joinList = $this->config->get('oneToMany');
 
         if (!empty($joinList)) {
-
             $joins = array_map(function($join) use ($template) {
                 return str_replace(['FKTABLE', 'FKALIAS', 'ALIAS', 'FK'],
                     [$join['table'], $join['alias'], $this->getAlias(), $join['pk']], $template);
-
             }, $joinList);
-//            foreach ($joinList as $join) {
-//                $joins[] =  str_replace(['FKTABLE', 'FKALIAS', 'ALIAS', 'FK'],
-//                    [$join['table'], $join['alias'], $this->getAlias(), $join['pk']], $template);
-//            }
 
             $joinText = PHP_EOL.implode(PHP_EOL, $joins);
         }

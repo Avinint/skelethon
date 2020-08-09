@@ -129,12 +129,12 @@ abstract class Field
 
     public function isNumber()
     {
-        return array_contains($this->type, array('int', 'smallint', 'tinyint', 'bigint', 'selectAjax', 'float', 'decimal', 'double'));
+        return array_contains($this->type, array('int', 'smallint', 'tinyint', 'bigint', 'foreignKey', 'float', 'decimal', 'double'));
     }
 
     public function isInteger()
     {
-        return array_contains($this->type, array('int', 'smallint', 'tinyint', 'bigint', 'selectAjax'));
+        return array_contains($this->type, array('int', 'smallint', 'tinyint', 'bigint', 'foreignKey'));
     }
 
     public function isDate()

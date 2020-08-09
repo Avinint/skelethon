@@ -12,13 +12,13 @@ class E2DField extends Field
     {
         parent::__construct($type, $name, $columnName, $defaultValue, $alias, $params);
 
-        $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'double', 'bool', 'enum', 'selectAjax'));
+        $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'double', 'bool', 'enum', 'foreignKey'));
     }
 
     protected function getFormattedName()
     {
         if ($this->formatted) {
-            if ($this->type === 'selectAjax') {
+            if ($this->type === 'foreignKey') {
                 return str_replace('nId', '', 's'.$this->name);
             }
             return $this->name.'Formate';
@@ -30,7 +30,7 @@ class E2DField extends Field
     protected function getFormattedColumn()
     {
         if ($this->formatted) {
-            if ($this->type === 'selectAjax') {
+            if ($this->type === 'foreignKey') {
                 return str_replace('id_', '', $this->name);
             }
             return $this->column.'_formate';
@@ -64,8 +64,8 @@ class E2DField extends Field
             $module = self::$module;
             $model = self::$model;
             $lines[] = $indent."' . \$this->sFormateValeurChampConf('$module', '$model', '$this->column', '{$this->getFormattedName()}') . '";
-        } elseif ('selectAjax' === $this->type) {
-            $strategy = $this->selectAjax['strategy'] ?? 'joins';
+        } elseif ('foreignKey' === $this->type) {
+            $strategy = $this->oneToMany['strategy'] ?? 'joins';
             if ($strategy === 'nested') {
                 $template = '(
                         SELECT LABEL
@@ -73,7 +73,7 @@ class E2DField extends Field
                         WHERE PK = ALIAS.PK
                     ) AS FIELD';
             } else {
-                if (is_array($this->selectAjax['label'])) {
+                if (is_array($this->oneToMany['label'])) {
                    ;$template = 'LABEL CONCATALIAS';
                 } else {
 
@@ -81,9 +81,9 @@ class E2DField extends Field
                 }
             }
 
-            //$alias = $this->selectAjax['alias'] !== '' ?  $this->selectAjax['alias'].'.' : '';
+            //$alias = $this->oneToMany['alias'] !== '' ?  $this->oneToMany['alias'].'.' : '';
             $lines[] = str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
-                [$this->selectAjax['alias'], $this->selectAjax['label'], $this->selectAjax['concatAlias'], $this->selectAjax['table'], $this->selectAjax['pk'], $this->alias, $this->getFormattedName()],
+                [$this->oneToMany['alias'], $this->oneToMany['label'], $this->oneToMany['concatAlias'], $this->oneToMany['table'], $this->oneToMany['pk'], $this->alias, $this->getFormattedName()],
                 $indent.$template);
         }
 
@@ -95,7 +95,7 @@ class E2DField extends Field
         $aCriteresRecherche = [];
         $fieldName = "AND $this->alias.$this->column";
 
-        if (array_contains($this->type, array('tinyint', 'smallint', 'int', 'float', 'decimal', 'double', 'selectAjax'))) {
+        if (array_contains($this->type, array('tinyint', 'smallint', 'int', 'float', 'decimal', 'double', 'foreignKey'))) {
             $conditionEquals = $fieldName . ' = ' . $this->addNumberField($this->name, array_contains($this->type, ['smallint', 'int']));
             $aCriteresRecherche[] = $this->addNumberCriterion($this->name, $conditionEquals);
 
@@ -231,18 +231,18 @@ class E2DField extends Field
         return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
     }
 
-    public static function changeToSelectAjax($columnName, $selectAjaxParams)
+    public static function changeToOneToManyField($columnName, $oneToManyParamss)
     {
-        static::getFieldByColumn($columnName)->set('type', 'selectAjax');
+        static::getFieldByColumn($columnName)->set('type', 'foreignKey');
 
-        if(is_array($selectAjaxParams['label'])) {
-            $selectAjaxParams['label'] = static::generateConcatenatedColumn(
-                $selectAjaxParams['label'],
-                $selectAjaxParams['alias']
+        if(is_array($oneToManyParamss['label'])) {
+            $oneToManyParamss['label'] = static::generateConcatenatedColumn(
+                $oneToManyParamss['label'],
+                $oneToManyParamss['alias']
             );
         }
 
-        static::getFieldByColumn($columnName)->set('selectAjax', $selectAjaxParams);
+        static::getFieldByColumn($columnName)->set('oneToMany', $oneToManyParamss);
         static::getFieldByColumn($columnName)->set('formatted', true);
 
     }
@@ -253,8 +253,8 @@ class E2DField extends Field
      */
     protected function handleAssociations(&$properties)
     {
-        if (isset($this->selectAjax)) {
-            $properties['selectAjax'] = $this->selectAjax;
+        if (isset($this->oneToMany)) {
+            $properties['oneToMany'] = $this->oneToMany;
         }
     }
 
@@ -269,7 +269,6 @@ class E2DField extends Field
             $alias = $alias. '.';
 
             $column = array_map(function($part) use ($alias) {return $alias.$part;}, $column);
-            var_dump($column);
         }
         return "CONCAT_WS(\' \', " . implode(", ",  $column) . ')';
     }

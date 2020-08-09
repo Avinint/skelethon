@@ -58,9 +58,19 @@ abstract class ModelMaker extends BaseMaker
 
     private function askTableName()
     {
-        $tableName = $this->config->get('tableName') ?? readline($this->msg('Si le nom de la table en base est différente de '. $this->highlight($this->name, 'success'). ' entrer le nom de la table :').'');
+        $prefix = $this->config->get('prefix');
+        if (!$prefix && $this->config->get('usesPrefix')) {
+            $this->askPrefix();
+        }
+        if ($prefix) {
+            $tempTableName = $prefix . '_'. $this->name;
+        } else {
+            $tempTableName = $this->name;
+        }
 
-        if (empty($tableName)) $tableName = $this->name;
+        $tableName = $this->config->get('tableName') ?? readline($this->msg('Si le nom de la table en base est différent de '. $this->highlight($tempTableName , 'success'). ' entrer le nom de la table :').'');
+
+        if (empty($tableName)) $tableName = $tempTableName;
 
         if (!$this->config->has('tableName')) {
             $this->config->set('tableName', $tableName, $this->name);
@@ -327,6 +337,11 @@ abstract class ModelMaker extends BaseMaker
     protected function generateAlias(string $alias): string
     {
        return strtoupper(substr(str_replace('_', '', $this->table), 0, 3));
+    }
+
+    private function askPrefix()
+    {
+        $prefix = $this->prompt("Voulez vous utiliser un prefix dans votre projet?");
     }
 
 }

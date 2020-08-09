@@ -67,7 +67,7 @@ class ModuleMakerFactory
                 break;
 
 //            case 'select:ajax':
-//                $moduleMaker::create($module, $model, 'addSelectAjax');
+//                $moduleMaker::create($module, $model, 'AddOneToMany');
 //                break;
         }
 

@@ -34,8 +34,8 @@ class E2DModuleMaker extends ModuleMaker
 
     protected function executeSpecificModes()
     {
-        //if ('addSelectAjax' === $this->creationMode)
-        return $this->addSelectAjax();
+        //if ('AddOneToMany' === $this->creationMode)
+        return $this->AddOneToMany();
     }
 
     /**
@@ -62,7 +62,7 @@ class E2DModuleMaker extends ModuleMaker
         if ('generate' === $this->creationMode) {
             return false;
         }
-        $modes = ['addModel' =>['yml', 'js'], 'addSelectAjax' => 'js', ''];
+        $modes = ['addModel' =>['yml', 'js'], 'AddOneToMany' => 'js', ''];
         return 'generate' !== $this->creationMode && preg_match('/\.'.(is_array($modes[$this->creationMode]) ?
                     implode('|', $modes[$this->creationMode]) :
                     $modes[$this->creationMode]).'$/', $path);
@@ -398,14 +398,14 @@ class E2DModuleMaker extends ModuleMaker
         $selectAjaxDefinitionText = '';
         $personalizeButtons = '';
         if (strpos($templatePath, 'Admin') > 0) {
-           if ($this->model->usesSelectAjax) {
+           if ($this->model->hasOneRelations) {
 
-                if ($fields = $this->model->getViewFieldsByType('selectAjax')) {
+                if ($fields = $this->model->getViewFieldsByType('foreignKey')) {
 
                     $selectAjaxDefinition = [];
                     foreach ($fields as $field) {
-                        $foreignClassName = $this->pascalize($field['selectAjax']['table']);
-                        $label = $field['selectAjax']['label'];
+                        $foreignClassName = $this->pascalize($field['oneToMany']['table']);
+                        $label = $field['oneToMany']['label'];
                         if (is_array($label)) {
                             $label = $this->generateConcatenatedColumn($label);
                         }
@@ -421,7 +421,7 @@ class E2DModuleMaker extends ModuleMaker
 
                         $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxDefinition.', $selectedTemplatePath)));
                         $selectAjaxDefinition[] = str_replace(['MODEL', 'PK', 'LABEL', 'TABLE', 'ORDERBY'],
-                            [$foreignClassName, $field['column'], $label, $field['selectAjax']['table'], $field['column']], $selectAjaxDefinitionTemp);
+                            [$foreignClassName, $field['column'], $label, $field['oneToMany']['table'], $field['column']], $selectAjaxDefinitionTemp);
                     }
 
                     $selectAjaxDefinitionText = PHP_EOL . implode(PHP_EOL, $selectAjaxDefinition) . PHP_EOL;
@@ -547,7 +547,7 @@ class E2DModuleMaker extends ModuleMaker
                 } else {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_bool_radio.'));
                 }
-            } elseif (array_contains($field['type'], ['selectAjax'])) {
+            } elseif (array_contains($field['type'], ['foreignKey'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum_select_ajax.'));
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_date.'));
@@ -591,7 +591,7 @@ class E2DModuleMaker extends ModuleMaker
                 } else {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_bool_radio.'));
                 }
-            } elseif (array_contains($field['type'], ['selectAjax'])) {
+            } elseif (array_contains($field['type'], ['foreignKey'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_enum_select2.'));
             } elseif (array_contains($field['type'], ['date', 'datetime'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, '_date.'));
@@ -689,7 +689,7 @@ class E2DModuleMaker extends ModuleMaker
 
     }
 
-    private function addSelectAjax()
+    private function AddOneToMany()
     {
         // Get fields that can become select ajax
     }
