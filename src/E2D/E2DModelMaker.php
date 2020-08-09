@@ -70,13 +70,13 @@ class E2DModelMaker extends ModelMaker
     private function askAddOneToManyField()
     {
         $this->hasOneRelations = $this->config->get('hasOneRelations', $this->name);
-        $ajaxFields = $this->config->get('oneToMany', $this->name) ?? [];
-        $potentialFields = $this->getPotentialFields($ajaxFields);
+        $foreignKeys = $this->config->get('oneToMany', $this->name) ?? [];
+        $potentialFields = $this->getPotentialFields($foreignKeys);
 
         if ($this->hasOneRelations ?? true) {
 
             $gotPotential = !empty($potentialFields);
-            $needToAsk = is_null($this->hasOneRelations) && ($gotPotential || !empty($ajaxFields));
+            $needToAsk = is_null($this->hasOneRelations) && ($gotPotential || !empty($foreignKeys));
 
             if ($needToAsk) {
                 $this->hasOneRelations = $this->prompt('Voulez-vous transformer des champs en selects Ajax ?', ['o', 'n']) === 'o';
@@ -88,8 +88,9 @@ class E2DModelMaker extends ModelMaker
                     $this->convertToOneToManyFields($potentialFields);
                 }
 
-                foreach ($ajaxFields as $column => $field ) {
-                    $this->fieldClass::changeToOneToManyField($column, $field);
+                foreach ($foreignKeys as $column => $fieldData ) {
+                    $this->getFieldByColumn($column)->changeToOneToManyField($fieldData);
+                    //$this->fieldClass::changeToOneToManyField($column, $fieldData); TODO remove
                 }
             }
 
@@ -174,6 +175,7 @@ class E2DModelMaker extends ModelMaker
     }
 
     /**
+     * TODO revoir le fonctionmt de cette méthode
      * @return array
      */
     public function getSqlSelectFields(): string
@@ -193,14 +195,14 @@ class E2DModelMaker extends ModelMaker
 
     /**
      * @param bool $filterIdSuffixes
-     * @param array $ajaxFields
+     * @param array $foreignKeys
      * @return array
      */
-    private function getPotentialFields(array $ajaxFields): array
+    private function getPotentialFields(array $foreignKeys): array
     {
-        $filterIdSuffixes = $this->config->get('associations_start_with_id_only') ?? true;
-        $potentialFields = array_filter($this->getViewFieldsByType(['int', 'smallint', 'tinyint']), function ($field) use ($filterIdSuffixes, $ajaxFields) {
-            return (preg_match('/^id_[a-z]*/', $field['column']) || $filterIdSuffixes === false) && !array_key_exists($field['column'], $ajaxFields);
+        $filterIdSuffixes = $this->config->get('foreign_keys_start_with_id_only') ?? true;
+        $potentialFields = array_filter($this->getViewFieldsByType(['int', 'smallint', 'tinyint']), function ($field) use ($filterIdSuffixes, $foreignKeys) {
+            return (preg_match('/^id_[a-z]*/', $field['column']) || $filterIdSuffixes === false) && !array_key_exists($field['column'], $foreignKeys);
         });
         return $potentialFields;
     }
@@ -209,18 +211,20 @@ class E2DModelMaker extends ModelMaker
      * @param $field
      * @param array $OneToManyFieldData
      */
-    private function generateOneToManyField($field, array $OneToManyFieldData): void
+    private function generateOneToManyField($fieldColumn, array $OneToManyFieldData): void
     {
-        $this->fieldClass::changeToOneToManyField($field, $OneToManyFieldData);
+        $this->getFieldByColumn($fieldColumn)->changeToOneToManyField($OneToManyFieldData);
+        //$this->fieldClass::changeToOneToManyField($fieldColumn, $OneToManyFieldData); TODD remove
         if (!$this->config->has('oneToMany', $this->name)) {
             $this->config->set('oneToMany', [], $this->name);
         }
         //$this->config->set('hasOneRelations', true);
 
-        $this->config->addTo('oneToMany', $field, $OneToManyFieldData , $this->name);
+        $this->config->addTo('oneToMany', $fieldColumn, $OneToManyFieldData , $this->name);
     }
 
     /**
+     * Essaie de deviner quel champ utiliser dans table parente de la relation one2Many
      * @param $column
      * @param array $displayFields
      * @param bool $childTable

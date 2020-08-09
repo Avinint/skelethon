@@ -42,7 +42,7 @@ class E2DField extends Field
     /**
      * @return string
      */
-    protected function getSelectField()
+    public function getSelectField()
     {
         $indent = str_repeat("\x20", 20);
         $lines = [];
@@ -90,7 +90,7 @@ class E2DField extends Field
         return implode(','.PHP_EOL, $lines);
     }
 
-    protected function getSearchCriterion()
+    public function getSearchCriterion()
     {
         $aCriteresRecherche = [];
         $fieldName = "AND $this->alias.$this->column";
@@ -182,7 +182,7 @@ class E2DField extends Field
             str_repeat("\x20", 8).'}'.PHP_EOL;
     }
 
-    protected function getValidationCriterion()
+    public function getValidationCriterion()
     {
         $sCritere = str_repeat("\x20", 8) . "\$aConfig['" . $this->name . '\'] = array(' . PHP_EOL;
         if (!$this->isNullable) {
@@ -209,12 +209,12 @@ class E2DField extends Field
     /**
      * @param $data
      */
-    protected function getTableHeader()
+    public function getTableHeader()
     {
         return str_repeat("\x20", 16).'<th id="th_'.$this->column.'" class="tri">'.$this->label.'</th>';
     }
 
-    protected function getTableColumn()
+   public function getTableColumn()
     {
         $alignment = $this->getAlignmentFromType();
 
@@ -226,24 +226,26 @@ class E2DField extends Field
         return ($this->isNumber() ? ' align-right' : ($this->isDateOrEnum() ? ' align-center'  : ''));
     }
 
-    protected function getFieldMapping()
+    public function getFieldMapping()
     {
         return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
     }
 
-    public static function changeToOneToManyField($columnName, $oneToManyParamss)
+    public function changeToOneToManyField($oneToManyParams)
     {
-        static::getFieldByColumn($columnName)->set('type', 'foreignKey');
+        $this->type = 'foreignKey';
 
-        if(is_array($oneToManyParamss['label'])) {
-            $oneToManyParamss['label'] = static::generateConcatenatedColumn(
-                $oneToManyParamss['label'],
-                $oneToManyParamss['alias']
+        if(is_array($oneToManyParams['label'])) {
+            $oneToManyParams['label'] = static::generateConcatenatedColumn(
+                $oneToManyParams['label'],
+                $oneToManyParams['alias']
             );
         }
 
-        static::getFieldByColumn($columnName)->set('oneToMany', $oneToManyParamss);
-        static::getFieldByColumn($columnName)->set('formatted', true);
+        $this->oneToMany = $oneToManyParams;
+        $this->formatted = true;
+//        static::getFieldByColumn($columnName)->set('oneToMany', $oneToManyParams);
+//        static::getFieldByColumn($columnName)->set('formatted', true);
 
     }
 

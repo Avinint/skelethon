@@ -17,7 +17,7 @@ abstract class Field
     protected $defaultValue;
 
     protected $maxLength;
-    protected $isPrimaryKey;
+    public $isPrimaryKey;
 
     /**
      * Field constructor.
@@ -45,9 +45,10 @@ abstract class Field
         $this->maxLength = isset($params['maxlength']) ? ($params['maxlength']) : null;
         //$this->step = isset($params['step']) ? ($params['step']) : null;
 
-        self::$collection[] = $this;
+       // self::$collection[] = $this;
     }
 
+    // TODO remove
     public static function getSelectFields()
     {
         return array_map(function ($field) {return $field->getSelectField();}, self::$collection);
@@ -71,13 +72,14 @@ abstract class Field
         return $name;
     }
 
+    // TODO Remove
     public static function getViewFields($showId = false)
     {
         return array_map(function (Field $field) {
             return $field->getViewField();}, array_filter(self::$collection, function ($field) use ($showId) {return !$field->isPrimaryKey || $showId;}));
     }
 
-    private function getViewField()
+    public function getViewField()
     {
         $properties =  [
             'field' => $this->getFormattedName(),
@@ -170,4 +172,6 @@ abstract class Field
     }
 
     abstract protected function handleAssociations(&$properties);
+
+    abstract public function getSelectField();
 }

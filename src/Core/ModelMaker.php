@@ -15,6 +15,7 @@ abstract class ModelMaker extends BaseMaker
     protected $module;
     private $table = [];
     private $mappingChamps = [];
+    protected $fields;
     protected $primaryKey;
     protected $idField;
 
@@ -58,11 +59,11 @@ abstract class ModelMaker extends BaseMaker
 
     private function askTableName()
     {
-        $prefix = $this->config->get('prefix');
-        if (!$prefix && $this->config->get('usesPrefix')) {
-            $this->askPrefix();
+        $prefix = $this->config->get('prefix') ?? null;
+        if (!isset($prefix) && ($this->config->get('usesPrefix') ?? true)) {
+            $prefix = $this->askPrefix();
         }
-        if ($prefix) {
+        if (isset($prefix)) {
             $tempTableName = $prefix . '_'. $this->name;
         } else {
             $tempTableName = $this->name;
@@ -82,8 +83,8 @@ abstract class ModelMaker extends BaseMaker
 
     public function generate()
     {
+        $this->fields = [];
         $this->alias =  $this->generateAlias($this->tableName);
-
         foreach ($this->table as $field => $data) {
             if ('PRI' === $data->Key) {
                 $this->primaryKey = $data->Field;
@@ -91,13 +92,10 @@ abstract class ModelMaker extends BaseMaker
             }
 
             $this->addField($data);
-
             $this->addModalTitle($data);
         }
 
         $this->askModifySpecificData();
-
-
     }
 
     private function addField($data)
@@ -116,7 +114,7 @@ abstract class ModelMaker extends BaseMaker
             $params['step'] = $data->step;
         }
 
-        new $this->fieldClass(
+        $this->fields[$data->Field] = new $this->fieldClass(
             $data->sType,
             $data->sChamp,
             $data->Field,
@@ -176,7 +174,7 @@ abstract class ModelMaker extends BaseMaker
 
     public function getAttributes() :string
     {
-        return implode(PHP_EOL, $this->fieldClass::getAttributes());
+        return  implode(PHP_EOL, array_map(function (Field $field) {return $field->getFieldMapping();}, $this->fields));
     }
 
     /**
@@ -200,7 +198,8 @@ abstract class ModelMaker extends BaseMaker
      */
     public function getSearchCriteria(): string
     {
-        return implode(PHP_EOL, $this->fieldClass::getSearchCriteria());
+        return implode(PHP_EOL, array_map(function (Field $field) {return $field->getSearchCriterion();}, $this->fields));
+//        return implode(PHP_EOL, $this->fieldClass::getSearchCriteria()); TODO remove
     }
 
     /**
@@ -208,7 +207,45 @@ abstract class ModelMaker extends BaseMaker
      */
     public function getValidationCriteria(): string
     {
-        return implode(PHP_EOL, $this->fieldClass::getValidationCriteria());
+        return implode(PHP_EOL, array_map(function (Field $field) {return $field->getValidationCriterion();}, $this->fields));
+//        return implode(PHP_EOL, $this->fieldClass::getValidationCriteria()); TODO remove
+    }
+
+    public function getViewFields($showIdField = false)
+    {
+        return array_map(function (Field $field) {
+            return $field->getViewField();}, array_filter($this->fields, function ($field) use ($showIdField) { return !$field->isPrimaryKey || $showIdField;}));
+//        return $this->fieldClass::getViewFields($showIdField); TODO remove
+    }
+
+    public function getViewFieldsByType($type)
+    {
+        return array_filter($this->getViewFields(), function ($field) use ($type) {
+            if (is_array($type)) {
+                return array_contains($field['type'], $type);
+            }
+            return $field['type'] === $type;
+        });
+    }
+
+    public function getViewFieldsExcludingType($type)
+    {
+        return array_filter($this->getViewFields(), function ($field) use ($type) {
+            if (is_array($type)) {
+                return !array_contains($field['type'], $type);
+            }
+            return $field['type'] !== $type;
+        });
+    }
+
+    /**
+     * @return array
+     */
+    public function getSqlSelectFields(): string
+    {
+        //$fields =  implode(','.PHP_EOL, $this->fieldClass::getSelectFields());
+//        return $fields;
+        return  implode(','.PHP_EOL, array_map(function (Field $field) {return $field->getSelectField();}, $this->fields));
     }
 
     /**
@@ -223,57 +260,25 @@ abstract class ModelMaker extends BaseMaker
     {
         $actionHeader = empty($this->actions) ? '' : str_repeat("\x20", 16).'<th class="centre">Actions</th>'.PHP_EOL;
 
-        return $actionHeader.implode(PHP_EOL, $this->fieldClass::getTableHeaders());
+        return  $actionHeader.implode(PHP_EOL, array_map(function (Field $field) {return $field->getTableHeader();}, $this->fields));
+
+        //return $actionHeader.implode(PHP_EOL, $this->fieldClass::getTableHeaders());
     }
+
 
     /**
      * @return string
      */
     public function getTableColumns()
     {
-        return implode(PHP_EOL, $this->fieldClass::getTableColumns());
+        return implode(PHP_EOL, array_map(function (Field $field) {return $field->getTableColumn();}, $this->fields));
+        //return implode(PHP_EOL, $this->fieldClass::getTableColumns());
     }
 
     public function getColumnNumber()
     {
         return count($this->table);
     }
-
-    public function getViewFields($showIdField = false)
-    {
-        return $this->fieldClass::getViewFields($showIdField);
-    }
-
-    public function getViewFieldsByType($type)
-    {
-        return array_filter($this->fieldClass::getViewFields(), function($field) use ($type) {
-            if (is_array($type)) {
-                return array_contains($field['type'], $type);
-            }
-            return $field['type'] === $type;
-        });
-    }
-
-    public function getViewFieldsExcludingType($type)
-    {
-        return array_filter($this->fieldClass::getViewFields(), function($field) use ($type) {
-            if (is_array($type)) {
-                return !array_contains($field['type'], $type);
-            }
-            return $field['type'] !== $type;
-        });
-    }
-
-    /**
-     * @return array
-     */
-    public function getSqlSelectFields(): string
-    {
-        $fields =  implode(','.PHP_EOL, $this->fieldClass::getSelectFields());
-
-        return $fields;
-    }
-
 
     public function setDbTable(): void
     {
@@ -341,7 +346,30 @@ abstract class ModelMaker extends BaseMaker
 
     private function askPrefix()
     {
-        $prefix = $this->prompt("Voulez vous utiliser un prefix dans votre projet?");
+        $prefix = null;
+        $reponse1 = $this->prompt("Voulez vous utiliser un prefix dans votre projet?", ['o', 'n']) === 'o';
+        if ($reponse1) {
+            $prefix = readline($this->msg('Entrer le préfix lié au projet:'));
+            $scope = $this->prompt("Voulez vous affecter le prefix au model (1), au module (2) ou au projet (3)?", ['1', '2', '3']);
+            if ($scope === '1')
+                $this->config->set('prefix', $prefix, $this->name);
+            elseif ($scope === '2')
+                $this->config->set('prefix', $prefix);
+            elseif ($scope === '3')
+                $this->config->set('prefix', $prefix, null, true);
+
+
+        }
+
+        return $prefix;
+    }
+
+    protected function getFieldByColumn($columnName)
+    {
+        if (!isset($this->fields[$columnName])) {
+            return false;
+        }
+        return $this->fields[$columnName];
     }
 
 }
