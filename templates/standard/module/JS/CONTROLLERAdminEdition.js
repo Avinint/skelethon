@@ -47,14 +47,7 @@ SELECT2EDIT
      * @return void
      */
     this.vFermeEditionEtRefreshListe = function(oReponseJSON, oParams)
-    {
-        if (oReponseJSON.bModif === true) {
-            var oParamsConsultation = {
-                aVariables: [oReponseJSON.oElement.nIdElement]
-            };
-            this.vExecuteAction('', 'mODULE', 'btn_ouverture_consultation_TABLE', oParamsConsultation);
-        }
-
+    {CLOSECONSULTATIONMODAL
         this.vChargeListe('', $('.liste_TABLE'));
         vFermeCalque('modal_calque_edition_TABLE');
     };

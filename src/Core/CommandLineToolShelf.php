@@ -116,12 +116,25 @@ class CommandLineToolShelf
 
     protected function snakize($name = '')
     {
-        return strtolower(str_replace(['-', ' '], '_', $name));
+        if (strpos($name, '_')) {
+            return strtolower(str_replace(['-', ' '], '_', $name));
+        } else {
+            return strtolower (preg_replace_callback ( '/([a-z])([A-Z])/', function ($match) {
+                return $match[1] . "_" . $match[2] ;
+            }, $name  ));
+        }
     }
 
     protected function urlize($name = '', $noHyphen = false)
     {
         $replace = $noHyphen ? '' : '-';
-        return strtolower(str_replace(['_', ' '], $replace, $name));
+
+        if (strpos($name, '_')) {
+            return strtolower(str_replace(['_', ' '], $replace, $name));
+        } else {
+            return strtolower (preg_replace_callback ( '/([a-z])([A-Z])/', function ($match) {
+                return $match[1] . "-" . $match[2] ;
+            }, $name  ));
+        }
     }
 }

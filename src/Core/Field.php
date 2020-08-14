@@ -72,13 +72,6 @@ abstract class Field
         return $name;
     }
 
-    // TODO Remove
-    public static function getViewFields($showId = false)
-    {
-        return array_map(function (Field $field) {
-            return $field->getViewField();}, array_filter(self::$collection, function ($field) use ($showId) {return !$field->isPrimaryKey || $showId;}));
-    }
-
     public function getViewField()
     {
         $properties =  [
@@ -141,7 +134,12 @@ abstract class Field
 
     public function isDate()
     {
-        return array_contains($this->type, array('date', 'datetime'));
+        return array_contains($this->type, array('date', 'datetime', 'time'));
+    }
+
+    public function isTime()
+    {
+        return array_contains($this->type, array('datetime', 'time'));
     }
 
     public function isDateOrEnum()

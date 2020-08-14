@@ -190,13 +190,6 @@ INSERTVALUES
     {
         $bRetour = false;
 
-        // Mise à jour de l'utilisateur permettant de se connecter.
-        $bSucces = parent::bUpdate();
-
-        if ($bSucces === false) {
-            return false;
-        }
-
         $sRequete = '
 			UPDATE TABLE SET 
 EDITCHAMPS

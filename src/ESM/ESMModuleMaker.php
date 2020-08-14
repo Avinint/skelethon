@@ -82,6 +82,6 @@ class ESMModuleMaker extends E2DModuleMaker
      */
     protected function generateControllerIntegerField($field, $fieldTemplatePath): string
     {
-        return str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[3]);
+        return str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[5]);
     }
 }

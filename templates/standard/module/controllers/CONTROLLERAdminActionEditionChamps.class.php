@@ -1,3 +1,5 @@
             'COLUMN' => $_REQUEST['NAME'],
             'COLUMN' => $this->sGetDateFormatUniversel($_REQUEST['NAME'], 'Y-m-d'),
+            'COLUMN' => $this->sGetDateFormatUniversel($_REQUEST['NAME'], 'Y-m-d h:i:s'),
+            'COLUMN' => $this->sGetDateFormatUniversel($_REQUEST['NAME'], 'h:i:s'),
             'COLUMN' => str_replace(',', '.', $_REQUEST['FIELD']),

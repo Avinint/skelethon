@@ -29,8 +29,9 @@ class E2DModelMaker extends ModelMaker
     public function getTableHeaders()
     {
         $actionHeader = empty($this->actions) ? '' : str_repeat("\x20", 16).'<th class="centre">Actions</th>'.PHP_EOL;
+        return  $actionHeader.implode(PHP_EOL, array_map(function (Field $field) {return $field->getTableHeader();}, $this->fields));
 
-        return $actionHeader.implode(PHP_EOL, Field::getTableHeaders());
+        //return $actionHeader.implode(PHP_EOL, $this->fieldClass::getTableHeaders());
     }
 
     /**
@@ -150,10 +151,9 @@ class E2DModelMaker extends ModelMaker
             
             $concat = count($displayFields) > 1;
 
-            $concatAlias = '';
+            $childTableAlias = $this->createChildTableAlias($childTable);
             if ($concat) {
-                $concatAlias = 's'. implode("" , array_map([$this, 'pascalize'], $displayFields));
-//                $displayField = "CONCAT_WS(\\' \\', ".implode (", ", $displayFields).')';
+                $childTableAlias = 's'. implode("" , array_map([$this, 'pascalize'], $displayFields));
                 $displayField = $displayFields;
             } else {
                 $displayField = array_shift($displayFields);
@@ -165,13 +165,22 @@ class E2DModelMaker extends ModelMaker
 
             if ($primaryKeyExists) {
 
-                return ['table' => $childTable, 'pk' => $field['column'], 'label' => $displayField, 'alias' => $alias, 'concatAlias' => $concatAlias,  'id' => $idField];
+                return ['table' => $childTable, 'pk' => $field['column'], 'label' => $displayField, 'alias' => $alias, 'childTableAlias' => $childTableAlias,  'id' => $idField];
             } else {
                 return false;
             }
         }
 
         return false;
+    }
+
+    public function createChildTableAlias($tableName)
+    {
+        $prefix = $this->config->get('prefix') ?? '';
+        if ($prefix)
+            $tableName = str_replace($prefix.'_' , '', $tableName);
+
+        return 's'. $this->pascalize($tableName);
     }
 
     /**

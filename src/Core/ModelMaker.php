@@ -218,6 +218,19 @@ abstract class ModelMaker extends BaseMaker
 //        return $this->fieldClass::getViewFields($showIdField); TODO remove
     }
 
+    // TODO rendre liste de champs parametrables
+    public function getInsertFields()
+    {
+        return array_map(function (Field $field) {
+            return $field;}, array_filter($this->fields, function ($field)  { return !$field->isPrimaryKey;}));
+    }
+
+    // TODO rendre liste de champs parametrrables independamment de getInsertFields
+    public function getUpdateFields()
+    {
+        return $this->getInsertFields();
+    }
+
     public function getViewFieldsByType($type)
     {
         return array_filter($this->getViewFields(), function ($field) use ($type) {
@@ -254,15 +267,6 @@ abstract class ModelMaker extends BaseMaker
     public function getAlias()
     {
         return $this->alias;
-    }
-
-    public function getTableHeaders()
-    {
-        $actionHeader = empty($this->actions) ? '' : str_repeat("\x20", 16).'<th class="centre">Actions</th>'.PHP_EOL;
-
-        return  $actionHeader.implode(PHP_EOL, array_map(function (Field $field) {return $field->getTableHeader();}, $this->fields));
-
-        //return $actionHeader.implode(PHP_EOL, $this->fieldClass::getTableHeaders());
     }
 
 
