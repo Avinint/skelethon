@@ -1,5 +1,5 @@
 json_suppression_TABLE:
-    reecriture: admin/mODULE/TABLE/(\d+)/suppression.json
+    reecriture: admin/mODULE/mODEL/(\d+)/suppression.json
     route:
         zone: admin
         module: mODULE

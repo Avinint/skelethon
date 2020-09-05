@@ -1,5 +1,5 @@
 html_edition_TABLE:
-    reecriture: admin/mODULE/TABLE/edition.html
+    reecriture: admin/mODULE/mODEL/edition.html
     route:
         zone: admin
         module: mODULE
@@ -7,7 +7,7 @@ html_edition_TABLE:
         mode: edition_TABLE
 
 json_dynamisation_edition_TABLE:
-    reecriture: admin/mODULE/TABLE/(\d+)/edition.json
+    reecriture: admin/mODULE/mODEL/(\d+)/edition.json
     route:
         zone: admin
         module: mODULE
@@ -17,7 +17,7 @@ json_dynamisation_edition_TABLE:
             - nIdElement
 
 json_enregistre_edition_TABLE:
-    reecriture: admin/mODULE/TABLE/(\d+)/enregistre-edition.json
+    reecriture: admin/mODULE/mODEL/(\d+)/enregistre-edition.json
     route:
         zone: admin
         module: mODULE

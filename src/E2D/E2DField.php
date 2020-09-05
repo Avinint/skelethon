@@ -8,9 +8,9 @@ class E2DField extends Field
 {
     protected $formatted;
     
-    public function __construct($type, $name, $columnName, $defaultValue, $alias, $params = [])
+    public function __construct($type, $name, $columnName, $defaultValue, $alias, $model, $params = [])
     {
-        parent::__construct($type, $name, $columnName, $defaultValue, $alias, $params);
+        parent::__construct($type, $name, $columnName, $defaultValue, $alias, $model, $params);
 
         $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'time', 'double', 'bool', 'enum', 'foreignKey'));
     }
@@ -64,10 +64,10 @@ class E2DField extends Field
             $lines[] = "$indent(CASE WHEN $this->alias.$this->column = 1 THEN \'oui\' ELSE \'non\' END) AS {$this->getFormattedName()}";
         } elseif ("enum" === $this->type) {
             $module = self::$module;
-            $model = self::$model;
-            $lines[] = $indent."' . \$this->sFormateValeurChampConf('$module', '$model', '$this->column', '{$this->getFormattedName()}') . '";
+            $lines[] = $indent."IFNULL(' . \$this->sGetClauseCase('SAR.etat', \$this->szGetParametreModule('$module', 'aListe-{$this->model->getName()}-$this->column')) . ', \'\') {$this->getFormattedName()}";
+            //$lines[] = $indent."' . \$this->sFormateValeurChampConf('$module', '$this->model', '$this->column', '{$this->getFormattedName()}') . '";
         } elseif ('foreignKey' === $this->type) {
-            $strategy = $this->oneToMany['strategy'] ?? 'joins';
+            $strategy = $this->manyToOne['strategy'] ?? 'joins';
             if ($strategy === 'nested') {
                 $template = '(
                         SELECT LABEL
@@ -75,18 +75,18 @@ class E2DField extends Field
                         WHERE PK = ALIAS.PK
                     ) AS FIELD';
             } else {
-                if ($this->oneToMany['concat']) {
-                   ;$template = 'LABEL CONCATALIAS';
-                } else {
+//                if ($this->manyToOne['concat']) {
+//                   ;$template = 'LABEL CONCATALIAS';
+//                } else {
 
                     $template = 'FKALIAS.LABEL CONCATALIAS';
-                }
+//                }
             }
 
 
-            //$alias = $this->oneToMany['alias'] !== '' ?  $this->oneToMany['alias'].'.' : '';
+            //$alias = $this->manyToOne['alias'] !== '' ?  $this->manyToOne['alias'].'.' : '';
             $lines[] = str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
-                [$this->oneToMany['alias'], $this->oneToMany['label'], $this->oneToMany['childTableAlias'], $this->oneToMany['table'], $this->oneToMany['pk'], $this->alias, $this->getFormattedName()],
+                [$this->manyToOne['alias'], $this->manyToOne['label'], $this->manyToOne['childTableAlias'], $this->manyToOne['table'], $this->manyToOne['pk'], $this->alias, $this->getFormattedName()],
                 $indent.$template);
         }
 
@@ -209,15 +209,12 @@ class E2DField extends Field
         return $sCritere . str_repeat("\x20", 8) . ');' . PHP_EOL;
     }
 
-    /**
-     * @param $data
-     */
     public function getTableHeader()
     {
         return str_repeat("\x20", 16).'<th id="th_'.$this->column.'" class="tri">'.$this->label.'</th>';
     }
 
-   public function getTableColumn()
+    public function getTableColumn()
     {
         $alignment = $this->getAlignmentFromType();
 
@@ -234,18 +231,18 @@ class E2DField extends Field
         return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
     }
 
-    public function changeToOneToManyField($oneToManyParams)
+    public function changeToManyToOneField($manyToOneParams)
     {
         $this->type = 'foreignKey';
-        if(is_array($oneToManyParams['label'])) {
-            $oneToManyParams['label'] = static::generateConcatenatedColumn(
-                $oneToManyParams['label'],
-                $oneToManyParams['alias']
+        if(is_array($manyToOneParams['label'])) {
+            $manyToOneParams['label'] = static::generateConcatenatedColumn(
+                $manyToOneParams['label'],
+                $manyToOneParams['alias']
             );
-            $oneToManyParams['concat'] = true;
+            $manyToOneParams['concat'] = true;
         }
 
-        $this->oneToMany = $oneToManyParams;
+        $this->manyToOne = $manyToOneParams;
         $this->formatted = true;
 
     }
@@ -256,8 +253,8 @@ class E2DField extends Field
      */
     protected function handleAssociations(&$properties)
     {
-        if (isset($this->oneToMany)) {
-            $properties['oneToMany'] = $this->oneToMany;
+        if (isset($this->manyToOne)) {
+            $properties['manyToOne'] = $this->manyToOne;
         }
     }
 

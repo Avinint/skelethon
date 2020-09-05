@@ -6,7 +6,7 @@ abstract class Field
 {
     protected static $collection = [];
     public static $module;
-    public static $model;
+    public $model;
 
     protected $type;
     protected $name;
@@ -27,7 +27,7 @@ abstract class Field
      * @param $formattedName
      * @param $defaultValue
      */
-    public function __construct($type, $name, $columnName, $defaultValue, $alias, $params = [])
+    public function __construct($type, $name, $columnName, $defaultValue, $alias, $model, $params = [])
     {
         $this->type = $type;
         $this->name = $name;
@@ -35,6 +35,7 @@ abstract class Field
         $this->defaultValue = $defaultValue;
         $this->alias = $alias;
         $this->label = $this->labelize($columnName);
+        $this->model = $model;
 
         if ('enum' === $type) {
             $this->enum = $this->parseEnumValues($params['enum']);

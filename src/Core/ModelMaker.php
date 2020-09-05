@@ -32,7 +32,8 @@ abstract class ModelMaker extends BaseMaker
         $this->creationMode = $mode;
         $this->fieldClass = $fieldClass;
         $this->module = Field::$module = $module;
-        $this->name = Field::$model = $this->askName($name);
+
+        $this->name = $mode === 'module' ? $module : $this->askName($name);
 
         $this->setClassName($this->name);
 
@@ -46,12 +47,12 @@ abstract class ModelMaker extends BaseMaker
         echo PHP_EOL;
         if ($name === '') {
             $name = readline($this->msg('Veuillez renseigner en snake_case le nom de la '.$this->highlight('table').' correspondant au modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
-                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').''));
+                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').'')) ? : $this->module;
         }
 
-        if ($name === '') {
-            $name = $this->module->getName();
-        }
+    //        if ($name === '') {
+    //            $name = $this->module;
+    //        }
 
         return $name;
     }
@@ -60,9 +61,10 @@ abstract class ModelMaker extends BaseMaker
     private function askTableName()
     {
         $prefix = $this->config->get('prefix') ?? null;
-        if (!isset($prefix) && ($this->config->get('usesPrefix') ?? true)) {
+        if (!isset($prefix) && ($this->config->get('prefix') ?? true)) {
             $prefix = $this->askPrefix();
         }
+
         if (isset($prefix)) {
             $tempTableName = $prefix . '_'. $this->name;
         } else {
@@ -120,6 +122,7 @@ abstract class ModelMaker extends BaseMaker
             $data->Field,
             $data->Default,
             $this->alias,
+            $this,
             $params
         );
     }
@@ -354,14 +357,11 @@ abstract class ModelMaker extends BaseMaker
         $reponse1 = $this->prompt("Voulez vous utiliser un prefix dans votre projet?", ['o', 'n']) === 'o';
         if ($reponse1) {
             $prefix = readline($this->msg('Entrer le préfix lié au projet:'));
-            $scope = $this->prompt("Voulez vous affecter le prefix au model (1), au module (2) ou au projet (3)?", ['1', '2', '3']);
+            $scope = $this->prompt("Voulez vous affecter le prefix au model (1), au module (2) ?", ['1', '2']);
             if ($scope === '1')
                 $this->config->set('prefix', $prefix, $this->name);
             elseif ($scope === '2')
                 $this->config->set('prefix', $prefix);
-            elseif ($scope === '3')
-                $this->config->set('prefix', $prefix, null, true);
-
 
         }
 

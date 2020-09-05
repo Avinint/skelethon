@@ -1,5 +1,5 @@
 json_dynamisation_recherche_TABLE:
-    reecriture:     admin/mODULE/TABLE/dynamisation-recherche.json
+    reecriture:     admin/mODULE/mODEL/dynamisation-recherche.json
     route:
         zone:       admin
         module:     mODULE

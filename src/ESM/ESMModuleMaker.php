@@ -13,22 +13,12 @@ class ESMModuleMaker extends E2DModuleMaker
         return  'esm';
     }
 
-
     /**
      * Vérifie qu'un sous menu correspondant au module existe dans menu.yml et soit conforme
      * Sinon on ajoute le sous-menu idoine
      */
-    protected function addMenu(): void
+    protected function addMenuItem(): void
     {
-
-        if (isset($this->config['updateMenu']) && !$this->config['updateMenu']) {
-            return;
-        }
-
-        if (!file_exists($this->menuPath)) {
-            return;
-        }
-
         $menu = Spyc::YAMLLoad($this->menuPath);
         $subMenu = $this->getSubMenu();
 
@@ -45,33 +35,6 @@ class ESMModuleMaker extends E2DModuleMaker
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
             $this->createFile($$this->menuPath, $menu, true);
         }
-    }
-
-    /**
-     * @param string $templatePath
-     * @return string|string[]
-     */
-    protected function generateModel(string $templatePath)
-    {
-        $text = '';
-        if (file_exists($templatePath = $this->getTrueTemplatePath($templatePath))) {
-            $text = file_get_contents($templatePath);
-        }
-
-        $joinTemplate = file_get_contents($this->getTrueTemplatePath(str_replace_first('.', 'Joins.', $templatePath)));
-        $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', 'LEFTJOINS', '//RECHERCHE', '//VALIDATION', 'EDITCHAMPS', 'INSERTCOLUMNS', 'INSERTVALUES'], [
-            $this->namespaceName,
-            $this->model->getClassName(),
-            $this->model->getTableName(),
-            $this->model->getAlias(),
-            $this->model->getPrimaryKey(), $this->model->getIdField(),
-            $this->model->getAttributes(), $this->model->getModalTitle(),
-            $this->model->getSqlSelectFields(), $this->model->getJoins($joinTemplate),
-            $this->model->getSearchCriteria(),
-            $this->model->getValidationCriteria(), $this->model->getEditFields(),
-            $this->model->getInsertColumns(),$this->model->getInsertValues()], $text);
-
-        return $text;
     }
 
     /**

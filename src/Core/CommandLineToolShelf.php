@@ -6,12 +6,12 @@ namespace Core;
 
 class CommandLineToolShelf
 {
-    const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[1;32m", 'White' => "\e[1;37m", 'Blue' => "\e[1;36m"];
+    const Color = ['Red' => "\e[1;31m", 'Yellow' => "\e[1;33m", 'Green' => "\e[1;32m", 'White' => "\e[1;37m", 'Blue' => "\e[1;36m", 'Orange' => "\e[38;5;208m"];
 
     protected static $verbose;
 
     public static function msg(string $text, $type = '', $hasDisplayYesNo = false, $verboseCondition = true, $important = false)
-    {;
+    {
         if ((self::$verbose && $verboseCondition) || empty($type) || $important) {
             $displayYesNo = $hasDisplayYesNo ? ' ['.static::highlight('O', 'success').'/'.static::highlight('N', 'error').']' : '';
             echo ($type? static::frame(strtoupper($type), $type).' ' : '')  . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
@@ -39,6 +39,9 @@ class CommandLineToolShelf
                 break;
             case 'info':
                 $color =  self::Color['Blue'];
+                break;
+            case 'important':
+                $color =  self::Color['Orange'];
                 break;
             default:
                 $color = self::Color['White'];

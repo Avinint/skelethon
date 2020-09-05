@@ -27,9 +27,6 @@ class ModuleMakerFactory
         }
 
         $config = new Config($moduleName, $modelName);
-//        $moduleConfig = new Config($moduleName);
-
-
 
         switch($action)
         {
@@ -67,13 +64,13 @@ class ModuleMakerFactory
                 break;
 
 //            case 'select:ajax':
-//                $moduleMaker::create($module, $model, 'AddOneToMany');
+//                $moduleMaker::create($module, $model, 'AddManyToOne');
 //                break;
         }
 
     }
 
-    public function buildModel($moduleName, $modelName,$fieldClass,  $creationMode, $config)
+    public function buildModel($fieldClass, $moduleName, $modelName, $creationMode, $config)
     {
         $params = [
             'config' => $config,
@@ -81,10 +78,12 @@ class ModuleMakerFactory
         ];
         $params['applyChoicesForAllModules'] = !isset($config['memorizeChoices']) || $config['memorizeChoices'];
 
-        /**
-         * @var E2DModelMaker $model
-         */
-        $model =  new $this->modelMaker($moduleName, $modelName, $fieldClass, $creationMode, $params);
+        if ($config->askLegacy($modelName)) {
+            $modelMakerLegacy = $this->modelMaker. 'Legacy';
+            $model = new $modelMakerLegacy($fieldClass, $moduleName, $modelName . 'Legacy', $creationMode, $params);
+        } else {
+            $model = new $this->modelMaker($fieldClass, $moduleName, $modelName, $creationMode, $params);
+        }
 
         $model->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
         $model->setDbTable();

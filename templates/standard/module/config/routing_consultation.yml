@@ -1,5 +1,5 @@
 html_consultation_TABLE:
-    reecriture: admin/mODULE/TABLE/consultation.html
+    reecriture: admin/mODULE/mODEL/consultation.html
     route:
         zone: admin
         module: mODULE
@@ -7,7 +7,7 @@ html_consultation_TABLE:
         mode: consultation_TABLE
 
 json_dynamisation_consultation_TABLE:
-    reecriture: admin/mODULE/TABLE/(\d+)/dynamisation-consultation.json
+    reecriture: admin/mODULE/mODEL/(\d+)/dynamisation-consultation.json
     route:
         zone: admin
         module: mODULE

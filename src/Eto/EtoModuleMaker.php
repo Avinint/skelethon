@@ -18,30 +18,31 @@ class EtoModuleMaker extends E2DModuleMaker
     protected function generateListView(string $templatePath)
     {
         $actionBarText = '';
-        $actionText = str_repeat("\x20", 16) . '<td class="szActions">' . PHP_EOL;
+        $actionText = [str_repeat("\x20", 20) . '<td class="szActions">'];
 
-        if (array_contains('edition', $this->model->getActions())) {
+        if (array_contains_array(['edition', 'consultation'], $this->model->getActions())) {
             $actionBarTemplatePath = $this->getTrueTemplatePath($templatePath, '_actionbar.');
             $actionBarText = file_get_contents($actionBarTemplatePath);
         }
 
         if (array_contains('consultation', $this->model->getActions())) {
             $consultationTemplatePath = $this->getTrueTemplatePath($templatePath, '_consultation.');
-            $actionText .= file_get_contents($consultationTemplatePath);
+            $actionText[] = file_get_contents($consultationTemplatePath);
         } else {
 
             if (array_contains('edition', $this->model->getActions())) {
                 $editionTemplatePath = $this->getTrueTemplatePath($templatePath, '_edition.');
-                $actionText .= file_get_contents($editionTemplatePath);
+                $actionText[] .= file_get_contents($editionTemplatePath);
             }
 
             if (array_contains('suppression', $this->model->getActions())) {
                 $suppressionTemplatePath = $this->getTrueTemplatePath($templatePath, '_suppression.');
-                $actionText .= file_get_contents($suppressionTemplatePath);
+                $actionText[] .= file_get_contents($suppressionTemplatePath);
             }
         }
 
-        $actionText .= PHP_EOL . str_repeat("\x20", 16) . '</td>';
+        $actionText[] = str_repeat("\x20", 20) . '</td>';
+        $actionText = implode(PHP_EOL, $actionText);
         $callbackLigne = '';
         if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY)) {
             $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";

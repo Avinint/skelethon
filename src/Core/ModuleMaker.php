@@ -18,6 +18,7 @@ abstract class ModuleMaker extends BaseMaker
     {
         parent::__construct($fileManager);
         $this->setConfig($params);
+
         $this->setModulePath($params['modulePath'] ?? null);
 
         static::$verbose = $this->config->get('verbose') ?? true;
@@ -149,7 +150,7 @@ abstract class ModuleMaker extends BaseMaker
 
         $path = $this->getTrueFilePath($path);
        if (!array_contains('consultation', $this->model->getActions()) &&  strpos($templatePath, 'consultation_TABLE') !== false) {
-           return ['No consultation template file created', 'success'];
+           return ['Pas de vue créé pour la consultation', 'important'];
        }
 
         if ($this->fileShouldNotbeCreated($path)) {
@@ -273,19 +274,6 @@ abstract class ModuleMaker extends BaseMaker
         }
 
         //return $enumSearchLines;
-    }
-
-    /**
-     * @param $field
-     * @param array $exceptions
-     * @param array $defaults
-     * @return array
-     */
-    protected function handleControllerBooleanField($field, array &$exceptions, array &$defaults)
-    {
-        $exceptions['aBooleens'][] = $field['field'];
-        $defaultValue = isset($field['default']) ? $field['default'] : 'nc';
-        $defaults[] = str_repeat("\x20", 8) . "\$aRetour['aRadios']['{$field['name']}'] = '$defaultValue';";
     }
 
     /**

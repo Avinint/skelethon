@@ -68,10 +68,10 @@ class E2DModelMaker extends ModelMaker
         return  $useSelect2;
     }
 
-    private function askAddOneToManyField()
+    private function askAddManyToOneField()
     {
         $this->hasOneRelations = $this->config->get('hasOneRelations', $this->name);
-        $foreignKeys = $this->config->get('oneToMany', $this->name) ?? [];
+        $foreignKeys = $this->config->get('manyToOne', $this->name) ?? [];
         $potentialFields = $this->getPotentialFields($foreignKeys);
 
         if ($this->hasOneRelations ?? true) {
@@ -86,12 +86,12 @@ class E2DModelMaker extends ModelMaker
 
             if ($this->hasOneRelations) {
                 if ($gotPotential) {
-                    $this->convertToOneToManyFields($potentialFields);
+                    $this->convertToManyToOneFields($potentialFields);
                 }
 
                 foreach ($foreignKeys as $column => $fieldData ) {
-                    $this->getFieldByColumn($column)->changeToOneToManyField($fieldData);
-                    //$this->fieldClass::changeToOneToManyField($column, $fieldData); TODO remove
+                    $this->getFieldByColumn($column)->changeToManyToOneField($fieldData);
+                    //$this->fieldClass::changeToManyToOneField($column, $fieldData); TODO remove
                 }
             }
 
@@ -118,7 +118,7 @@ class E2DModelMaker extends ModelMaker
         }
     }
 
-    private function getDataForOneToManyField($field)
+    private function getDataForManyToOneField($field)
     {
         $childTable = str_replace('id_', '', $field['column']);
         $tables = $this->databaseAccess->getSimilarTableList($childTable);
@@ -153,7 +153,7 @@ class E2DModelMaker extends ModelMaker
 
             $childTableAlias = $this->createChildTableAlias($childTable);
             if ($concat) {
-                $childTableAlias = 's'. implode("" , array_map([$this, 'pascalize'], $displayFields));
+                //$childTableAlias = 's'. implode("" , array_map([$this, 'pascalize'], $displayFields));
                 $displayField = $displayFields;
             } else {
                 $displayField = array_shift($displayFields);
@@ -199,7 +199,7 @@ class E2DModelMaker extends ModelMaker
 
     protected function askModifySpecificData()
     {
-        $this->askAddOneToManyField();
+        $this->askAddManyToOneField();
     }
 
     /**
@@ -213,23 +213,24 @@ class E2DModelMaker extends ModelMaker
         $potentialFields = array_filter($this->getViewFieldsByType(['int', 'smallint', 'tinyint']), function ($field) use ($filterIdSuffixes, $foreignKeys) {
             return (preg_match('/^id_[a-z]*/', $field['column']) || $filterIdSuffixes === false) && !array_key_exists($field['column'], $foreignKeys);
         });
+
         return $potentialFields;
     }
 
     /**
      * @param $field
-     * @param array $OneToManyFieldData
+     * @param array $manyToOneFieldData
      */
-    private function generateOneToManyField($fieldColumn, array $OneToManyFieldData): void
+    private function generateManyToOneField($fieldColumn, array $manyToOneFieldData): void
     {
-        $this->getFieldByColumn($fieldColumn)->changeToOneToManyField($OneToManyFieldData);
-        //$this->fieldClass::changeToOneToManyField($fieldColumn, $OneToManyFieldData); TODD remove
-        if (!$this->config->has('oneToMany', $this->name)) {
-            $this->config->set('oneToMany', [], $this->name);
+        $this->getFieldByColumn($fieldColumn)->changeToManyToOneField($manyToOneFieldData);
+        //$this->fieldClass::changeToManyToOneField($fieldColumn, $manyToOneFieldData); TODD remove
+        if (!$this->config->has('manyToOne', $this->name)) {
+            $this->config->set('manyToOne', [], $this->name);
         }
         //$this->config->set('hasOneRelations', true);
 
-        $this->config->addTo('oneToMany', $fieldColumn, $OneToManyFieldData , $this->name);
+        $this->config->addTo('manyToOne', $fieldColumn, $manyToOneFieldData , $this->name);
     }
 
     /**
@@ -282,19 +283,19 @@ class E2DModelMaker extends ModelMaker
      * @param array $potentialFields
      *
      */
-    private function convertToOneToManyFields(array $potentialFields)
+    private function convertToManyToOneFields(array $potentialFields)
     {
         $listNames = implode('', array_map(function ($field) {
             return $this->highlight($field['name'], 'info') . PHP_EOL;
         }, $potentialFields));
         $askConvertAll = $this->prompt('Voulez-vous convertir tous les champs suivants :' . PHP_EOL . $listNames . 'en Select Ajax ?', ['o', 'n']) === 'o';
         foreach ($potentialFields as &$field) {
-            $OneToManyFieldData = $this->getDataForOneToManyField($field);
-            if ($OneToManyFieldData === false) {
+            $manyToOneFieldData = $this->getDataForManyToOneField($field);
+            if ($manyToOneFieldData === false) {
                 $this->msg('Champ invalide comme clé étrangère', 'error');
             } else {
                 if ($askConvertAll || $this->prompt('Voulez-vous convertir le champ ' . $this->highlight($field['name']) . ' en Select Ajax ?', ['o', 'n']) === 'o') {
-                    $this->generateOneToManyField($field['column'], $OneToManyFieldData);
+                    $this->generateManyToOneField($field['column'], $manyToOneFieldData);
                 }
             }
         }
@@ -329,7 +330,7 @@ class E2DModelMaker extends ModelMaker
     {
         $joinText = '';
 //        $joins = [];
-        $joinList = $this->config->get('oneToMany');
+        $joinList = $this->config->get('manyToOne');
 
         if (!empty($joinList)) {
             $joins = array_map(function($join) use ($template) {

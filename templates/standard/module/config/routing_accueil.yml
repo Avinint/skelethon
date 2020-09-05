@@ -1,5 +1,5 @@
 html_accueil_TABLE:
-    reecriture: admin/mODULE/TABLE/accueil.html
+    reecriture: admin/mODULE/mODEL/accueil.html
     route:
         zone: admin
         module: mODULE
@@ -7,7 +7,7 @@ html_accueil_TABLE:
         mode: accueil_TABLE
 
 json_recherche_TABLE:
-    reecriture: admin/mODULE/TABLE/recherche.json
+    reecriture: admin/mODULE/mODEL/recherche.json
     route:
         zone: admin
         module: mODULE

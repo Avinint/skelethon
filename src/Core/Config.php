@@ -7,7 +7,7 @@ use Countable;
 use http\Exception\InvalidArgumentException;
 use \Spyc ;
 
-class Config implements ArrayAccess, Countable
+class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 {
 
     private $path;
@@ -192,14 +192,18 @@ class Config implements ArrayAccess, Countable
      */
     public function get(string $field, string $model = null)
     {
+        // Quand on set le model de façon explicite
+        // celui ci prévaut sur l'ordre canonique : app / module / model
         if (isset($model)) {
-            return $this->getValueFromModelConfig($field);
-        }
-        if (isset($this->data[$field])) {
-            return $this->data[$field];
+            return $this->getValueFromModelConfig($field, $model);
         }
 
-        return $this->getValueFromModuleConfig($field);
+        $result = $this->data[$field] ?? $this->getValueFromModuleConfig($field) ?? $this->getValueFromModelConfig($field);
+        if (isset($result)) {
+            return $result;
+        }
+
+        return null;
     }
 
     /**
@@ -211,6 +215,7 @@ class Config implements ArrayAccess, Countable
         if (isset($this->data['modules'][$this->module][$field])) {
             return $this->data['modules'][$this->module][$field];
         }
+
         return $this->getValueFromModelConfig($field);
     }
 
@@ -218,10 +223,11 @@ class Config implements ArrayAccess, Countable
      * @param string $field
      * @return mixed|null
      */
-    private function getValueFromModelConfig(string $field)
+    private function getValueFromModelConfig(string $field, $model = null)
     {
-        if (isset($this->currentModel) && isset($this->data['modules'][$this->module]['models'][$this->currentModel][$field])) {
-            return $this->data['modules'][$this->module]['models'][$this->currentModel][$field];
+        $currentModel = $model ?? $this->currentModel;
+        if (isset($currentModel) && isset($this->data['modules'][$this->module]['models'][$currentModel][$field])) {
+            return $this->data['modules'][$this->module]['models'][$currentModel][$field];
         }
 
         return null;
@@ -229,11 +235,12 @@ class Config implements ArrayAccess, Countable
 
     public function has(string $field, $model = null)
     {
-        if (isset($model)) {
-            $this->getValueFromModelConfig($field);
-        }
 
-        return $this->get($field) !== null;
+        $value = $this->getValueFromModelConfig($field, $model);
+
+
+
+        return $this->get($field, $model) !== null;
     }
 
     /**
@@ -266,5 +273,16 @@ class Config implements ArrayAccess, Countable
         $data['modules'][$this->module] = $moduleData;
 
         return $data;
+    }
+
+    public function askLegacy($model)
+    {
+        if ($this->has('legacy', $model)) {
+            return $this->get('legacy', $model);
+        } else {
+            $hasLegacyCode = $this->prompt('Voulez vous générer du code legacy ?', ['o', 'n']) === 'o';
+            $this->set('legacy', $hasLegacyCode, $model);
+            return $this->get('legacy');
+        }
     }
 }

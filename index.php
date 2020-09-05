@@ -7,7 +7,7 @@ spl_autoload_register('autoloader');
 [$type, $arguments] = getArguments($argv);
 
 if ($type === 'eto')  {
-    new Core\ModuleMakerFactory($arguments, Eto\EtoModuleMaker::class, E2D\E2DModelMaker::class, E2D\E2DField::class, Eto\EtoDatabaseAccess::class);
+    new Core\ModuleMakerFactory($arguments, Eto\EtoModuleMaker::class, Eto\EtoModelMaker::class, Eto\EtoField::class, Eto\EtoDatabaseAccess::class);
 } elseif ($type === 'esm') {
     new Core\ModuleMakerFactory($arguments, ESM\ESMModuleMaker::class, ESM\ESMModelMaker::class, ESM\ESMField::class, E2D\E2DDatabaseAccess::class);
 } elseif ($type === 'e2d') {

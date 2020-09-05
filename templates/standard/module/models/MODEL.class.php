@@ -200,61 +200,32 @@ class MODEL extends Bdd
         return $bRetour;
     }
 
-     /**
-      * Suppression d'un élément.
-      *
-      * @return void
-      */
-     public function bDelete()
-     {
-     	$bRetour = false;
-
-     	$sRequete = '
-     		DELETE 
-     		FROM TABLE
-     		WHERE PK = '.$this->IDFIELD;
-
-     	// echo "<pre>$sRequete</pre>";
-     	// exit;
-
-     	$rLien = $this->rConnexion->query($sRequete);
-
-     	if ($rLien) {
-     		$bRetour = true;
-     		//$this->bSetLog('delete_TABLE', $this->IDFIELD);
-     	} else {
-     		$this->sMessagePDO = $this->rConnexion->sMessagePDO;
-     	}
-
-     	return $bRetour;
-     }
-
     /**
-     * Affiche un "case when" d'un champ afin de le formater à partir de conf.yml
-     *
-     * @param string $sModule
-     * @param string $sParam
-     * @param string $sNomChamp
-     * @param string $sNomChampFormate
-     * @return string
-     * @throws \ReflectionException
-     */
-    private function sFormateValeurChampConf(string $sModule, string $sClasse, string $sNomChamp, string $sNomChampFormate) : string
+    * Suppression d'un élément.
+    *
+    * @return void
+    */
+    public function bDelete()
     {
-        $aListeValeurs = $this->szGetParametreModule($sModule, 'aListe-'.$sClasse.'-'.$sNomChamp);
-        $sRequete =
-                    "(
-                        CASE";
+        $bRetour = false;
 
-                foreach( $aListeValeurs as $sValeur => $sLibelle) {
-                    $sRequete .=  "
-                            WHEN $sNomChamp = '$sValeur'
-                            THEN  '{$this->szTraduire($sLibelle)}'";
-                }
-                $sRequete .=  "
-                        END
-                    ) AS $sNomChampFormate";
+        $sRequete = '
+            DELETE 
+            FROM TABLE
+            WHERE PK = '.$this->IDFIELD;
 
-        return $sRequete;
+        // echo "<pre>$sRequete</pre>";
+        // exit;
+
+        $rLien = $this->rConnexion->query($sRequete);
+
+        if ($rLien) {
+            $bRetour = true;
+            //$this->bSetLog('delete_TABLE', $this->IDFIELD);
+        } else {
+            $this->sMessagePDO = $this->rConnexion->sMessagePDO;
+        }
+
+        return $bRetour;
     }
 }
