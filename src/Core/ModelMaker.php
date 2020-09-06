@@ -26,8 +26,8 @@ abstract class ModelMaker extends BaseMaker
 
     public function __construct($fieldClass, $module, $name, $mode, array $params = [], FileManager $fileManager = null)
     {
-        parent::__construct($fileManager);
         $this->setConfig($params);
+        parent::__construct($fileManager);
         static::$verbose = $this->config->get('verbose') ?? true;
         $this->creationMode = $mode;
         $this->fieldClass = $fieldClass;
@@ -153,7 +153,7 @@ abstract class ModelMaker extends BaseMaker
             array_unshift($actions, 'accueil');
 
             if (!empty($actions)) {
-                $this->saveChoiceInConfig('actions', $actions, $this->name);
+                $this->config->saveChoice('actions', $actions, $this->name);
             }
 
             return $actions;

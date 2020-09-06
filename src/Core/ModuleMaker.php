@@ -16,9 +16,8 @@ abstract class ModuleMaker extends BaseMaker
 
     public function __construct(string $name, ModelMaker $model, $creationMode = 'generate', $params = [], FileManager $fileManager = null)
     {
-        parent::__construct($fileManager);
         $this->setConfig($params);
-
+        parent::__construct($fileManager);
         $this->setModulePath($params['modulePath'] ?? null);
 
         static::$verbose = $this->config->get('verbose') ?? true;
@@ -219,74 +218,22 @@ abstract class ModuleMaker extends BaseMaker
         return $this->name;
     }
 
-    public function getNamespace()
+    public function getNamespaceName()
     {
         return $this->namespaceName;
     }
 
-    protected function askTemplate()
-    {
-        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
-
-        return $this->askConfig('template', $templates, 'askMultipleChoices', 'standard');
-    }
-
 
     /**
-     * @param $enumPath
-     * @param $enum
-     * @param array $allEnumEditLines
-     * @param array $allEnumSearchLines
-     * @param array $enumDefaults
-     * @return array
-     */
-    protected function handleControllerEnumField($enumPath, $enum, array &$allEnumEditLines, array &$allEnumSearchLines, array &$enumDefaults)
-    {
-        $enumLines = $enumSearchLines = file($enumPath);
-        $enumEditionLine = $enumLines[0];
-
-        if ($enum['default']) {
-            $enumSearchLines = $enumLines;
-            $enumDefault = $enumLines[2];
-        } else {
-            $enumSearchLines = [$enumLines[0]];
-        }
-
-        if ($this->model->usesSelect2) {
-            if ($enum['default']) {
-                $enumSearchLines = array_slice($enumLines, 0, 3);
-                $enumDefault = $enumLines[3];
-            } else {
-                $enumSearchLines = array_slice($enumLines, 0, 1);
-            }
-            if ($enum['default'] === null) {
-                $enum['default'] = '';
-            }
-        }
-
-        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
-        $replacements = [$enum['name'], $this->name, $this->model->getName(), $enum['column'], $enum['default']];
-
-        $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLine);
-        $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));
-        if ($enum['default']) {
-            $enumDefaults[] = str_replace($searches, $replacements, $enumDefault);
-        }
-
-        //return $enumSearchLines;
-    }
-
-    /**
-     * Modifie le nom du template pour generer le fichier,
-     * à surcharger en fonction du projet
+     * Modifie le chemin du template
+     * pour récupérer le chemin
+     * d'un fichier existant dans le projet,
+     * afin de le modifier
      *
      * @param string $path
      * @return string
      */
-    protected function getTrueFilePath(string $path) : string
-    {
-        return $path;
-    }
+    abstract protected function getTrueFilePath(string $path) : string;
 
     /**
      * @param bool $success

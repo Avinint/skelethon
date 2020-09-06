@@ -29,7 +29,8 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     public function setFileManager(?FileManager $fileManager): void
     {
         if ($fileManager === null) {
-            $this->fileManager = new FileManager();
+            $template = $this->askTemplate();
+            $this->fileManager = new FileManager($template);
         } else {
             $this->fileManager = $fileManager;
         }
@@ -41,6 +42,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         $this->module = $module;
         $this->currentModel = $model;
         $this->data = $this->getData();
+
         $this->setFileManager($fileManager);
     }
 
@@ -275,6 +277,55 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         return $data;
     }
 
+    /**
+     * L'application donne des choix aux utilisateurs, les réponses sont stockées en config,
+     * permet a l'application de ne pas redemander une information déja stockée
+     *
+     * @param string $key
+     * @param array $choices
+     * @param $function
+     * @param bool $defaultValue
+     * @param bool $multiple
+     * @return mixed
+     * @throws \Exception
+     */
+    protected function askConfig(string $key, array $choices, $function, $defaultValue = false, $model = '')
+    {
+        if (count($choices) === 1) {
+            return $choices[0];
+        } elseif (count($choices) > 1) {
+            if ($this->has($key) && array_contains($this->get($key), $choices)) {
+                $selection = $this->get($key);
+            } else {
+                $selection = $this->$function($key, $choices, $defaultValue);
+
+                $this->saveChoice($key, $selection, $model);
+            }
+
+            return $selection;
+        } else {
+            throw new \Exception("Pas de $key disponible");
+        }
+    }
+
+    /**
+     * @param string $key
+     * @param $selection
+     * @param string $model
+     */
+   public function saveChoice(string $key, $selection, string $model = ''): void
+    {
+        if (empty($model)) {
+            $applyChoiceToAllModules = $this->get('memorizeChoices') ?? $this->prompt('Voulez vous appliquer ce choix à tous les modules créés à l\'avenir?', ['o', 'n']) === 'o';
+            if ($applyChoiceToAllModules) {
+                $this->set($key, $selection, '', true);
+            }
+            $this->set($key, $selection);
+        } else {
+            $this->set($key, $selection, $model);
+        }
+    }
+
     public function askLegacy($model)
     {
         if ($this->has('legacy', $model)) {
@@ -284,5 +335,13 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             $this->set('legacy', $hasLegacyCode, $model);
             return $this->get('legacy');
         }
+    }
+
+
+    protected function askTemplate()
+    {
+        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
+        $res =  $this->askConfig('template', $templates, 'askMultipleChoices', 'standard');
+        return $res;
     }
 }

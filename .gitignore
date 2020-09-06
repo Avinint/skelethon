@@ -2,4 +2,4 @@ lib/
 .idea/
 vendor/
 config_imaogo/
-prof_config.yml
+*config.yml

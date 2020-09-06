@@ -26,9 +26,10 @@ class E2DModelMaker extends ModelMaker
         $this->setDatabaseAccess(E2DDatabaseAccess::getDatabaseParams());
     }
 
-    public function getTableHeaders()
+    public function getTableHeaders($template)
     {
-        $actionHeader = empty($this->actions) ? '' : str_repeat("\x20", 16).'<th class="centre">Actions</th>'.PHP_EOL;
+
+        $actionHeader = empty($this->actions) ? '' : file_get_contents($template).PHP_EOL;
         return  $actionHeader.implode(PHP_EOL, array_map(function (Field $field) {return $field->getTableHeader();}, $this->fields));
 
         //return $actionHeader.implode(PHP_EOL, $this->fieldClass::getTableHeaders());
@@ -47,7 +48,7 @@ class E2DModelMaker extends ModelMaker
     private function askMulti()
     {
         $useMulti = $this->config->get('usesMulti') ?? $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']) === 'o';
-        $this->saveChoiceInConfig('usesMulti', $useMulti, $this->name);
+        $this->config->saveChoice('usesMulti', $useMulti, $this->name);
 
         return $useMulti === 'o';
     }
@@ -55,7 +56,7 @@ class E2DModelMaker extends ModelMaker
     private function askSwitches()
     {
         $usesSwitches = $this->config->get('usesSwitches') ?? $this->prompt('Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)', ['o', 'n']) === 'o';
-        $this->saveChoiceInConfig('usesSwitches', $usesSwitches, $this->name);
+        $this->config->saveChoice('usesSwitches', $usesSwitches, $this->name);
 
         return $usesSwitches;
     }
@@ -63,7 +64,7 @@ class E2DModelMaker extends ModelMaker
     private function askSelect2()
     {
         $useSelect2 = $this->config->get('usesSelect2') ?? $this->prompt('Voulez-vous utiliser les Select2 pour générer les champs Enum ?', ['o', 'n']) === 'o';
-        $this->saveChoiceInConfig('usesSelect2', $useSelect2, $this->name);
+        $this->config->saveChoice('usesSelect2', $useSelect2, $this->name);
 
         return  $useSelect2;
     }
@@ -98,6 +99,10 @@ class E2DModelMaker extends ModelMaker
         }
     }
 
+    /**
+     * Pour @ModelFile
+     * @return string
+     */
     public function getModalTitle()
     {
         if (empty($this->modalTitle)) {
@@ -107,6 +112,10 @@ class E2DModelMaker extends ModelMaker
         return PHP_EOL.str_repeat("\x20", 8).'$this->aTitreLibelle = [\''.implode(',', $this->modalTitle).'\'];'.PHP_EOL;
     }
 
+    /**
+     * Pour @ModelFile
+     * @param $data
+     */
     public function addModalTitle($data)
     {
         if ($this->usesMultiCalques) {
@@ -192,7 +201,7 @@ class E2DModelMaker extends ModelMaker
         $indent = str_repeat("\x20", 16);
         $fields =  '\''.PHP_EOL. parent::getSqlSelectFields().PHP_EOL.$indent.'\'';
 
-        $fields = str_replace_last(' . \''.PHP_EOL.$indent.'\'', '', $fields);
+        //  $fields = str_replace_last(' . \''.PHP_EOL.$indent.'\'', '', $fields);
 
         return $fields;
     }
@@ -341,6 +350,21 @@ class E2DModelMaker extends ModelMaker
             $joinText = PHP_EOL.implode(PHP_EOL, $joins);
         }
 
-       return $joinText;
+        return $joinText;
+    }
+
+    /**
+     * @param array $column
+     * @param string $alias
+     * @return string
+     */
+    public function generateConcatenatedColumn(array $columns, $alias = ''): string
+    {
+        if ($alias !== '') {
+            $alias = $alias. '.';
+
+            $columns = array_map(function($part) use ($alias) {return $alias.$part;}, $columns);
+        }
+        return "CONCAT_WS(\' \', " . implode(", ",  $columns) . ')';
     }
 }

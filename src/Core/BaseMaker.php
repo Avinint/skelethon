@@ -2,9 +2,6 @@
 
 namespace Core;
 
-use APP\Core\Lib\Interne\PHP\PHPMailerAdapter;
-use http\Exception\InvalidArgumentException;
-
 abstract class BaseMaker extends CommandLineToolShelf
 {
 
@@ -26,7 +23,7 @@ abstract class BaseMaker extends CommandLineToolShelf
     public function setFileManager(?FileManager $fileManager): void
     {
         if ($fileManager === null) {
-            $this->fileManager = new FileManager();
+            $this->fileManager = $this->config->getFileManager();
         } else {
             $this->fileManager = $fileManager;
         }
@@ -35,9 +32,8 @@ abstract class BaseMaker extends CommandLineToolShelf
     public function __construct(FileManager $fileManager = null)
     {
         $this->setFileManager($fileManager);
+        $this->template = $this->fileManager->getTemplate();
     }
-
-
 
     /**
      * @param array $params
@@ -47,10 +43,9 @@ abstract class BaseMaker extends CommandLineToolShelf
         if (!isset($params['config'])) {
             throw new \InvalidArgumentException("Fichiers config manquants");
         }
+
         $this->config = $params['config'];
     }
-
-
 
     /**
      * L'application donne des choix aux utilisateurs, les réponses sont stockées en config, permet a l'application de ne pas redemander une information déja stockée
@@ -73,7 +68,7 @@ abstract class BaseMaker extends CommandLineToolShelf
             } else {
                 $selection = $this->$function($key, $choices, $defaultValue);
 
-                $this->saveChoiceInConfig($key, $selection);
+                $this->config->saveChoice($key, $selection);
             }
 
             return $selection;
@@ -88,63 +83,31 @@ abstract class BaseMaker extends CommandLineToolShelf
      * @param $templatePath
      * @return string|string[]
      */
-    protected function getTrueTemplatePath($templatePath, $replace = '', $search = '.')
+    public function getTrueTemplatePath($templatePath, $replace = '', $search = '.')
     {
-        if (!empty($replace)) {
-            $templatePath = str_replace_last($search, $replace, $templatePath);
+        if (!isset($this->fileManager)) {
+            throw new \Exception("File manager non initialisé");
         }
-
-        if (!file_exists($templatePath) && isset($this->fallBackTemplate)) {
-
-            // get fallback template ($this->>template)  returns gettrutemplate (next template)
-            $templatePath = str_replace($this->template, $this->fallBackTemplate, $templatePath);
-        }
-
-        if (!file_exists($templatePath)) {
-            $templatePath = str_replace($this->template, 'standard', $templatePath);
-        }
-
-//        if (!file_exists($templatePath)) {
-//            throw new \Exception("Fichier manquant : $templatePath");
-//        }
-
-        return $templatePath;
+        return $this->fileManager->getTrueTemplatePath($templatePath, $replace, $search);
     }
 
-    /**
-     * @param string $key
-     * @param $selection    
-     * @param string $model
-     */
-    protected function saveChoiceInConfig(string $key, $selection, $model = ''): void
-    {
-        if (empty($model)) {
-            $applyChoiceToAllModules = $this->applyChoicesForAllModules ?? $this->prompt('Voulez vous appliquer ce choix à tous les modules créés à l\'avenir?', ['o', 'n']) === 'o';
-            if ($applyChoiceToAllModules) {
-                $this->config->set($key, $selection, '', true);
-            }
-            $this->config->set($key, $selection);
-        } else {
-            $this->config->set($key, $selection, $model);
-        }
-    }
+
 
     /**
      * @return bool|null
      *
-     * * TODO comparer a ce qui y a dans saveChoiceInConfig
+     * Permet de demander si on veut appliquer les réponses au choix à tous les modules
      *
-     *
+     * TODO (utiliser)
      */
     protected function askApplyChoiceForAllModules()
     {
-        $askChoice =  $this->prompt('Voulez-vous sauvegarder les choix sélectionnés pour les appliquer lors de la création de nouveaux modules? '
-            .PHP_EOL.'['.$this->highlight('o', 'success').'/'.$this->highlight('n', 'error').'] ou '.$this->highlight('réponse vide').' pour choisir au fur et à mesure', ['o', 'n', '']);
+        $reply = $this->prompt('Voulez-vous sauvegarder les choix sélectionnés pour les appliquer lors de la création de nouveaux modules? '
+            .PHP_EOL.'['.$this->highlight('o', 'success').'/'.$this->highlight('n', 'error').'] ou '.$this->highlight('réponse vide').
+                ' pour choisir au fur et à mesure', ['o', 'n']) === 'o';
 
-        $this->config->set('memorizeChoices', !empty($askChoice) && $askChoice === 'o');
-        return empty($askChoice)  ?  null :  $askChoice === 'o';
+        $this->config->set('memorizeChoices',  $reply);
+
+        return$reply;
     }
-
-
-
 }

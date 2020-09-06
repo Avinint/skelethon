@@ -8,7 +8,7 @@ use E2D\E2DModuleMaker;
 class ESMModuleMaker extends E2DModuleMaker
 {
 
-    protected function askTemplate()
+    protected static function askTemplate()
     {
         return  'esm';
     }

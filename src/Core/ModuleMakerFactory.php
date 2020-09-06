@@ -74,9 +74,8 @@ class ModuleMakerFactory
     {
         $params = [
             'config' => $config,
-            'applyChoicesForAllModules' => $config['memorize'],
+            'applyChoicesForAllModules' => (!$config->has('memorizeChoices') || $config->get('memorizeChoices')),
         ];
-        $params['applyChoicesForAllModules'] = !isset($config['memorizeChoices']) || $config['memorizeChoices'];
 
         if ($config->askLegacy($modelName)) {
             $modelMakerLegacy = $this->modelMaker. 'Legacy';

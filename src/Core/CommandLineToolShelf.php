@@ -140,4 +140,16 @@ class CommandLineToolShelf
             }, $name  ));
         }
     }
+
+    protected function camelize($name)
+    {
+        if (strpos($name, '-') || strpos($name, '_')) {
+            $name = str_replace('-', '_', $name);
+            $name = explode('_', $name);
+            $name = array_map('ucfirst', $name);
+            $name = implode('', $name);
+        }
+
+        return lcfirst($name);
+    }
 }

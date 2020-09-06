@@ -113,16 +113,20 @@ class E2DField extends Field
 
             $aCriteresRecherche[] = $this->addBooleanCriterion($this->name, $conditionEquals);
 
-        } elseif (array_contains($this->type, array('date', 'datetime')) === true) {
+        } elseif (array_contains($this->type, array('date', 'datetime', 'time')) === true) {
 
             if ($this->type === 'date') {
                 $sSuffixeDebut = '';
                 $sSuffixeFin = '';
                 $sFormat = ', \'Y-m-d\'';
-            } else {
+            } elseif ($this->type === 'datetime') {
                 $sSuffixeDebut = ' 00:00:00';
                 $sSuffixeFin = ' 23:59:59';
                 $sFormat = ', \'Y-m-d H:i:s\'';
+            } else {
+                $sSuffixeDebut = '';
+                $sSuffixeFin = '';
+                $sFormat = ', \'H:i:s\'';
             }
 
             $whereDebut = $fieldName .' >= \'".addslashes($this->sGetDateFormatUniversel($aRecherche[\''. $this->name.'Debut'.'\']'.$sFormat.")).\"'";
@@ -235,7 +239,7 @@ class E2DField extends Field
     {
         $this->type = 'foreignKey';
         if(is_array($manyToOneParams['label'])) {
-            $manyToOneParams['label'] = static::generateConcatenatedColumn(
+            $manyToOneParams['label'] = $this->model->generateConcatenatedColumn(
                 $manyToOneParams['label'],
                 $manyToOneParams['alias']
             );
