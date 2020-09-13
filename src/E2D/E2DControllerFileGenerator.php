@@ -91,7 +91,7 @@ class E2DControllerFileGenerator extends FileGenerator
             $text .= file_get_contents($path);
             $concurrentText = $this->model->usesMultiCalques ? file_get_contents(str_replace('Action.', 'ActionMulti.', $path)): '';
             $text = str_replace(['MODULE', 'CONTROLLER', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
-                [$this->namespaceName, $this->controllerName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
+                [$this->pascalCaseModuleName, $this->controllerName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
         }
 
         return $text;
@@ -196,7 +196,7 @@ class E2DControllerFileGenerator extends FileGenerator
         }
 
         $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
-        $replacements = [$enum['name'], $this->name, $this->model->getName(), $enum['column'], $enum['default']];
+        $replacements = [$enum['name'], $this->moduleName, $this->model->getName(), $enum['column'], $enum['default']];
 
         $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLine);
         $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));
@@ -218,12 +218,10 @@ class E2DControllerFileGenerator extends FileGenerator
         if (file_exists($templatePath = $this->getTrueTemplatePath($path))) {
             $text = file_get_contents($templatePath);
 
-            $recherche = array_contains('recherche', $this->model->actions) ? '$sFichierContenu = $this->szGetFichierPourInclusion(\'modules\', \'mODULE/vues/recherche_TABLE.html\');
-            $oContenu = $this->oGetVue($sFichierContenu);
-            $this->objQpModele->find(\'#zone_navigation_2\')->html($oContenu->find(\'body\')->html());' : '';
+            $recherche = array_contains('recherche', $this->model->actions) ? file_get_contents($this->getTrueTemplatePath($path, 'Recherche.class.php', '.class.php')) : '';
 
             $text = str_replace('//RECHERCHE', $recherche, $text);
-            $text = str_replace(['MODULE', 'CONTROLLER', 'mODULE', 'TABLE'], [$this->pascalCaseModuleName, $this->controllerName, $this->name, $this->model->getName()], $text);
+            $text = str_replace(['MODULE', 'CONTROLLER', 'mODULE', 'TABLE'], [$this->pascalCaseModuleName, $this->controllerName, $this->moduleName, $this->model->getName()], $text);
         }
 
         return $text;

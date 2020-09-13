@@ -47,6 +47,11 @@ abstract class BaseMaker extends CommandLineToolShelf
         $this->config = $params['config'];
     }
 
+    public function getConfig()
+    {
+        return $this->config;
+    }
+
     /**
      * L'application donne des choix aux utilisateurs, les réponses sont stockées en config, permet a l'application de ne pas redemander une information déja stockée
      *

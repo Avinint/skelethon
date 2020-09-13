@@ -23,7 +23,7 @@ class E2DViewFileGenerator extends FileGenerator
     public function generate(string $path) : string
     {
         $actionBarText = '';
-        $actionText = [str_repeat("\x20", 20) . '<td class="szActions">'];
+        $actionText = [];
         if (array_contains_array(['edition', 'consultation'], $this->model->getActions(), true)) {
             $actionBarTemplatePath = $this->getTrueTemplatePath($path, '_actionbar.');
             $actionBarText = file_get_contents($actionBarTemplatePath);
@@ -33,7 +33,6 @@ class E2DViewFileGenerator extends FileGenerator
             $consultationTemplatePath = $this->getTrueTemplatePath($path, '_consultation.');
             $actionText[] = file_get_contents($consultationTemplatePath);
         } else {
-
             if (array_contains('edition', $this->model->getActions())) {
                 $editionTemplatePath = $this->getTrueTemplatePath($path, '_edition.');
                 $actionText[] .= file_get_contents($editionTemplatePath);
@@ -45,17 +44,20 @@ class E2DViewFileGenerator extends FileGenerator
             }
         }
 
-        $actionText[] = str_repeat("\x20", 20) . '</td>';
-        $actionText = implode(PHP_EOL, $actionText);
+        $actionText = str_replace('ACTION', implode(PHP_EOL, $actionText), file_get_contents($this->getTrueTemplatePath($path,  '_actionblock.')));
+
         $callbackLigne = '';
         if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY)) {
             $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";
         }
-        $text = file_get_contents($this->getTrueTemplatePath($path));
+
+        $templatePath = $this->getTrueTemplatePath($path);
+        $text = file_get_contents($templatePath);
+        //$t    emplatePath = str_replace( '.', '_actionheader.', $path);
 //     <table id="liste_salle_creneau_reservation" class="material-table tableau_donnees liste_salle_creneau_reservation align_middle route_parametrageesm_json_recherche_salle_creneau_reservation variable_1_0 callback_salleCreneauReservation_vCallbackListeElement ligne_callback_salleCreneauReservation_vCallbackLigneListe">
         $text = str_replace(['ACTION_BAR', 'CALLBACKLIGNE', 'cONTROLLER', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'TABLE', 'NUMCOL'],
-            [$actionBarText, $callbackLigne, $this->camelize($this->controllerName), $this->model->getClassname(), $this->model->getTableHeaders(str_replace( '.', '_actionheader.', $path)),
-                $actionText, $this->model->getTableColumns(), $this->moduleName, $this->model->GetName(), $this->model->getColumnNumber()], $text);
+            [$actionBarText, $callbackLigne, $this->camelize($this->controllerName), $this->model->getClassname(), $this->model->getTableHeaders($templatePath),
+                $actionText, $this->model->getTableColumns( $templatePath), $this->moduleName, $this->model->GetName(), $this->model->getColumnNumber()], $text);
         return $text;
     }
 

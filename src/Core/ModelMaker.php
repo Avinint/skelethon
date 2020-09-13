@@ -175,9 +175,9 @@ abstract class ModelMaker extends BaseMaker
         return $this->actions;
     }
 
-    public function getAttributes() :string
+    public function getAttributes($template) :string
     {
-        return  implode(PHP_EOL, array_map(function (Field $field) {return $field->getFieldMapping();}, $this->fields));
+        return  implode(PHP_EOL, array_map(function (Field $field)  use ($template) {return $field->getFieldMapping($template);}, $this->fields));
     }
 
     /**
@@ -199,19 +199,18 @@ abstract class ModelMaker extends BaseMaker
     /**
      * @return array
      */
-    public function getSearchCriteria(): string
+    public function getSearchCriteria($path): string
     {
-        return implode(PHP_EOL, array_map(function (Field $field) {return $field->getSearchCriterion();}, $this->fields));
+        return implode(PHP_EOL, array_filter(array_map(function (Field $field) use($path) {return $field->getSearchCriterion($path);}, $this->fields)));
 //        return implode(PHP_EOL, $this->fieldClass::getSearchCriteria()); TODO remove
     }
 
     /**
      * @return array
      */
-    public function getValidationCriteria(): string
+    public function getValidationCriteria($path): string
     {
-        return implode(PHP_EOL, array_map(function (Field $field) {return $field->getValidationCriterion();}, $this->fields));
-//        return implode(PHP_EOL, $this->fieldClass::getValidationCriteria()); TODO remove
+        return implode(PHP_EOL, array_filter(array_map(function (Field $field) use ($path) {return $field->getValidationCriterion($path);}, $this->fields)));
     }
 
     public function getViewFields($showIdField = false)
@@ -257,11 +256,11 @@ abstract class ModelMaker extends BaseMaker
     /**
      * @return array
      */
-    public function getSqlSelectFields(): string
+    public function getSqlSelectFields($template): string
     {
         //$fields =  implode(','.PHP_EOL, $this->fieldClass::getSelectFields());
 //        return $fields;
-        return  implode(','.PHP_EOL, array_map(function (Field $field) {return $field->getSelectField();}, $this->fields));
+        return  implode(','.PHP_EOL, array_map(function (Field $field) use ($template) {return $field->getSelectField($template);}, $this->fields));
     }
 
     /**
@@ -270,16 +269,6 @@ abstract class ModelMaker extends BaseMaker
     public function getAlias()
     {
         return $this->alias;
-    }
-
-
-    /**
-     * @return string
-     */
-    public function getTableColumns()
-    {
-        return implode(PHP_EOL, array_map(function (Field $field) {return $field->getTableColumn();}, $this->fields));
-        //return implode(PHP_EOL, $this->fieldClass::getTableColumns());
     }
 
     public function getColumnNumber()

@@ -26,14 +26,22 @@ class E2DModelMaker extends ModelMaker
         $this->setDatabaseAccess(E2DDatabaseAccess::getDatabaseParams());
     }
 
-    public function getTableHeaders($template)
+    public function getTableHeaders($templatePath)
     {
-
-        $actionHeader = empty($this->actions) ? '' : file_get_contents($template).PHP_EOL;
-        return  $actionHeader.implode(PHP_EOL, array_map(function (Field $field) {return $field->getTableHeader();}, $this->fields));
-
+        $actionHeader = empty($this->actions) ? '' : file_get_contents(str_replace('.', '_actionheader.', $templatePath)).PHP_EOL;
+        return $actionHeader.implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {
+            return $field->getTableHeader($templatePath);}, $this->fields));
         //return $actionHeader.implode(PHP_EOL, $this->fieldClass::getTableHeaders());
     }
+
+    /**
+     * @return string
+     */
+     public function getTableColumns($templatePath)
+     {
+         return implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {return $field->getTableColumn($templatePath);}, $this->fields));
+         //return implode(PHP_EOL, $this->fieldClass::getTableColumns());
+     }
 
     /**
      * Details spécifiques au projet
@@ -196,10 +204,10 @@ class E2DModelMaker extends ModelMaker
      * TODO revoir le fonctionmt de cette méthode
      * @return array
      */
-    public function getSqlSelectFields(): string
+    public function getSqlSelectFields($template): string
     {
         $indent = str_repeat("\x20", 16);
-        $fields =  '\''.PHP_EOL. parent::getSqlSelectFields().PHP_EOL.$indent.'\'';
+        $fields =  '\''.PHP_EOL. parent::getSqlSelectFields($template).PHP_EOL.$indent.'\'';
 
         //  $fields = str_replace_last(' . \''.PHP_EOL.$indent.'\'', '', $fields);
 

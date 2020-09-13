@@ -20,47 +20,19 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
         $this->pascalCaseModuleName = $pascalCaseModuleName;
     }
 
+    // action de génération des fichiers
     public function generate(string $path) : string
     {
         $modelName = '';
         $enumText = '';
 
         if (strpos($path, 'conf.yml') === false ) {
-            $texts = [];
-            foreach ($this->model->actions as $action) {
-                $templatePerActionPath = $this->getTrueTemplatePath(str_replace('.', '_' . $action . '.', $path));
-                if (file_exists($templatePerActionPath)) {
-                    $texts[] = file_get_contents($templatePerActionPath) .
-                        ($this->model->usesMultiCalques && strpos($path, 'blocs') !== false ?
-                            file_get_contents(str_replace($action, 'multi', $templatePerActionPath)) :
-                            '');
-                }
-            }
-
-            $text = implode(PHP_EOL, $texts);
-
+            $text = $this->generateRoutingConfigFiles($path);
         } else {
-            $text = '';
+            $modelName = $this->model->getClassName();
             $templatePath = $this->getTrueTemplatePath($path);
-            if (file_exists($templatePath)) {
-                $text = file_get_contents($templatePath);
-
-                $modelName = $this->model->getClassName() ;
-                $fields = $this->model->getViewFieldsByType('enum');
-
-                if (!empty($fields)) {
-                    $enumText = '';
-                    foreach ($fields as $field) {
-                        $enumLines = file(str_replace('conf.', 'conf_enum.', $templatePath));
-                        $enumHandle = str_replace(['MODEL', 'COLUMN'], [$modelName, $field['column']], $enumLines[0]);
-                        $enumText .= $enumHandle.PHP_EOL;
-                        foreach ($field['enum'] as $value) {
-                            $enumKeyValuePair = str_replace(['VALEUR', 'LIBELLE'], [$value, $this->labelize($value)], $enumLines[1]);
-                            $enumText .= $enumKeyValuePair.PHP_EOL;
-                        }
-                    }
-                }
-            }
+            $text = file_get_contents($templatePath);
+            $enumText = $this->addEnumsToConfig($templatePath, $modelName);
         }
 
         $text = str_replace(['mODULE', 'mODEL', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
@@ -69,58 +41,153 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
         return $text;
     }
 
+    /**
+     * Génère des fichiers de config de routing (action, routing ou bloc)
+     * @param string $path
+     * @return string
+     * @throws \Exception
+     */
+    private function generateRoutingConfigFiles(string $path): string
+    {
+        $texts = [];
+        foreach ($this->model->actions as $action) {
+            $templatePerActionPath = $this->getTrueTemplatePath(str_replace('.', '_' . $action . '.', $path));
+            if (file_exists($templatePerActionPath)) {
+                $texts[] = $this->getConfigTemplateForAction($templatePerActionPath, $path, $action);
+            }
+        }
+
+        $text = implode(PHP_EOL, $texts);
+        return $text;
+    }
+
+    /**
+     * Modifie fichiers existants pour prendre en compte l'ajout de nouveaux fichiers
+     * @param $templatePath
+     * @param $filePath
+     * @return string
+     * @throws \Exception
+     */
     public function modify($templatePath, $filePath)
     {
         $config = Spyc::YAMLLoad($filePath);
-
         if (strpos($templatePath, 'conf.yml') === false ) {
-            foreach ($this->model->actions as $action) {
-                $templatePerActionPath = $this->getTrueTemplatePath(str_replace('.', '_' . $action . '.', $templatePath));
-                if (file_exists($templatePerActionPath)) {
-                    $template = file_get_contents($templatePerActionPath).($this->model->usesMultiCalques && strpos($templatePath, 'blocs') !== false ?
-                            file_get_contents(str_replace($action, 'multi', $templatePerActionPath)) : '');
-
-                    $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'cONTROLLER', 'MODEL'],
-                        [$this->moduleName, $this->model->getName(), $this->snakize($this->controllerName), ''], $template));
-                    $config = array_replace_recursive($config, $newConfig);
-                }
-            }
-
+            $config = $this->modifyRoutingConfigFiles($templatePath, $config);
         } else {
-
-            $enumText = '';
-            $templatePath = $this->getTrueTemplatePath($templatePath);
-            if (file_exists($templatePath)) {
-                $modelName = $this->model->getClassName() ;
-                $fields = $this->model->getViewFieldsByType('enum');
-
-                if (!empty($fields)) {
-                    foreach ($fields as $field) {
-                        $enumLines = file(str_replace('conf.', 'conf_enum.', $templatePath));
-                        $enumHandle = str_replace(['MODEL', 'COLUMN'], [$modelName, $field['column']], $enumLines[0]);
-                        $enumText .= $enumHandle.PHP_EOL;
-                        foreach ($field['enum'] as $value) {
-                            $enumKeyValuePair = str_replace(['VALEUR', 'LIBELLE'], [$value, $this->labelize($value)], $enumLines[1]);
-                            $enumText .= $enumKeyValuePair.PHP_EOL;
-                        }
-                    }
-                }
-            }
-
-            $template = file_get_contents($templatePath);
-
-            $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
-                [$this->moduleName, $this->model->getName(), $this->model->getClassName(), $this->pascalCaseModuleName, $this->controllerName, $this->snakize($this->controllerName), $enumText], $template));
-
-            $baseJSFilePath = $this->moduleName.'/JS/'.$this->pascalCaseModuleName.'.js';
-            array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['formulaires']['edition_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
-            array_unshift($newConfig['aVues'][$this->model->getName()]['admin']['simples']['accueil_'.$this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
-
-            $config = array_replace_recursive($config, $newConfig);
+            $config = $this->modifyConfFile($templatePath, $config);
         }
 
-        $text = Spyc::YAMLDump($config, false, 0, true);
-
-        return $text;
+        return Spyc::YAMLDump($config, false, 0, true);
     }
+
+    /**
+     *  Modifie les fichiers de routing (actions, routing, bloc)
+     * @param $templatePath
+     * @param array $config
+     * @return array
+     * @throws \Exception
+     */
+    private function modifyRoutingConfigFiles($templatePath, array $config): array
+    {
+        foreach ($this->model->actions as $action) {
+            $templatePerActionPath = $this->getTrueTemplatePath(str_replace('.', '_' . $action . '.', $templatePath));
+            if (file_exists($templatePerActionPath)) {
+                $template = file_get_contents($templatePerActionPath) . $this->makeMultiModalBlock($templatePath, $action, $templatePerActionPath);
+
+                $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'cONTROLLER', 'MODEL'],
+                    [$this->moduleName, $this->model->getName(), $this->snakize($this->controllerName), ''], $template));
+                $config = array_replace_recursive($config, $newConfig);
+            }
+        }
+        return $config;
+    }
+
+    /**
+     * Récupère le template pour générer un fichier action, routing ou bloc par action
+     * @param string $templatePerActionPath
+     * @param string $path
+     * @param string $action
+     * @return string
+     */
+    private function getConfigTemplateForAction(string $templatePerActionPath, string $path, string $action): string
+    {
+        return file_get_contents($templatePerActionPath) .
+            $this->makeMultiModalBlock($path, $action, $templatePerActionPath);
+    }
+
+    /**
+     * Ajoute les lignes permettant les calques multiples, dans les blocs
+     * @param string $path
+     * @param string $action
+     * @param string $templatePerActionPath
+     * @return false|string
+     */
+    private function makeMultiModalBlock(string $path, string $action, string $templatePerActionPath)
+    {
+        return ($this->model->usesMultiCalques && strpos($path, 'blocs') !== false ?
+            file_get_contents(str_replace($action, 'multi', $templatePerActionPath)) : '');
+    }
+
+    /**
+     * Ajout des Enums dans le fichier conf
+     * @param string $templatePath
+     * @param string $modelName
+     * @return string
+     */
+    private function addEnumsToConfig(string $templatePath, string $modelName): string
+    {
+        $enumText = '';
+        $fields = $this->model->getViewFieldsByType('enum');
+        if (!empty($fields)) {
+            foreach ($fields as $field) {
+                $enumLines = file(str_replace('conf.', 'conf_enum.', $templatePath));
+                $enumHandle = str_replace(['MODEL', 'COLUMN'], [$modelName, $field['column']], $enumLines[0]);
+                $enumText .= $enumHandle . PHP_EOL;
+                foreach ($field['enum'] as $value) {
+                    $enumKeyValuePair = str_replace(['VALEUR', 'LIBELLE'], [$value, $this->labelize($value)], $enumLines[1]);
+                    $enumText .= $enumKeyValuePair . PHP_EOL;
+                }
+            }
+        }
+        return $enumText;
+    }
+
+    /**
+     *  Modifie le fichier conf
+     * @param $templatePath
+     * @param array $config
+     * @return array
+     * @throws \Exception
+     */
+    private function modifyConfFile($templatePath, array $config): array
+    {
+        $enumText = '';
+        $templatePath = $this->getTrueTemplatePath($templatePath);
+        if (file_exists($templatePath)) {
+            $modelName = $this->model->getClassName();
+            $enumText = $this->addEnumsToConfig($templatePath, $modelName);
+        }
+
+        $template = file_get_contents($templatePath);
+        $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS'],
+            [$this->moduleName, $this->model->getName(), $this->model->getClassName(), $this->pascalCaseModuleName, $this->controllerName, $this->snakize($this->controllerName), $enumText], $template));
+
+        $this->addMainModuleJSFileLinkToConfig($newConfig['aVues']);
+
+        $config = array_replace_recursive($config, $newConfig);
+        return $config;
+    }
+
+    /**
+     * Ajoute le fichier nomdumodule.js dans les fichiers js liés aux controllers
+     * @param $aVues
+     * @return void
+     */
+    private function addMainModuleJSFileLinkToConfig(array $aVues): void
+    {
+        $baseJSFilePath = $this->moduleName . '/JS/' . $this->pascalCaseModuleName . '.js';
+        array_unshift($aVues[$this->model->getName()]['admin']['formulaires']['edition_' . $this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
+        array_unshift($aVues[$this->model->getName()]['admin']['simples']['accueil_' . $this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
+    }
+
 }

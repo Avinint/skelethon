@@ -20,8 +20,7 @@ class CONTROLLERAdminHTML extends AffichageHTML
             $oContenu = $this->oGetVue($sFichierContenu);
             
             $this->objQpModele->find('#zone_navigation_3')->html($oContenu->find('body')->html());
-
-            //RECHERCHE
+//RECHERCHE
         } else {
             return $sContenu;
         }

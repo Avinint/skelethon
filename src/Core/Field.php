@@ -50,9 +50,9 @@ abstract class Field
     }
 
     // TODO remove
-    public static function getSelectFields()
+    public static function getSelectFields($template)
     {
-        return array_map(function ($field) {return $field->getSelectField();}, self::$collection);
+        return array_map(function ($field) use ($template) {return $field->getSelectField($template);}, self::$collection);
     }
 
     protected function parseEnumValues($enum)
@@ -172,5 +172,5 @@ abstract class Field
 
     abstract protected function handleAssociations(&$properties);
 
-    abstract public function getSelectField();
+    abstract public function getSelectField($template);
 }

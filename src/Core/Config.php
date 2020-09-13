@@ -26,16 +26,15 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     /**
      * @param FileManager|null $fileManager
      */
-    public function setFileManager(?FileManager $fileManager): void
+    public function setFileManager(?string $template = null, ?FileManager $fileManager = null): void
     {
         if ($fileManager === null) {
-            $template = $this->askTemplate();
+            $template = $template ?? $this->get('template', $this->currentModel) ?? $this->askTemplate();
             $this->fileManager = new FileManager($template);
         } else {
             $this->fileManager = $fileManager;
         }
     }
-
 
     public function __construct($module, $model, FileManager $fileManager = null)
     {
@@ -43,7 +42,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         $this->currentModel = $model;
         $this->data = $this->getData();
 
-        $this->setFileManager($fileManager);
+        $this->setFileManager(null, $fileManager);
     }
 
     /**
@@ -194,14 +193,17 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      */
     public function get(string $field, string $model = null)
     {
+        //var_dump($this->data[$field] );
         // Quand on set le model de façon explicite
         // celui ci prévaut sur l'ordre canonique : app / module / model
         if (isset($model)) {
             return $this->getValueFromModelConfig($field, $model);
         }
-
+//        var_dump($this->getValueFromModuleConfig($field));
+//        var_dump($this->getValueFromModelConfig($field));
         $result = $this->data[$field] ?? $this->getValueFromModuleConfig($field) ?? $this->getValueFromModelConfig($field);
         if (isset($result)) {
+
             return $result;
         }
 
@@ -237,11 +239,6 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 
     public function has(string $field, $model = null)
     {
-
-        $value = $this->getValueFromModelConfig($field, $model);
-
-
-
         return $this->get($field, $model) !== null;
     }
 
@@ -336,7 +333,6 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             return $this->get('legacy');
         }
     }
-
 
     protected function askTemplate()
     {

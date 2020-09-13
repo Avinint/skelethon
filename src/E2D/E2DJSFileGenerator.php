@@ -126,7 +126,7 @@ class E2DJSFileGenerator extends FileGenerator
 
         $text = str_replace([ '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
             'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2', 'SELECTAJAX',],
-            [$personalizeButtons, '', $actionMethodText, $closeConsultationModal, $this->name, $this->controllerName,
+            [$personalizeButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
                 $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2SearchText, $selectAjaxDefinitionText], $text);
 
         return $text;

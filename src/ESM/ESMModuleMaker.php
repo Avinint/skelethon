@@ -7,12 +7,6 @@ use E2D\E2DModuleMaker;
 
 class ESMModuleMaker extends E2DModuleMaker
 {
-
-    protected static function askTemplate()
-    {
-        return  'esm';
-    }
-
     /**
      * Vérifie qu'un sous menu correspondant au module existe dans menu.yml et soit conforme
      * Sinon on ajoute le sous-menu idoine

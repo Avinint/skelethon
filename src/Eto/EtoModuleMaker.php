@@ -2,13 +2,18 @@
 
 namespace Eto;
 
+use Core\FileManager;
 use E2D\E2DModuleMaker;
 
 class EtoModuleMaker extends E2DModuleMaker
 {
-    protected function askTemplate()
+    /**
+     * @param mixed $fileManager
+     */
+    public function setFileManager(?FileManager $fileManager): void
     {
-        return  'etotem';
+        $this->fileManager = $fileManager ?? $this->config->getFileManager('etotem');
+
     }
 
     /**
@@ -18,7 +23,8 @@ class EtoModuleMaker extends E2DModuleMaker
     protected function generateListView(string $templatePath)
     {
         $actionBarText = '';
-        $actionText = [str_repeat("\x20", 20) . '<td class="szActions">'];
+
+        $actionText = [];
 
         if (array_contains_array(['edition', 'consultation'], $this->model->getActions())) {
             $actionBarTemplatePath = $this->getTrueTemplatePath($templatePath, '_actionbar.');
@@ -41,8 +47,9 @@ class EtoModuleMaker extends E2DModuleMaker
             }
         }
 
-        $actionText[] = str_repeat("\x20", 20) . '</td>';
-        $actionText = implode(PHP_EOL, $actionText);
+        $actionText = str_replace('ACTION', implode(PHP_EOL, $actionText), file_get_contents(str_replace('.', '_actionblock.', $templatePath)));
+
+        //$actionText[] = str_repeat("\x20", 20) . '</td>';
         $callbackLigne = '';
         if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY)) {
             $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";

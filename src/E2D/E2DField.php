@@ -42,187 +42,160 @@ class E2DField extends Field
     /**
      * @return string
      */
-    public function getSelectField()
+    public function getSelectField($path)
     {
         $indent = str_repeat("\x20", 20);
         $lines = [];
 
-        $lines[] = "{$indent}$this->alias.$this->column";
-        if ($this->isPrimaryKey) {
-            $lines[] =  "{$indent}$this->alias.$this->column nIdElement";;
+        $template = file(str_replace_first('_selectFields.', '.', $path), FILE_IGNORE_NEW_LINES);
+        if (!$template) {
+            return '';
         }
+        $lines[] = $indent.str_replace(['ALIAS', 'COLUMN'], [$this->alias, $this->column], $template[0]);
 
-        if ('date' === $this->type) {
-            $lines[] = "{$indent}IF($this->alias.$this->column, DATE_FORMAT($this->alias.$this->column, \'%d/%m/%Y\'), \'\') AS {$this->getFormattedName()}";
-        } elseif ('datetime' === $this->type) {
-            $lines[] = "{$indent}IF($this->alias.$this->column, DATE_FORMAT($this->alias.$this->column, \'%d/%m/%Y à %H\h%i\'), \'\') AS {$this->getFormattedName()}";
-        } elseif ('time' === $this->type) {
-            $lines[] = "{$indent}IF($this->alias.$this->column, DATE_FORMAT($this->alias.$this->column, \'%H\h%i\'), \'\') AS {$this->getFormattedName()}";
-        } elseif (array_contains($this->type, ['float', 'double', 'decimal'])) {
-            $lines[] = "{$indent}REPLACE($this->alias.$this->column, \'.\', \',\') AS {$this->getFormattedName()}";
-        } elseif ('bool' === $this->type) {
-            $lines[] = "$indent(CASE WHEN $this->alias.$this->column = 1 THEN \'oui\' ELSE \'non\' END) AS {$this->getFormattedName()}";
-        } elseif ("enum" === $this->type) {
-            $module = self::$module;
-            $lines[] = $indent."IFNULL(' . \$this->sGetClauseCase('SAR.etat', \$this->szGetParametreModule('$module', 'aListe-{$this->model->getName()}-$this->column')) . ', \'\') {$this->getFormattedName()}";
-            //$lines[] = $indent."' . \$this->sFormateValeurChampConf('$module', '$this->model', '$this->column', '{$this->getFormattedName()}') . '";
+        if ($this->isPrimaryKey) {
+            $lines[] = $indent. str_replace(['ALIAS', 'COLUMN'], [$this->alias, $this->column], $template[1]);
         } elseif ('foreignKey' === $this->type) {
-            $strategy = $this->manyToOne['strategy'] ?? 'joins';
-            if ($strategy === 'nested') {
-                $template = '(
-                        SELECT LABEL
-                        FROM FKTABLE
-                        WHERE PK = ALIAS.PK
-                    ) AS FIELD';
-            } else {
-//                if ($this->manyToOne['concat']) {
-//                   ;$template = 'LABEL CONCATALIAS';
-//                } else {
-
-                    $template = 'FKALIAS.LABEL CONCATALIAS';
-//                }
-            }
-
-
-            //$alias = $this->manyToOne['alias'] !== '' ?  $this->manyToOne['alias'].'.' : '';
-            $lines[] = str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
-                [$this->manyToOne['alias'], $this->manyToOne['label'], $this->manyToOne['childTableAlias'], $this->manyToOne['table'], $this->manyToOne['pk'], $this->alias, $this->getFormattedName()],
-                $indent.$template);
+            $lines[] = $this->getSelectFieldForeignKey($template, $indent);
+        } else {
+            $lines = $this->getSelectFieldFormatted($indent, $template, $lines);
         }
 
         return implode(','.PHP_EOL, $lines);
     }
 
-    public function getSearchCriterion()
+    /**
+     * @param array $template
+     * @param string $indent
+     * @param array $lines
+     * @return string
+     */
+    private function getSelectFieldForeignKey(array $template, string $indent): string
     {
-        $aCriteresRecherche = [];
-        $fieldName = "AND $this->alias.$this->column";
+        $strategy = $this->manyToOne['strategy'] ?? 'joins';
+        if ($strategy === 'nested') {
+            $field = implode($indent, array_slice($template, 9));
+        } else {
+            $field = $indent . $template[8];
+        }
+
+        return str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
+            [$this->manyToOne['alias'], $this->manyToOne['label'], $this->manyToOne['childTableAlias'], $this->manyToOne['table'], $this->manyToOne['pk'], $this->alias, $this->getFormattedName()],
+            $field);
+    }
+
+    /**
+     * @param string $indent
+     * @param array $template
+     * @param array $lines
+     * @return array
+     */
+    private function getSelectFieldFormatted(string $indent, array $template, array $lines): array
+    {
+        $type = array_contains($this->type, ['double', 'decimal']) ? 'float' : $this->type;
+        $correspondances = ['', 'primayKey', 'date', 'datetime', 'time', 'float', 'bool', 'enum'];
+        $index = array_contains($type, $correspondances) ? array_search($type, $correspondances) : 0;
+        if ($index) {
+            $lines[] = $indent . str_replace(['ALIAS', 'COLUMN', 'mODULE', 'MODEL', 'NAME'], [$this->alias, $this->column, self::$module, $this->model->getName(), $this->getFormattedName()], $template[$index]);
+        }
+        return $lines;
+    }
+
+    public function getSearchCriterion($path)
+    {
+        $template = file(str_replace_first( '.','_searchCriterion.', $path));
+
+        $aCritereRecherche = [];
+        $indent = str_repeat("\x20", 8);
 
         if (array_contains($this->type, array('tinyint', 'smallint', 'int', 'float', 'decimal', 'double', 'foreignKey'))) {
-            $conditionEquals = $fieldName . ' = ' . $this->addNumberField($this->name, array_contains($this->type, ['smallint', 'int']));
-            $aCriteresRecherche[] = $this->addNumberCriterion($this->name, $conditionEquals);
 
             if (!preg_match('/^nId([A-Z]{1}([a-z]*))$/', $this->name)) {
-                $conditionMin = $fieldName . ' >= ' . $this->addNumberField($this->name . 'Min', array_contains($this->type, ['smallint', 'int']));
-                $aCriteresRecherche[] = $this->addNumberCriterion($this->name.'Min', $conditionMin);
-                $conditionMax = $fieldName . ' <= ' . $this->addNumberField($this->name . 'Max', array_contains($this->type, ['smallint', 'int']));
-                $aCriteresRecherche[] = $this->addNumberCriterion($this->name.'Max', $conditionMax);
+                $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
+                    [$template[7], $template[0], ($this->isInteger() ? $template[11] : $template[12]), $template[1], $template[2]]));
+                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+                    [$this->alias, $this->column, '>=', $this->name . 'Min'], $texteCritere);
+                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+                    [$this->alias, $this->column, '<=', $this->name . 'Max'], $texteCritere);
+                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+                    [$this->alias, $this->column, '=', $this->name . ''], $texteCritere);
+            } else {
+                $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
+                    [$template[7], $template[0], $template[11], $template[1], $template[2]]));
+                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+                    [$this->alias, $this->column, '=', $this->name . ''], $texteCritere);
             }
         } elseif ('bool' === $this->type) {
-            $conditionEquals = $fieldName . ' = ' . $this->addNumberField($this->name);
 
-            $aCriteresRecherche[] = $this->addBooleanCriterion($this->name, $conditionEquals);
+            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+                [$this->alias, $this->column, '=', $this->name . ''],
+                $indent . implode('', array_map(function($line) use ($indent) {return $line.$indent;},
+                    [$template[7].$template[0].$template[11].$template[1].$template[2]])));
+
 
         } elseif (array_contains($this->type, array('date', 'datetime', 'time')) === true) {
 
-            if ($this->type === 'date') {
-                $sSuffixeDebut = '';
-                $sSuffixeFin = '';
-                $sFormat = ', \'Y-m-d\'';
-            } elseif ($this->type === 'datetime') {
-                $sSuffixeDebut = ' 00:00:00';
-                $sSuffixeFin = ' 23:59:59';
-                $sFormat = ', \'Y-m-d H:i:s\'';
-            } else {
-                $sSuffixeDebut = '';
-                $sSuffixeFin = '';
-                $sFormat = ', \'H:i:s\'';
-            }
-
-            $whereDebut = $fieldName .' >= \'".addslashes($this->sGetDateFormatUniversel($aRecherche[\''. $this->name.'Debut'.'\']'.$sFormat.")).\"'";
-            $aCriteresRecherche[] = $this->addDateCriterion($this->name.'Debut', $whereDebut, $sSuffixeDebut);
-
-            $whereFin = $fieldName .' <= \'".addslashes($this->sGetDateFormatUniversel($aRecherche[\''. $this->name.'Fin'.'\']'.$sFormat.")).\"'";
-            $aCriteresRecherche[] = $this->addDateCriterion($this->name.'Fin' , $whereFin, $sSuffixeFin);
+            $aCritereRecherche = $this->getSearchCriterionDate($indent, $template, $aCritereRecherche);
 
         } else {
-            $whereIEquals = $fieldName.' LIKE \'".addslashes($aRecherche[\''.$this->name.'\'])."\'';
-
-            $aCriteresRecherche[] = $this->addStringCriterion($this->name, $whereIEquals);
-            $whereLike = $fieldName.' LIKE \'%".addslashes($aRecherche[\''.$this->name.'Partiel\'])."%\'';
-            $aCriteresRecherche[] = $this->addStringCriterion($this->name.'Partiel', $whereLike);
+            $texteCritere = $indent . implode('',array_map(function($line) use ($indent) {return $line.$indent;},
+                [$template[6], $template[0], $template[9], $template[1], $template[2]]));
+            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'FIELD'],
+                [$this->alias, $this->column, $this->name], $texteCritere);
+            $texteCritere = $indent . implode('',array_map(function($line) use ($indent) {return $line.$indent;},
+                [$template[6], $template[0], $template[10], $template[1], $template[2]]));
+            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'FIELD'],
+                [$this->alias, $this->column, $this->name.'Partiel'], $texteCritere);
         }
 
-        return implode(PHP_EOL, $aCriteresRecherche);
+        return implode(PHP_EOL, $aCritereRecherche);
     }
 
-    protected function addNumberField($field, $integer = true)
+    public function getValidationCriterion($path)
     {
-        $text = 'addslashes($aRecherche[\'' . $field . '\'])';
-        $text =  $integer ? $text : 'str_replace(\',\', \'.\', '. $text.')';
-
-        return '".'.$text.'."';
-    }
-
-    protected function addNumberCriterion($field, $whereClause)
-    {
-        return  str_repeat("\x20", 8) . 'if (isset($aRecherche[\''.$field .'\']) && $aRecherche[\''. $field .'\'] > 0) {'.PHP_EOL.
-            $this->addQuery($whereClause);
-    }
-
-    protected function addBooleanCriterion($field, $whereClause)
-    {
-        return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'nc\') {'.PHP_EOL.
-            $this->addQuery($whereClause);
-    }
-
-    protected function addDateCriterion($field, $whereClause, $suffixe)
-    {
-        return str_repeat("\x20", 8) . "if (isset(\$aRecherche['" . $field . '\']) === true && $aRecherche[\'' . $field . '\'] !== \'\') {' . PHP_EOL .
-            str_repeat("\x20", 12) . 'if (!preg_match(\'/:/\', $aRecherche[\'' . $field . '\']) && !preg_match(\'/h/\', $aRecherche[\'' . $field . "'])) {" . PHP_EOL .
-            str_repeat("\x20", 16) . '$aRecherche[\'' . $field . '\']'.($suffixe ? ' .= \'' . $suffixe . '\'' : $suffixe).';' . PHP_EOL .
-            str_repeat("\x20", 12)."}" . PHP_EOL .
-            $this->addQuery($whereClause);
-    }
-
-    protected function addStringCriterion($field, $whereClause)
-    {
-        return str_repeat("\x20", 8).'if (isset($aRecherche[\''.$field.'\']) && $aRecherche[\''.$field.'\'] != \'\') {'.PHP_EOL.
-            $this->addQuery($whereClause);
-    }
-
-    protected function addQuery($whereClause)
-    {
-        return str_repeat("\x20", 12).'$sRequete .= "'.PHP_EOL.
-            str_repeat("\x20", 16) . $whereClause . PHP_EOL.
-            str_repeat("\x20", 12).'";'.PHP_EOL.
-            str_repeat("\x20", 8).'}'.PHP_EOL;
-    }
-
-    public function getValidationCriterion()
-    {
-        $sCritere = str_repeat("\x20", 8) . "\$aConfig['" . $this->name . '\'] = array(' . PHP_EOL;
+        $indent = str_repeat("\x20", 8);
+        $template = file(str_replace_first( '.','_validationCriterion.', $path));
+        $sCritere = $indent . str_replace('NAME', $this->name, $template[0]);
+        if ($this->isNullable && !isset($this->maxLength)) {
+            return '';
+        }
         if (!$this->isNullable) {
-            $sCritere .=
-                str_repeat("\x20", 12) . '\'required\' => \'1\',' . PHP_EOL .
-                str_repeat("\x20", 12) . '\'minlength\' => \'1\',' . PHP_EOL;
+            $sCritere .= $indent.$template[1].$indent.$template[2];
         }
+
+//        $sCritere = $indent . "\$aConfig['" . $this->name . '\'] = array(' . PHP_EOL;
+//        if (!$this->isNullable) {
+//            $sCritere .=
+//                str_repeat("\x20", 12) . "'required' => '1'," . PHP_EOL .
+//                str_repeat("\x20", 12) . "'minlength' => '1'," . PHP_EOL;
+//        }
 
         if (isset($this->maxLength)) {
             $maxLength = str_replace(' unsigned', '', $this->maxLength);
-            if (preg_match('/,/', $this->maxLength)) {
+            if (strpos($this->maxLength, ',')) {
                 $aLength = explode(',', $this->maxLength);
                 $maxLength = 1;
                 $maxLength += (int)$aLength[0];
                 $maxLength += (int)$aLength[1];
             }
+            $sCritere .= $indent . str_replace('MAX', $maxLength, $template[3]);
 
-            $sCritere .= str_repeat("\x20", 12) . "'maxlength' => '$maxLength'," . PHP_EOL;
+            //$sCritere .= str_repeat("\x20", 12) . "'maxlength' => '$maxLength'," . PHP_EOL;
         }
 
-        return $sCritere . str_repeat("\x20", 8) . ');' . PHP_EOL;
+        return $sCritere . $indent .$template[4] . PHP_EOL;
     }
 
-    public function getTableHeader()
+    public function getTableHeader($templatePath)
     {
-        return str_repeat("\x20", 16).'<th id="th_'.$this->column.'" class="tri">'.$this->label.'</th>';
+        return str_replace(['COLUMN', 'LABEL'], [$this->column, $this->label],
+            file_get_contents(str_replace('.', '_tableheader.', $templatePath)));
     }
 
-    public function getTableColumn()
+    public function getTableColumn($templatePath)
     {
-        $alignment = $this->getAlignmentFromType();
-
-        return str_repeat("\x20", 16)."<td class=\"{$this->getFormattedName()}$alignment\"></td>";
+        return str_replace(['NAME', 'ALIGN'], [$this->getFormattedName(), ''],
+            file_get_contents(str_replace('.', '_tablecolumn.', $templatePath)));
     }
 
     public function getAlignmentFromType()
@@ -230,9 +203,11 @@ class E2DField extends Field
         return ($this->isNumber() ? ' align-right' : ($this->isDateOrEnum() ? ' align-center'  : ''));
     }
 
-    public function getFieldMapping()
+    public function getFieldMapping($templatePath)
     {
-        return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
+        $path = str_replace_first('.', '_fieldmapping.', $templatePath);
+        return str_replace(['COLUMN', 'NAME'], [$this->column, $this->name], file_get_contents($path));
+//        return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
     }
 
     public function changeToManyToOneField($manyToOneParams)
@@ -276,4 +251,46 @@ class E2DField extends Field
         }
         return "CONCAT_WS(\' \', " . implode(", ",  $column) . ')';
     }
+
+    /**
+     * @param string $indent
+     * @param array $template
+     * @param array $aCritereRecherche
+     * @return array
+     */
+    private function getSearchCriterionDate(string $indent, array $template, array $aCritereRecherche): array
+    {
+        if ($this->type === 'date') {
+            $sSuffixeDebut = '';
+            $sSuffixeFin = '';
+            $sFormat = 'Y-m-d';
+        } elseif ($this->type === 'datetime') {
+            $sSuffixeDebut = ' 00:00:00';
+            $sSuffixeFin = ' 23:59:59';
+            $sFormat = 'Y-m-d H:i:s';
+        } else {
+            $sSuffixeDebut = '';
+            $sSuffixeFin = '';
+            $sFormat = 'H:i:s';
+        }
+
+        if ($this->type === 'datetime') {
+            $texteCritere = $indent . implode('', array_map(function ($line) use ($indent) {
+                    return $line . $indent;
+                },
+                    [$template[6], ...array_slice($template, 3, 3), $template[0], $template[13], $template[1], $template[2]]));
+        } else {
+            $texteCritere = $indent . implode('', array_map(function ($line) use ($indent) {
+                    return $line . $indent;
+                },
+                    [$template[6], $template[0], $template[13], $template[1], $template[2]]));
+        }
+
+        $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
+            [$this->alias, $this->column, '>=', $this->name . 'Debut', $sSuffixeDebut, $sFormat], $texteCritere);
+        $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
+            [$this->alias, $this->column, '<=', $this->name . 'Fin', $sSuffixeFin, $sFormat], $texteCritere);
+        return $aCritereRecherche;
+    }
+
 }

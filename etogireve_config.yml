@@ -10,3 +10,5 @@ models:
         usesSwitches: true
         tableName: eto_emsp_gireve_pool
 
+prefix: eto
+

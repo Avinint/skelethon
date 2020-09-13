@@ -7,9 +7,11 @@ use E2D\E2DModelMaker;
 
 class EtoModelMaker extends E2DModelMaker
 {
-    public function getTableHeaders()
+    public function getTableHeaders($templatePath)
     {
-        $actionHeader = empty($this->actions) ? '' : str_repeat("\x20", 20).'<th id="th_actions"></th>';
-        return  implode(PHP_EOL, array_map(function (Field $field) {return $field->getTableHeader();}, $this->fields)).PHP_EOL.$actionHeader;
+        $actionHeader = empty($this->actions) ? '' : file_get_contents($this->getTrueTemplatePath($templatePath, '_actionheader.'));
+        return implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {
+                return $field->getTableHeader($templatePath);
+            }, $this->fields)).PHP_EOL. $actionHeader;
     }
 }
