@@ -61,14 +61,28 @@ class E2DControllerFileGenerator extends FileGenerator
             $exceptionText = '';
 
             $fields = $this->model->getViewFields();
-            $fieldsText = '';
+            $fieldsNotNullableText = '';
+            $fieldsNotNullable = [];
+            $fieldsNullableText = '';
+            $fieldsNullable = [];
 
             foreach ($fields as $field) {
-                $this->handleControllerField($field, $exceptions, $defaults, $fieldTemplatePath, $fieldsText, $enumPath, $allEnumEditLines, $allEnumSearchLines);
+                $fieldText = $this->handleControllerField($field, $exceptions, $defaults, $fieldTemplatePath,$enumPath, $allEnumEditLines, $allEnumSearchLines);
+                if ($field['is_nullable'] === true) {
+                    $fieldsNullable[] = $fieldText.PHP_EOL;
+                } else {
+                    $fieldsNotNullable[] = $fieldText;
+                }
             }
 
-            if (!empty($fieldsText)) {
-                $fieldsText = PHP_EOL.$fieldsText.str_repeat("\x20", 8);
+            if (!empty($fieldsNullable)) {
+                $fieldsNullableText = PHP_EOL.str_repeat("\x20", 8).'$aChampsNull = [];'.
+                    PHP_EOL.str_repeat("\x20", 8).implode(PHP_EOL.str_repeat("\x20", 8), $fieldsNullable).PHP_EOL;
+            }
+            //var_dump($fieldsNullableText); die();
+
+            if (!empty($fieldsNotNullable)) {
+                $fieldsNotNullableText = PHP_EOL.str_repeat("\x20", 12).implode(PHP_EOL.str_repeat("\x20", 12), $fieldsNotNullable).PHP_EOL.str_repeat("\x20", 8);
             }
 
             $enumEditText = implode(PHP_EOL, $allEnumEditLines);
@@ -85,8 +99,8 @@ class E2DControllerFileGenerator extends FileGenerator
                 $exceptionText .= implode(',', $exceptionArr).']';
             }
 
-            $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', 'CHAMPS', 'IDFIELD'],
-                [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsText, $this->model->getIdField()], $methodText);
+                $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', '//CHAMPSNOTNULL', '//CHAMPSNULL', 'IDFIELD'],
+                [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsNotNullableText, $fieldsNullableText, $this->model->getIdField()], $methodText);
 
             $text .= file_get_contents($path);
             $concurrentText = $this->model->usesMultiCalques ? file_get_contents(str_replace('Action.', 'ActionMulti.', $path)): '';
@@ -116,46 +130,66 @@ class E2DControllerFileGenerator extends FileGenerator
      * @param array $exceptions
      * @param array $defaults
      * @param $fieldTemplatePath
-     * @param string $fieldsText
+     * @param string $fieldsNotNullableText
      * @param $enumPath
      * @param array $allEnumEditLines
      * @param array $allEnumSearchLines
      */
-    private function handleControllerField($field, array &$exceptions, array &$defaults, $fieldTemplatePath, string &$fieldsText, $enumPath, array &$allEnumEditLines, array &$allEnumSearchLines): void
+    private function handleControllerField($field, array &$exceptions, array &$defaults, $fieldTemplatePath, $enumPath, array &$allEnumEditLines, array &$allEnumSearchLines): string
     {
+        $templateFields = file($fieldTemplatePath, FILE_IGNORE_NEW_LINES);
+        $nullableFieldTemplatePath = str_replace('Champs.', 'ChampsNullable.', $fieldTemplatePath);
+        $templateNullableFields = file_get_contents($nullableFieldTemplatePath);
         if ($field['type'] === 'bool') {
             $this->handleControllerBooleanField($field, $exceptions, $defaults, $fieldTemplatePath);
-            $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
+            $template = [$templateFields[0], $templateFields[1]];
+            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+
 
         } elseif ($field['type'] === 'date') {
+            $template = [$templateFields[0], $templateFields[2].$templateFields[3]];
+            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
             $exceptions['aDates'][] = $field['name'];
-            $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[1]);
+//            $fieldsNotNullableText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], $templateFields[2].$templateFields[3]);
         }  elseif ($field['type'] === 'datetime') {
+            $template = [$templateFields[0], $templateFields[2].$templateFields[4]];
+            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
             $exceptions['aDateTimes'][] = $field['name'];
-            $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[2]);
+            //$fieldsNotNullableText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], $templateFields[2].$templateFields[4]);
         } elseif ($field['type'] === 'time') {
-            $exceptions['aDateTimes'][] = $field['name'];
-            $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[3]);
+            $template = [$templateFields[0], $templateFields[2].$templateFields[5]];
+            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+            $exceptions['aTimes'][] = $field['name'];
+            //$fieldsNotNullableText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], $templateFields[2].$templateFields[5]);
         }
 
         elseif ($field['type'] === 'enum') {
+            $template = [$templateFields[0], $templateFields[1]];
+            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
             $this->handleControllerEnumField($enumPath, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
-            $fieldsText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[0]);
+//            $fieldsNotNullableText .= str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], $templateFields[0].$templateFields[1]);
         } elseif (array_contains($field['type'], ['int', 'smallint', 'tinyint', 'bigint'])) {
-            $fieldsText .= $this->generateControllerIntegerField($field, $fieldTemplatePath);
-
+//            $fieldsText = $this->generateControllerIntegerField($field, $fieldTemplatePath);
+            $template = [$templateFields[0], $templateFields[1]];
+            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
         } elseif (array_contains($field['type'], ['float', 'double', 'decimal'])) {
+            $template = [$templateFields[0], $templateFields[6]];
             $exceptions['aFloats'][] = $field['name'];
-            $fieldsText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], file($fieldTemplatePath)[4]);
+            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+//            $fieldsNotNullableText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], $templateFields[0].$templateFields[6]);
         } else {
-            $fieldsText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], file($fieldTemplatePath)[0]);
+            $template = [$templateFields[0], $templateFields[1]];
+            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+//            $fieldsNotNullableText .= str_replace(['COLUMN', 'NAME', 'FIELD'], [$field['column'], $field['name'], $field['field']], $templateFields[0].$templateFields[1]);
         }
+
+        return $fieldsText;
     }
 
     /**
      * @param $field
      * @param $fieldTemplatePath
-     * @param string $fieldsText
+     * @param string $fieldsNotNullableText
      * @return string
      */
     protected function generateControllerIntegerField($field, $fieldTemplatePath): string
@@ -225,5 +259,25 @@ class E2DControllerFileGenerator extends FileGenerator
         }
 
         return $text;
+    }
+
+    /**
+     * @param $field
+     * @param string $template
+     * @param string $templateNullableFields
+     * @param string $fieldsText
+     * @return string
+     */
+    private function buildControllerField($field, array $template, string $templateNullableFields): string
+    {
+        $indent = str_repeat("\x20", 8);
+        if ($field['is_nullable']) {
+            $fieldsText = str_replace(['VALUE', 'COLUMN', 'NAME', PHP_EOL],
+                [$template[1], $field['column'], $field['name'], PHP_EOL.$indent], $templateNullableFields);
+        } else {
+            $fieldsText = str_replace(['VALUE', 'COLUMN', 'NAME'], [$template[1], $field['column'], $field['name']], $template[0]);
+        }
+
+        return $fieldsText;
     }
 }

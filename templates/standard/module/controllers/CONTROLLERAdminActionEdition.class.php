@@ -39,13 +39,13 @@
 
         $oElement->IDFIELD = $nIdElement;
 
-        $aChamps = [CHAMPS];
-
+        $aChamps = [//CHAMPSNOTNULL];
+//CHAMPSNULL
         if ($nIdElement > 0) {
-            $aRetour['bSucces'] = $oElement->bUpdate($aChamps);
+            $aRetour['bSucces'] = $oElement->bUpdate($aChamps, $aChampsNull);
             $aRetour['bModif'] = true;
         } else {
-            $aRetour['bSucces'] = $oElement->bInsert($aChamps);
+            $aRetour['bSucces'] = $oElement->bInsert($aChamps, $aChampsNull);
         }
 
         if ($aRetour['bSucces'] === false) {
