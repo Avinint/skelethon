@@ -31,16 +31,25 @@ class E2DModuleMaker extends ModuleMaker
     protected function initializeModule($params): void
     {
         $this->applyChoicesForAllModules = $this->config->get('memorizeChoices') ?? $this->askApplyChoiceForAllModules();
-
+        $this->initializeFileGenerators($params);
         $this->setMenuPath($params['menuPath']);
         $this->addMenu();
 
-        $modelFileGenerator = $params['modelFileGenerator'] ?? E2DModelFileGenerator::class;
-        $this->modelFileGenerator = new $modelFileGenerator($this->name, $this->model);
-        $this->controllerFileGenerator = new E2DControllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
-        $this->jsFileGenerator = new E2DJSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName());
-        $this->configFileGenerator = new E2DConfigFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
-        $this->viewFileGenerator = new E2DViewFileGenerator($this->name, $this->model, $this->getControllerName());
+    }
+
+    protected function initializeFileGenerators($params)
+    {
+        $modelFileGenerator       = $params['modelFileGenerator'] ?? E2DModelFileGenerator::class;
+        $controllerFileGenerator  = $params['controllerFileGenerator'] ?? E2DControllerFileGenerator::class;
+        $viewFileGenerator        = $params['viewFileGenerator'] ?? E2DViewFileGenerator::class;
+        $jSFileGenerator          = $params['jSFileGenerator'] ?? E2DJSFileGenerator::class;
+        $configFileGenerator      = $params['ConfigFileGenerator'] ?? E2DConfigFileGenerator::class;
+
+        $this->modelFileGenerator      = new $modelFileGenerator($this->name, $this->model);
+        $this->controllerFileGenerator = new $controllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
+        $this->jsFileGenerator         = new $jSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName());
+        $this->configFileGenerator     = new $configFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
+        $this->viewFileGenerator       = new $viewFileGenerator($this->name, $this->model, $this->getControllerName());
     }
 
     protected function executeSpecificModes()
@@ -141,6 +150,9 @@ class E2DModuleMaker extends ModuleMaker
         $this->addMenuItem();
     }
 
+    /**
+     *  Ajoute lien d'accueil dans le menu
+     */
     protected function addMenuItem()
     {
         $menu = Spyc::YAMLLoad($this->menuPath);

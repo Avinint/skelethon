@@ -8,13 +8,13 @@ use Core\FileGenerator;
 
 class E2DViewFileGenerator extends FileGenerator
 {
-    private string $moduleName;
-    private string $controllerName;
-    private E2DModelMaker $model;
+    protected string $moduleName;
+    protected string $controllerName;
+    protected E2DModelMaker $model;
 
     public function __construct(string $moduleName, E2DModelMaker $model, string $controllerName)
     {
-        parent::__construct($model->fileManager);
+        parent::__construct($model->getFileManager());
         $this->model = $model;
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
@@ -22,45 +22,18 @@ class E2DViewFileGenerator extends FileGenerator
     
     public function generate(string $path) : string
     {
-        $actionBarText = '';
-        $actionText = [];
-        if (array_contains_array(['edition', 'consultation'], $this->model->getActions(), true)) {
-            $actionBarTemplatePath = $this->getTrueTemplatePath($path, '_actionbar.');
-            $actionBarText = file_get_contents($actionBarTemplatePath);
-        }
+        $actionBarText = $this->generateListActionBarText($path);
 
-        if (array_contains('consultation', $this->model->getActions())) {
-            $consultationTemplatePath = $this->getTrueTemplatePath($path, '_consultation.');
-            $actionText[] = file_get_contents($consultationTemplatePath);
-        } else {
-            if (array_contains('edition', $this->model->getActions())) {
-                $editionTemplatePath = $this->getTrueTemplatePath($path, '_edition.');
-                $actionText[] .= file_get_contents($editionTemplatePath);
-            }
+        $actionText = $this->generateListActionText($path);
 
-            if (array_contains('suppression', $this->model->getActions())) {
-                $suppressionTemplatePath = $this->getTrueTemplatePath($path, '_suppression.');
-                $actionText[] .= file_get_contents($suppressionTemplatePath);
-            }
-        }
-
-        $actionText = str_replace('ACTION', implode(PHP_EOL, $actionText), file_get_contents($this->getTrueTemplatePath($path,  '_actionblock.')));
-
-        $callbackLigne = '';
-        if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY)) {
-            $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";
-        }
+        $tabletagText = $this->generateListTableTag($path);
 
         $templatePath = $this->getTrueTemplatePath($path);
-        $text = file_get_contents($templatePath);
-        $tabletagSubTemplate = ($this->model->getConfig()->get('noCallbackListeElenent') ?? true) ?
-                '_tabletag_nocallback.' : '_tabletag.';
 
-        $tabletagText = file_get_contents($this->getTrueTemplatePath($path, $tabletagSubTemplate));
-        //$t    emplatePath = str_replace( '.', '_actionheader.', $path);
-//     <table id="liste_salle_creneau_reservation" class="material-table tableau_donnees liste_salle_creneau_reservation align_middle route_parametrageesm_json_recherche_salle_creneau_reservation variable_1_0 callback_salleCreneauReservation_vCallbackListeElement ligne_callback_salleCreneauReservation_vCallbackLigneListe">
-        $text = str_replace(['TABLETAG','ACTION_BAR', 'CALLBACKLIGNE', 'cONTROLLER', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'TABLE', 'NUMCOL'],
-            [$tabletagText, $actionBarText, $callbackLigne, $this->camelize($this->controllerName), $this->model->getClassname(), $this->model->getTableHeaders($templatePath),
+        $text = file_get_contents($templatePath);
+        //$templatePath = str_replace( '.', '_actionheader.', $path);
+        $text = str_replace(['TABLETAG','ACTION_BAR', 'cONTROLLER', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'TABLE', 'NUMCOL'],
+            [$tabletagText, $actionBarText, $this->camelize($this->controllerName), $this->model->getClassname(), $this->model->getTableHeaders($templatePath),
                 $actionText, $this->model->getTableColumns( $templatePath), $this->moduleName, $this->model->GetName(), $this->model->getColumnNumber()], $text);
         return $text;
     }
@@ -187,5 +160,64 @@ class E2DViewFileGenerator extends FileGenerator
 
         return $text;
     }
-    
+
+    /**
+     * @param string $path
+     * @return string
+     * @throws \Exception
+     */
+    private function generateListActionText(string $path): string
+    {
+        $actionText = [];
+        if (array_contains('consultation', $this->model->getActions())) {
+            $consultationTemplatePath = $this->getTrueTemplatePath($path, '_consultation.');
+            $actionText[] = file_get_contents($consultationTemplatePath);
+        } else {
+            if (array_contains('edition', $this->model->getActions())) {
+                $editionTemplatePath = $this->getTrueTemplatePath($path, '_edition.');
+                $actionText[] = file_get_contents($editionTemplatePath);
+            }
+
+            if (array_contains('suppression', $this->model->getActions())) {
+                $suppressionTemplatePath = $this->getTrueTemplatePath($path, '_suppression.');
+                $actionText[] = file_get_contents($suppressionTemplatePath);
+            }
+        }
+
+        return str_replace('ACTION', implode(PHP_EOL, $actionText), file_get_contents($this->getTrueTemplatePath($path,  '_actionblock.')));
+    }
+
+    /**
+     * @param string $path
+     * @return false|string
+     * @throws \Exception
+     */
+    private function generateListActionBarText(string $path)
+    {
+        $actionBarText = '';
+        if (array_contains_array(['edition', 'consultation'], $this->model->getActions(), true)) {
+            $actionBarTemplatePath = $this->getTrueTemplatePath($path, '_actionbar.');
+            $actionBarText = file_get_contents($actionBarTemplatePath);
+        }
+        return $actionBarText;
+    }
+
+    /**
+     * @param string $path
+     * @return false|string|string[]
+     * @throws \Exception
+     */
+    private function generateListTableTag(string $path)
+    {
+        $callbackLigne = '';
+        if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY)) {
+            $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";
+        }
+
+        $tabletagSubTemplate = ($this->model->getConfig()->get('noCallbackListeElenent') ?? true) ?
+            '_tabletag_nocallback.' : '_tabletag.';
+        $tabletagText = str_replace('CALLBACKLIGNE', $callbackLigne, file_get_contents($this->getTrueTemplatePath($path, $tabletagSubTemplate)));
+        return $tabletagText;
+    }
+
 }    

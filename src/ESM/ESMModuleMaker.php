@@ -31,14 +31,18 @@ class ESMModuleMaker extends E2DModuleMaker
         }
     }
 
-    /**
-     * @param $field
-     * @param $fieldTemplatePath
-     * @param string $fieldsText
-     * @return string
-     */
-    protected function generateControllerIntegerField($field, $fieldTemplatePath): string
+    protected function initializeFileGenerators($params)
     {
-        return str_replace(['COLUMN', 'NAME'], [$field['column'], $field['name']], file($fieldTemplatePath)[5]);
+        $modelFileGenerator       = $params['modelFileGenerator'] ?? ESMModelFileGenerator::class;
+        $controllerFileGenerator  = $params['controllerFileGenerator'] ?? ESMControllerFileGenerator::class;
+        $viewFileGenerator        = $params['viewFileGenerator'] ?? ESMViewFileGenerator::class;
+        $jSFileGenerator          = $params['jSFileGenerator'] ?? ESMJSFileGenerator::class;
+        $configFileGenerator      = $params['ConfigFileGenerator'] ?? ESMConfigFileGenerator::class;
+
+        $this->modelFileGenerator      = new $modelFileGenerator($this->name, $this->model);
+        $this->controllerFileGenerator = new $controllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
+        $this->jsFileGenerator         = new $jSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName());
+        $this->configFileGenerator     = new $configFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
+        $this->viewFileGenerator       = new $viewFileGenerator($this->name, $this->model, $this->getControllerName());
     }
 }
