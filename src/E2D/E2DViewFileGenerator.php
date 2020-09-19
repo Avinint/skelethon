@@ -53,8 +53,9 @@ class E2DViewFileGenerator extends FileGenerator
 
         $templatePath = $this->getTrueTemplatePath($path);
         $text = file_get_contents($templatePath);
-        $tabletagSubTemplate = $this->model->getConfig()->get('nocallbacklisteelenent') ?? true ?
+        $tabletagSubTemplate = ($this->model->getConfig()->get('noCallbackListeElenent') ?? true) ?
                 '_tabletag_nocallback.' : '_tabletag.';
+
         $tabletagText = file_get_contents($this->getTrueTemplatePath($path, $tabletagSubTemplate));
         //$t    emplatePath = str_replace( '.', '_actionheader.', $path);
 //     <table id="liste_salle_creneau_reservation" class="material-table tableau_donnees liste_salle_creneau_reservation align_middle route_parametrageesm_json_recherche_salle_creneau_reservation variable_1_0 callback_salleCreneauReservation_vCallbackListeElement ligne_callback_salleCreneauReservation_vCallbackLigneListe">

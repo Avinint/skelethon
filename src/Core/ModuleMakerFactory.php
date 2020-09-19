@@ -26,6 +26,8 @@ class ModuleMakerFactory
             $this->displayHelpPage();
         }
 
+        $modelName = $action === 'module' ? $moduleName: $this->askName($modelName);
+
         $config = new Config($moduleName, $modelName);
 
         switch($action)
@@ -55,7 +57,6 @@ class ModuleMakerFactory
              */
             case 'action':
                 $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addAction', $config);
-                $model->setDatabaseAccess($databaseAccess::getDatabaseParams());
                 $maker = new $moduleMaker($fieldClass, $moduleName, $model, 'action', [
                     'config' => $config,
                     'menuPath' => 'config/menu.yml',
@@ -79,13 +80,12 @@ class ModuleMakerFactory
 
         if ($config->askLegacy($modelName)) {
             $modelMakerLegacy = $this->modelMaker. 'Legacy';
-            $model = new $modelMakerLegacy($fieldClass, $moduleName, $modelName . 'Legacy', $creationMode, $params);
+            $model = new $modelMakerLegacy($fieldClass, $moduleName, $modelName . 'Legacy', $creationMode, $params, $this->databaseAccess::getDatabaseParams(), null);
         } else {
-            $model = new $this->modelMaker($fieldClass, $moduleName, $modelName, $creationMode, $params);
+            $model = new $this->modelMaker($fieldClass, $moduleName, $modelName, $creationMode, $params, $this->databaseAccess::getDatabaseParams(), null);
         }
 
         $model->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
-        $model->setDbTable();
 
 
         return $model;
@@ -109,6 +109,17 @@ class ModuleMakerFactory
     ');
 
         die();
+    }
+
+    private function askName($name = '')
+    {
+        echo PHP_EOL;
+        if ($name === '') {
+            $name = readline($this->msg('Veuillez renseigner en '.$this->highlight('snake_case').' le nom du modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
+                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').'')) ? : $this->module;
+        }
+
+        return $name;
     }
 
 

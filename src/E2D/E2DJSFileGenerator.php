@@ -48,7 +48,7 @@ class E2DJSFileGenerator extends FileGenerator
         }
 
         $noRecherche = true;
-        $usesRechercheNoCallback = $this->model->getConfig()->get('nocallbacklisteelenent') ?? true;
+        $usesRechercheNoCallback = $this->model->getConfig()->get('noCallbackListeElenent') ?? true;
         foreach ($this->model->actions as $action) {
             $templatePerActionPath =  $this->getTrueTemplatePath($path, $this->pascalize($action) . '.');
             if ($action === 'recherche') {

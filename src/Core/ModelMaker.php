@@ -24,38 +24,41 @@ abstract class ModelMaker extends BaseMaker
     protected $fieldClass;
 
 
-    public function __construct($fieldClass, $module, $name, $mode, array $params = [], FileManager $fileManager = null)
+    public function __construct($fieldClass, $module, $name, $mode, array $params = [], DatabaseAccess $databaseAccess,  $fileManager = null)
     {
+        $this->name = $name;
         $this->setConfig($params);
         parent::__construct($fileManager);
+        $this->databaseAccess = $databaseAccess;
         static::$verbose = $this->config->get('verbose') ?? true;
         $this->creationMode = $mode;
         $this->fieldClass = $fieldClass;
         $this->module = Field::$module = $module;
 
-        $this->name = $mode === 'module' ? $module : $this->askName($name);
+//        $this->name = $mode === 'module' ? $module : $this->askName($name);
 
         $this->setClassName($this->name);
+        $this->setDbTable();
 
         $this->actions = $this->askActions();
 
         $this->askSpecifics();
     }
 
-    private function askName($name = '')
-    {
-        echo PHP_EOL;
-        if ($name === '') {
-            $name = readline($this->msg('Veuillez renseigner en snake_case le nom de la '.$this->highlight('table').' correspondant au modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
-                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').'')) ? : $this->module;
-        }
-
-    //        if ($name === '') {
-    //            $name = $this->module;
-    //        }
-
-        return $name;
-    }
+//    private function askName($name = '')
+//    {
+//        echo PHP_EOL;
+//        if ($name === '') {
+//            $name = readline($this->msg('Veuillez renseigner en '.$this->highlight('snake_case').' le nom du modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
+//                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').'')) ? : $this->module;
+//        }
+//
+//    //        if ($name === '') {
+//    //            $name = $this->module;
+//    //        }
+//
+//        return $name;
+//    }
 
 
     private function askTableName()

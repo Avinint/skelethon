@@ -10,11 +10,10 @@ class E2DModelMaker extends ModelMaker
 {
     private $modalTitle = [];
 
-    public function __construct($fieldClass, $module, $name, $creationMode = 'generate',  array $params = [])
+    public function __construct($fieldClass, $module, $name, $creationMode = 'generate',  array $params = [], $databaseAccess)
     {
-        $this->creationMode = $creationMode;
         $this->applyChoicesForAllModules = $params['applyChoicesForAllModules'];
-        parent::__construct($fieldClass, $module, $name, $creationMode, $params);
+        parent::__construct($fieldClass, $module, $name, $creationMode, $params, $databaseAccess);
 
     }
 
@@ -51,14 +50,21 @@ class E2DModelMaker extends ModelMaker
         $this->usesMultiCalques = $this->askMulti();
         $this->usesSelect2 = $this->askSelect2();
         $this->usesSwitches = $this->askSwitches();
+        $this->usesNoCallBackListeElement = $this->askCallbackListe();
+    }
+
+    private function askCallbackListe()
+    {
+        $usesNoCallbackListe = $this->config->get('noCallbackListeElenent') ?? $this->prompt('Voulez-vous un template qui n\'utilise pas le callback liste ? (Utile si vous avez des valeurs de recherche par défaut)', ['o', 'n']) === 'o';
+        $this->config->saveChoice('noCallbackListeElenent', $usesNoCallbackListe, $this->name);
     }
 
     private function askMulti()
     {
-        $useMulti = $this->config->get('usesMulti') ?? $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']) === 'o';
-        $this->config->saveChoice('usesMulti', $useMulti, $this->name);
+        $usesMulti = $this->config->get('usesMulti') ?? $this->prompt('Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)', ['o', 'n']) === 'o';
+        $this->config->saveChoice('usesMulti', $usesMulti, $this->name);
 
-        return $useMulti === 'o';
+        return $usesMulti === 'o';
     }
 
     private function askSwitches()
