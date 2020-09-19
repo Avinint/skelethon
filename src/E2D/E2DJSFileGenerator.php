@@ -48,19 +48,23 @@ class E2DJSFileGenerator extends FileGenerator
         }
 
         $noRecherche = true;
+        $usesRechercheNoCallback = $this->model->getConfig()->get('nocallbacklisteelenent') ?? true;
         foreach ($this->model->actions as $action) {
-            $templatePerActionPath =  $this->getTrueTemplatePath(str_replace('.', $this->pascalize($action) . '.', $path));
-            if (file_exists($templatePerActionPath)) {
-                $actionMethodText .= file_get_contents($templatePerActionPath);
-            }
-
+            $templatePerActionPath =  $this->getTrueTemplatePath($path, $this->pascalize($action) . '.');
             if ($action === 'recherche') {
                 $noRecherche = false;
+                if ($usesRechercheNoCallback) {
+                    $templatePerActionPath =  $this->getTrueTemplatePath($templatePerActionPath, '_nocallback.');
+                }
+            }
+
+            if (file_exists($templatePerActionPath)) {
+                $actionMethodText .= file_get_contents($templatePerActionPath);
             }
         }
 
         if ($noRecherche) {
-            $noRechercheText = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'NoRecherche.', $path)));
+            $noRechercheText = file_get_contents($this->getTrueTemplatePath($path, 'NoRecherche.'));
             $actionMethodText = $noRechercheText.$actionMethodText;
         }
 
@@ -122,7 +126,6 @@ class E2DJSFileGenerator extends FileGenerator
             $personalizedButtonsTemplateSuffix = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton.' : 'NoConsultationButtons.';
             $personalizeButtons = file_get_contents($this->getTrueTemplatePath(str_replace('.', $personalizedButtonsTemplateSuffix, $path)));
         }
-
 
         $text = str_replace([ '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
             'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2', 'SELECTAJAX',],

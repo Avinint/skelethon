@@ -157,7 +157,7 @@ class E2DModuleMaker extends ModuleMaker
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
-            $this->createFile($$this->menuPath, $menu, true);
+            $this->createFile($this->menuPath, $menu, true);
         }
     }
 

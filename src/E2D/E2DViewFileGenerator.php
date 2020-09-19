@@ -53,10 +53,13 @@ class E2DViewFileGenerator extends FileGenerator
 
         $templatePath = $this->getTrueTemplatePath($path);
         $text = file_get_contents($templatePath);
+        $tabletagSubTemplate = $this->model->getConfig()->get('nocallbacklisteelenent') ?? true ?
+                '_tabletag_nocallback.' : '_tabletag.';
+        $tabletagText = file_get_contents($this->getTrueTemplatePath($path, $tabletagSubTemplate));
         //$t    emplatePath = str_replace( '.', '_actionheader.', $path);
 //     <table id="liste_salle_creneau_reservation" class="material-table tableau_donnees liste_salle_creneau_reservation align_middle route_parametrageesm_json_recherche_salle_creneau_reservation variable_1_0 callback_salleCreneauReservation_vCallbackListeElement ligne_callback_salleCreneauReservation_vCallbackLigneListe">
-        $text = str_replace(['ACTION_BAR', 'CALLBACKLIGNE', 'cONTROLLER', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'TABLE', 'NUMCOL'],
-            [$actionBarText, $callbackLigne, $this->camelize($this->controllerName), $this->model->getClassname(), $this->model->getTableHeaders($templatePath),
+        $text = str_replace(['TABLETAG','ACTION_BAR', 'CALLBACKLIGNE', 'cONTROLLER', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'TABLE', 'NUMCOL'],
+            [$tabletagText, $actionBarText, $callbackLigne, $this->camelize($this->controllerName), $this->model->getClassname(), $this->model->getTableHeaders($templatePath),
                 $actionText, $this->model->getTableColumns( $templatePath), $this->moduleName, $this->model->GetName(), $this->model->getColumnNumber()], $text);
         return $text;
     }

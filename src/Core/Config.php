@@ -40,6 +40,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     {
         $this->module = $module;
         $this->currentModel = $model;
+        $this->path = $this->getPath();
         $this->data = $this->getData();
 
         $this->setFileManager(null, $fileManager);
@@ -144,7 +145,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 
         if ($module) {
             $data = $moduleData;
-            $path = str_replace('config', $module.'_config', $this->path);
+            $path = str_replace_last('config', $module.'_config', $this->path);
         } else {
             $data = $this->data;
             unset($data['modules']);
@@ -156,7 +157,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 
     private function getPath($module = 'main')
     {
-        return dirname(dirname(__DIR__)) .DS .($module !== 'main' ? $module. '_' : '').'config.yml';
+        return dirname(dirname(__DIR__)) . DS . 'config' . DS .($module !== 'main' ? $module. '_' : '') . 'config.yml';
     }
 
     public function offsetSet($offset, $value) {
@@ -264,7 +265,6 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 
     protected function getData(): array
     {
-        $this->path = $this->getPath();
         $modulePath = $this->getPath($this->module);
 
         $data = file_exists($this->path) ? Spyc::YAMLLoad($this->path) : [];
