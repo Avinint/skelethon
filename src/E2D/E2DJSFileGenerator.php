@@ -2,6 +2,7 @@
 
 namespace E2D;
 
+use Core\Config;
 use Core\FileGenerator;
 
 class E2DJSFileGenerator extends FileGenerator
@@ -13,10 +14,10 @@ class E2DJSFileGenerator extends FileGenerator
     private string $moduleName;
     private string $pascalCaseModuleName;
 
-    public function __construct(string $moduleName, string $pascalCaseModuleName, E2DModelMaker $model, string $controllerName)
+    public function __construct(string $moduleName, string $pascalCaseModuleName, E2DModelMaker $model, string $controllerName, Config $config)
     {
-        parent::__construct($model->fileManager);
-
+        $this->config = $config;
+        parent::__construct($model->getFileManager());
         $this->model = $model;
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
@@ -91,7 +92,7 @@ class E2DJSFileGenerator extends FileGenerator
         $selectAjaxDefinitionText = '';
         $personalizeButtons = '';
         if (strpos($templatePath, 'Admin') > 0) {
-            if ($this->model->hasOneRelations) {
+            if ($this->model->hasManyToOneRelation) {
 
                 if ($fields = $this->model->getViewFieldsByType('foreignKey')) {
 
@@ -103,11 +104,11 @@ class E2DJSFileGenerator extends FileGenerator
                             $label = $this->model->generateConcatenatedColumn($label);
                         }
 
-                        $ajaxSearchTextTemp = PHP_EOL.file_get_contents($this->getTrueTemplatePath(str_replace('.', 'RechercheSelectAjaxCall.', $path)));
+                        $ajaxSearchTextTemp = PHP_EOL.file_get_contents($this->getTrueTemplatePath(str_replace('.', 'RechercheSelectAjaxCall.', $templatePath)));
                         $select2SearchText .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], $ajaxSearchTextTemp);
                         $allowClear = $field['is_nullable'] ? 'true' : 'false';
 
-                        $selectAjaxCallEditTextTemp = PHP_EOL.file_get_contents($this->getTrueTemplatePath(str_replace('.', 'EditionSelectAjaxCall.', $path)));
+                        $selectAjaxCallEditTextTemp = PHP_EOL.file_get_contents($this->getTrueTemplatePath(str_replace('.', 'EditionSelectAjaxCall.', $templatePath)));
 
 
                         $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'FIELD', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $field['field'], $allowClear], $selectAjaxCallEditTextTemp);
@@ -125,12 +126,20 @@ class E2DJSFileGenerator extends FileGenerator
 
             $personalizedButtonsTemplateSuffix = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton.' : 'NoConsultationButtons.';
             $personalizeButtons = file_get_contents($this->getTrueTemplatePath(str_replace('.', $personalizedButtonsTemplateSuffix, $path)));
+
+            $tinyMCE = '';
+            $champs = $this->model->getConfig()->get('champsTinyMCE');
+            foreach ($champs as $champ) {
+                $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path, 'EditionAppelTinyMCE.')));
+            }
+
+            $tinyMCEDef = $this->model->getConfig()->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path, 'EditionDefinitionTinyMCE.')) : '';
         }
 
         $text = str_replace([ '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
-            'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT', 'SELECT2', 'SELECTAJAX',],
+            'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT' , 'TINYMCEDEF', 'TINYMCE', 'SELECT2', 'SELECTAJAX',],
             [$personalizeButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
-                $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $select2SearchText, $selectAjaxDefinitionText], $text);
+                $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $tinyMCEDef, $tinyMCE, $select2SearchText, $selectAjaxDefinitionText], $text);
 
         return $text;
     }

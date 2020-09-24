@@ -21,6 +21,8 @@
 SELECT2EDIT
         oModal.oOpenModal();
         aInstancesCalques[oParams.szIdCalque] = oModal;
+
+TINYMCE
     };
 
     /**
@@ -64,3 +66,5 @@ SELECT2EDIT
         oParams.sClasseListe = 'TABLE';
         this.vRefreshListeEtFermeCalque(oParams);
     };
+
+TINYMCEDEF

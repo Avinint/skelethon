@@ -2,19 +2,20 @@
 
 namespace Core;
 
-
 use E2D\E2DModelMaker;
 
 class ModuleMakerFactory
 {
-    private $moduleMaker;
+    private $databaseAccess;
     private $modelMaker;
+    private $fieldClass;
 
-    public function __construct($arguments, $moduleMaker, $modelMaker, $fieldClass, $databaseAccess)
+    public function __construct(ProjectType $type, $arguments)
     {
-        $this->databaseAccess = $databaseAccess;
-        $this->moduleMaker = $moduleMaker;
-        $this->modelMaker = $modelMaker;
+        $this->databaseAccess = $type.'DatabaseAccess';
+        $this->modelMaker = $type.'ModelMaker';
+        $moduleMaker = $type.'ModuleMaker';
+        $this->fieldClass = $type.'Field';
 
         if (!is_dir('modules')) {
             ModuleMaker::msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
@@ -28,12 +29,15 @@ class ModuleMakerFactory
 
         $modelName = $action === 'module' ? $moduleName: $this->askName($modelName);
 
-        $config = new Config($moduleName, $modelName);
+        $config = new Config($moduleName, $modelName, $type);
+        $config->setFileManager($type->getTemplate());
+
+        $config->initialize();
 
         switch($action)
         {
             case 'module':
-                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'generate', $config);
+                $model = $this->buildModel($moduleName, $modelName, 'generate', $config);
                 $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'generate', [
                     'config' => $config,
@@ -42,7 +46,7 @@ class ModuleMakerFactory
                 $maker->generate();
                 break;
             case 'modele':
-                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addModel', $config);
+                $model = $this->buildModel($moduleName, $modelName, 'addModel', $config);
                 ;
                 $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'addModel', [
@@ -56,8 +60,8 @@ class ModuleMakerFactory
              *  Ajoute une action et une route et une action du controlleur une callback js une vue
              */
             case 'action':
-                $model = $this->buildModel($fieldClass, $moduleName, $modelName, 'addAction', $config);
-                $maker = new $moduleMaker($fieldClass, $moduleName, $model, 'action', [
+                $model = $this->buildModel($moduleName, $modelName, 'addAction', $config);
+                $maker = new $moduleMaker($moduleName, $model, 'action', [
                     'config' => $config,
                     'menuPath' => 'config/menu.yml',
                 ]);
@@ -71,7 +75,14 @@ class ModuleMakerFactory
 
     }
 
-    public function buildModel($fieldClass, $moduleName, $modelName, $creationMode, $config)
+    /**
+     * @param $moduleName
+     * @param $modelName
+     * @param $creationMode
+     * @param $config
+     * @return mixed
+     */
+    public function buildModel($moduleName, $modelName, $creationMode, $config)
     {
         $params = [
             'config' => $config,
@@ -80,9 +91,9 @@ class ModuleMakerFactory
 
         if ($config->askLegacy($modelName)) {
             $modelMakerLegacy = $this->modelMaker. 'Legacy';
-            $model = new $modelMakerLegacy($fieldClass, $moduleName, $modelName . 'Legacy', $creationMode, $params, $this->databaseAccess::getDatabaseParams(), null);
+            $model = new $modelMakerLegacy($this->fieldClass, $moduleName, $modelName . 'Legacy', $creationMode, $params, $this->databaseAccess::getDatabaseParams(), null);
         } else {
-            $model = new $this->modelMaker($fieldClass, $moduleName, $modelName, $creationMode, $params, $this->databaseAccess::getDatabaseParams(), null);
+            $model = new $this->modelMaker($this->fieldClass, $moduleName, $modelName, $creationMode, $params, $this->databaseAccess::getDatabaseParams(), null);
         }
 
         $model->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
@@ -90,7 +101,6 @@ class ModuleMakerFactory
 
         return $model;
     }
-
 
     private function displayHelpPage(): void
     {

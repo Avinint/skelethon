@@ -4,6 +4,7 @@
 namespace E2D;
 
 
+use Core\Config;
 use Core\FileGenerator;
 
 class E2DViewFileGenerator extends FileGenerator
@@ -12,14 +13,15 @@ class E2DViewFileGenerator extends FileGenerator
     protected string $controllerName;
     protected E2DModelMaker $model;
 
-    public function __construct(string $moduleName, E2DModelMaker $model, string $controllerName)
+    public function __construct(string $moduleName, E2DModelMaker $model, string $controllerName, Config $config)
     {
+        $this->config = $config;
         parent::__construct($model->getFileManager());
         $this->model = $model;
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
     }
-    
+
     public function generate(string $path) : string
     {
         $actionBarText = $this->generateListActionBarText($path);

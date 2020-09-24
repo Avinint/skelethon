@@ -9,14 +9,16 @@ abstract class ModuleMaker extends BaseMaker
     protected $name;
     protected $model;
     protected $namespaceName;
-    protected $config;
+    protected Config $config;
     protected $specificField;
     protected $modulePath;
-    protected $fileManager;
+    protected FileManager $fileManager;
 
     public function __construct(string $name, ModelMaker $model, $creationMode = 'generate', $params = [], FileManager $fileManager = null)
     {
         $this->setConfig($params);
+        $this->template = $this->config->get('template') ?? 'standard';
+
         parent::__construct($fileManager);
         $this->setModulePath($params['modulePath'] ?? null);
 

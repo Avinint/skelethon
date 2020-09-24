@@ -13,6 +13,7 @@ class CONTROLLERAdminHTML extends AffichageHTML
      */
     public function szGetContenuCentralHTML()
     {
+//TINYMCE
         $sContenu = parent::szGetContenuCentralHTML();
 
         if ($this->bAccueilModule === true) {

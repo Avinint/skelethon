@@ -10,9 +10,9 @@ class EtoModuleMaker extends E2DModuleMaker
     /**
      * @param mixed $fileManager
      */
-    public function setFileManager(?FileManager $fileManager): void
+    public function setFileManager(?FileManager $fileManager, $template = 'standard'): void
     {
-        $this->fileManager = $fileManager ?? $this->config->getFileManager('etotem');
+        $this->fileManager = $fileManager ?? $this->config->getFileManager($template);
 
     }
 

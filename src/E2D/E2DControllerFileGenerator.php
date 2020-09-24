@@ -2,15 +2,17 @@
 
 namespace E2D;
 
+use Core\Config;
 use Core\FileGenerator;
 
 class E2DControllerFileGenerator extends FileGenerator
 {
     private string $pascalCaseModuleName;
 
-    public function __construct(string $moduleName, string $pascalCaseModuleName, object $model, string $controllerName)
+    public function __construct(string $moduleName, string $pascalCaseModuleName, object $model, string $controllerName, Config $config)
     {
-        parent::__construct($model->fileManager);
+        $this->config = $config;
+        parent::__construct($model->getFileManager());
         $this->model = $model;
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
@@ -254,7 +256,9 @@ class E2DControllerFileGenerator extends FileGenerator
 
             $recherche = array_contains('recherche', $this->model->actions) ? file_get_contents($this->getTrueTemplatePath($path, 'Recherche.class.php', '.class.php')) : '';
 
-            $text = str_replace('//RECHERCHE', $recherche, $text);
+            $tinyMCE =  array_contains('edition', $this->model->actions) && $this->model->getConfig()->has('champsTinyMCE') ? file_get_contents($this->getTrueTemplatePath($path, 'TinyMCE.class.php', '.class.php')) : '';
+
+            $text = str_replace(['//RECHERCHE', '//TINYMCE'], [$recherche, $tinyMCE], $text);
             $text = str_replace(['MODULE', 'CONTROLLER', 'mODULE', 'TABLE'], [$this->pascalCaseModuleName, $this->controllerName, $this->moduleName, $this->model->getName()], $text);
         }
 

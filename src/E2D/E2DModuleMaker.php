@@ -34,7 +34,6 @@ class E2DModuleMaker extends ModuleMaker
         $this->initializeFileGenerators($params);
         $this->setMenuPath($params['menuPath']);
         $this->addMenu();
-
     }
 
     protected function initializeFileGenerators($params)
@@ -45,11 +44,11 @@ class E2DModuleMaker extends ModuleMaker
         $jSFileGenerator          = $params['jSFileGenerator'] ?? E2DJSFileGenerator::class;
         $configFileGenerator      = $params['ConfigFileGenerator'] ?? E2DConfigFileGenerator::class;
 
-        $this->modelFileGenerator      = new $modelFileGenerator($this->name, $this->model);
-        $this->controllerFileGenerator = new $controllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
-        $this->jsFileGenerator         = new $jSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName());
-        $this->configFileGenerator     = new $configFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
-        $this->viewFileGenerator       = new $viewFileGenerator($this->name, $this->model, $this->getControllerName());
+        $this->modelFileGenerator      = new $modelFileGenerator($this->name, $this->model, $this->config);
+        $this->controllerFileGenerator = new $controllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName(), $this->config);
+        $this->jsFileGenerator         = new $jSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName(), $this->config);
+        $this->configFileGenerator     = new $configFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName(), $this->config);
+        $this->viewFileGenerator       = new $viewFileGenerator($this->name, $this->model, $this->getControllerName(), $this->config);
     }
 
     protected function executeSpecificModes()
@@ -153,7 +152,7 @@ class E2DModuleMaker extends ModuleMaker
     /**
      *  Ajoute lien d'accueil dans le menu
      */
-    protected function addMenuItem()
+    protected function addMenuItem() : void
     {
         $menu = Spyc::YAMLLoad($this->menuPath);
         $subMenu = $this->getSubMenu();
@@ -180,9 +179,10 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function getSubMenu(): array
     {
-        $template = file_exists(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
+        $template = file_exists(dirname(dirname(dirname(__DIR__))) . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
         $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
             $this->model->getTitre();
+
 
         return Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
             [$this->name, $this->model->getName(), $label], file_get_contents(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $template . DS . 'menu.yml')));

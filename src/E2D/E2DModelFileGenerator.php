@@ -3,13 +3,16 @@
 
 namespace E2D;
 
+use Core\BaseMaker;
 use Core\FileGenerator;
 
 class E2DModelFileGenerator extends FileGenerator
 {
-    public function __construct(string $moduleName, object $model)
+
+    public function __construct(string $moduleName, object $model, $config)
     {
-        parent::__construct($model->fileManager);
+        $this->config = $config;
+        BaseMaker::__construct($model->getFileManager());
         $this->model = $model;
         $this->moduleName = $moduleName;
     }

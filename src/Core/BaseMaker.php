@@ -5,9 +5,8 @@ namespace Core;
 abstract class BaseMaker extends CommandLineToolShelf
 {
 
-    /** @var Config $this->config */
-    protected $config;
-    protected $fileManager;
+    protected Config $config;
+    protected FileManager $fileManager;
 
     /**
      * @return mixed
@@ -22,17 +21,13 @@ abstract class BaseMaker extends CommandLineToolShelf
      */
     public function setFileManager(?FileManager $fileManager): void
     {
-        if ($fileManager === null) {
-            $this->fileManager = $this->config->getFileManager();
-        } else {
-            $this->fileManager = $fileManager;
-        }
+        $this->fileManager = $fileManager ??  $this->config->getFileManager($this->template ?? 'standard');
     }
 
-    public function __construct(FileManager $fileManager = null)
+    public function __construct( FileManager $fileManager = null)
     {
-        $this->setFileManager($fileManager);
-        $this->template = $this->fileManager->getTemplate();
+        $this->setFileManager($fileManager, $this->template );
+
     }
 
     /**
@@ -95,8 +90,6 @@ abstract class BaseMaker extends CommandLineToolShelf
         }
         return $this->fileManager->getTrueTemplatePath($templatePath, $replace, $search);
     }
-
-
 
     /**
      * @return bool|null

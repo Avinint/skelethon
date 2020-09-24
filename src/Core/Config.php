@@ -6,12 +6,14 @@ use ArrayAccess;
 use Countable;
 use http\Exception\InvalidArgumentException;
 use \Spyc ;
+use function PHPUnit\Framework\directoryExists;
 
 class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 {
-
+    private $type;
+    private $module;
     private $path;
-    private $data;
+    private array $data;
     private $currentModel;
     protected $fileManager;
 
@@ -29,21 +31,34 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     public function setFileManager(?string $template = null, ?FileManager $fileManager = null): void
     {
         if ($fileManager === null) {
-            $template = $template ?? $this->get('template', $this->currentModel) ?? $this->askTemplate();
+            $this->template = $template ?? $this->get('template', $this->currentModel);
             $this->fileManager = new FileManager($template);
+
         } else {
             $this->fileManager = $fileManager;
         }
+
+        $this->ensureDirectoryExists(dirname($this->getPath('for_project')));
+
+        if (!file_exists($this->getPath('for_project'))) {
+            $this->fileManager->createFile($this->getPath('for_project', Spyc::YAMLDump([], 4, 40, true), true));
+        }
+
+        $this->set('template', $template,  'for_project');
     }
 
-    public function __construct($module, $model, FileManager $fileManager = null)
+    public function setTemplate(string $template)
+    {
+        $this->set('template', $template,  'for_project');
+    }
+
+    public function __construct($module, $model, ProjectType $type)
     {
         $this->module = $module;
         $this->currentModel = $model;
+        $this->type = $type;
+        $this->subDir = $this->type->getConfigName();
         $this->path = $this->getPath();
-        $this->data = $this->getData();
-
-        $this->setFileManager(null, $fileManager);
     }
 
     /**
@@ -77,12 +92,16 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             if ($setForAll) {
                 $this->data[$field] = $value;
                 $this->write();
+            } elseif (isset($model) && $model === 'for_project') {
+                $this->data[$this->subDir][$field] = $value;
+                $this->write('for_project');
             } else {
                 if (isset($model)) {
-                    $this->data['modules'][$this->module]['models'][$model][$field] = $value;
+                    $this->data[$this->subDir]['modules'][$this->module]['models'][$model][$field] = $value;
                 } else {
-                    $this->data['modules'][$this->module][$field] = $value;
+                    $this->data[$this->subDir]['modules'][$this->module][$field] = $value;
                 }
+
                 $this->write($this->module);
             }
         } else {
@@ -103,12 +122,12 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             $this->data[$field][] = $value;
             return;
         } else {
-            if (isset($model) && is_array($this->data['modules'][$this->module]['models'][$model][$field])) {
-                $this->data['modules'][$this->module]['models'][$model][$field][$key] = $value;
+            if (isset($model) && is_array($this->data[$this->subDir]['modules'][$this->module]['models'][$model][$field])) {
+                $this->data[$this->subDir]['modules'][$this->module]['models'][$model][$field][$key] = $value;
                 $this->write($this->module);
                 return;
-            } elseif (is_array($this->data['modules'][$this->module][$field] )) {
-                $this->data['modules'][$this->module][$field][$key] = $value;
+            } elseif (is_array($this->data[$this->subDir]['modules'][$this->module][$field] )) {
+                $this->data[$this->subDir]['modules'][$this->module][$field][$key] = $value;
                 $this->write($this->module);
                 return;
             }
@@ -141,23 +160,42 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 
     public function write($module = '')
     {
-        $moduleData = $this->data['modules'][$module];
+        if ($module === 'for_project') {
+            $path = $this->getPath('for_project');
+            $data = $this->data[$this->subDir];
+            unset($data['modules']);
 
-        if ($module) {
+        } elseif ($module) {
+            if (!isset($this->data[$this->subDir]['modules'])) {
+                $this->data[$this->subDir]['modules'] = [$module => []];
+            }
+            $moduleData = $this->data[$this->subDir]['modules'][$module];
             $data = $moduleData;
-            $path = str_replace_last('config', $module.'_config', $this->path);
+
+            $path = $this->getPath($module);
         } else {
             $data = $this->data;
-            unset($data['modules']);
+            unset($data[$this->subDir]);
             $path = $this->path;
+
         }
 
         $this->fileManager->createFile($path, Spyc::YAMLDump($data, 4, 40, true), true);
     }
 
-    private function getPath($module = 'main')
+    /**
+     * @param string $name app, project ou nom de module spécifique
+     * @return string
+     */
+    private function getPath($name = 'for_app')
     {
-        return dirname(dirname(__DIR__)) . DS . 'config' . DS .($module !== 'main' ? $module. '_' : '') . 'config.yml';
+        if ($name === 'for_app') {
+            return dirname(dirname(__DIR__)) . DS . 'config' . DS . 'config.yml';
+        } elseif ($name === 'for_project') {
+            return dirname(dirname(__DIR__)) . DS . 'config' . DS . $this->type->getConfigName() . DS . 'config.yml';
+        } else {
+            return dirname(dirname(__DIR__)) . DS . 'config' . DS . $this->type->getConfigName() . DS . $name . '_config.yml';
+        }
     }
 
     public function offsetSet($offset, $value) {
@@ -200,15 +238,9 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         if (isset($model)) {
             return $this->getValueFromModelConfig($field, $model);
         }
-//        var_dump($this->getValueFromModuleConfig($field));
-//        var_dump($this->getValueFromModelConfig($field));
-        $result = $this->data[$field] ?? $this->getValueFromModuleConfig($field) ?? $this->getValueFromModelConfig($field);
-        if (isset($result)) {
 
-            return $result;
-        }
-
-        return null;
+        $result = $this->data[$this->type->getName()][$field] ?? $this->getValueFromModuleConfig($field) ?? $this->getValueFromModelConfig($field) ?? $this->data[$field] ?? null;
+        return $result;
     }
 
     /**
@@ -217,8 +249,8 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      */
     private function getValueFromModuleConfig(string $field)
     {
-        if (isset($this->data['modules'][$this->module][$field])) {
-            return $this->data['modules'][$this->module][$field];
+        if (isset($this->data[$this->subDir]['modules'][$this->module][$field])) {
+            return $this->data[$this->subDir]['modules'][$this->module][$field];
         }
 
         return $this->getValueFromModelConfig($field);
@@ -231,8 +263,8 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     private function getValueFromModelConfig(string $field, $model = null)
     {
         $currentModel = $model ?? $this->currentModel;
-        if (isset($currentModel) && isset($this->data['modules'][$this->module]['models'][$currentModel][$field])) {
-            return $this->data['modules'][$this->module]['models'][$currentModel][$field];
+        if (isset($currentModel) && isset($this->data[$this->subDir]['modules'][$this->module]['models'][$currentModel][$field])) {
+            return $this->data[$this->subDir]['modules'][$this->module]['models'][$currentModel][$field];
         }
 
         return null;
@@ -255,24 +287,15 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             $this->write();
         } else {
             if (isset($model)) {
-                unset($this->data['modules'][$this->module]['models'][$model][$field]);
+                unset($this->data[$this->subDir]['modules'][$this->module]['models'][$model][$field]);
             } else {
-                unset($this->data['modules'][$this->module][$field]);
+                unset($this->data[$this->subDir]['modules'][$this->module][$field]);
             }
             $this->write($this->module);
         }
     }
 
-    protected function getData(): array
-    {
-        $modulePath = $this->getPath($this->module);
 
-        $data = file_exists($this->path) ? Spyc::YAMLLoad($this->path) : [];
-        $moduleData = file_exists($modulePath) ? Spyc::YAMLLoad($modulePath) : [];
-        $data['modules'][$this->module] = $moduleData;
-
-        return $data;
-    }
 
     /**
      * L'application donne des choix aux utilisateurs, les réponses sont stockées en config,
@@ -334,10 +357,45 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         }
     }
 
-    protected function askTemplate()
+    public function askTemplate()
     {
         $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
-        $res =  $this->askConfig('template', $templates, 'askMultipleChoices', 'standard');
+        $res = $this->askConfig('template', $templates, 'askMultipleChoices', $this->type->getTemplate());
         return $res;
+    }
+
+//    public function initializeData()
+//    {
+//        $this->getData();
+//
+//
+//    }
+//
+//
+
+    public function initialize(): void
+    {
+        $projectPath = $this->getPath('for_project');
+        $modulePath = $this->getPath($this->module);
+
+        $data = file_exists($this->path) ? Spyc::YAMLLoad($this->path) : [];
+        $projectData = file_exists($projectPath) ? Spyc::YAMLLoad($projectPath) : [];
+        $moduleData = file_exists($modulePath) ? Spyc::YAMLLoad($modulePath) : [];
+//        if (!isset($this->data[$this->subDir]['modules'])) {
+//            $this->data[$this->subDir]['modules'] = [$this->module => []];
+//        }
+        $data[$this->subDir] = $projectData;
+        $data[$this->subDir]['modules'] = [$this->module => $moduleData];
+
+        $this->data = $data;
+    }
+
+    private function ensureDirectoryExists(string $path): void
+    {
+        if (!is_dir($path)) {
+            if (!mkdir($path) && !is_dir($path)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
+            }
+        }
     }
 }

@@ -1,4 +1,3 @@
-
     /**
      * Rafraichissement de la liste.
      *

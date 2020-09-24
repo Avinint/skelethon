@@ -28,6 +28,7 @@ abstract class ModelMaker extends BaseMaker
     {
         $this->name = $name;
         $this->setConfig($params);
+
         parent::__construct($fileManager);
         $this->databaseAccess = $databaseAccess;
         static::$verbose = $this->config->get('verbose') ?? true;
@@ -63,24 +64,27 @@ abstract class ModelMaker extends BaseMaker
 
     private function askTableName()
     {
-        $prefix = $this->config->get('prefix') ?? null;
-        if (!isset($prefix) && ($this->config->get('prefix') ?? true)) {
-            $prefix = $this->askPrefix();
+//        $prefix = $this->config->get('prefix') ?? null;
+//        if (!isset($prefix) && ($this->config->get('prefix') ?? true)) {
+//            $prefix = $this->askPrefix();
+//        }
+
+        if ($this->config->has('tableName')) {
+            $this->tableName = $this->config->get('tableName');
+            return;
         }
 
-        if (isset($prefix)) {
-            $tempTableName = $prefix . '_'. $this->name;
-        } else {
-            $tempTableName = $this->name;
-        }
+//        var_dump($this->config); die();
+
+        $prefix = $this->config->get('prefix') ?? $this->askPrefix();
+
+        $tempTableName = ($prefix ? $prefix . '_' : '') . $this->name;
 
         $tableName = $this->config->get('tableName') ?? readline($this->msg('Si le nom de la table en base est différent de '. $this->highlight($tempTableName , 'success'). ' entrer le nom de la table :').'');
 
         if (empty($tableName)) $tableName = $tempTableName;
 
-        if (!$this->config->has('tableName')) {
-            $this->config->set('tableName', $tableName, $this->name);
-        }
+        $this->config->set('tableName', $tableName, $this->name);
 
         $this->tableName = $tableName;
     }
@@ -130,9 +134,13 @@ abstract class ModelMaker extends BaseMaker
         );
     }
 
-    private function askActions()
+    /**
+     * Demande quelles actions générer pour ce modèle dans le domaine
+     * @return string[]
+     */
+    private function askActions() : array
     {
-        if (    $this->config->has('actions')) {
+        if ($this->config->has('actions')) {
             return $this->config->get('actions');
         } else {
             $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
@@ -345,16 +353,17 @@ abstract class ModelMaker extends BaseMaker
 
     private function askPrefix()
     {
-        $prefix = null;
-        $reponse1 = $this->prompt("Voulez vous utiliser un prefix dans votre projet?", ['o', 'n']) === 'o';
-        if ($reponse1) {
-            $prefix = readline($this->msg('Entrer le préfix lié au projet:'));
+        $prefix = readline($this->msg('Renseigner le prefix du projet ou laisser vide'));
+
+        if (!empty($prefix)) {
             $scope = $this->prompt("Voulez vous affecter le prefix au model (1), au module (2) ?", ['1', '2']);
             if ($scope === '1')
                 $this->config->set('prefix', $prefix, $this->name);
             elseif ($scope === '2')
                 $this->config->set('prefix', $prefix);
 
+        } else {
+            $this->config->set('prefix', '', $this->name);
         }
 
         return $prefix;
@@ -366,6 +375,24 @@ abstract class ModelMaker extends BaseMaker
             return false;
         }
         return $this->fields[$columnName];
+    }
+
+    /**
+     * @param $param
+     * @param $message
+     * @return bool
+     */
+    protected function askBool($param, $message) : bool
+    {
+        if ($this->config->has($param)) {
+
+            $res = $this->config->get($param);
+        } else {
+            $res = $this->prompt($message, ['o', 'n']) === 'o';
+            $this->config->saveChoice($param, $res, $this->name);
+        }
+
+        return $res;
     }
 
 }

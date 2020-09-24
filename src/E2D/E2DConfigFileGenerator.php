@@ -2,6 +2,7 @@
 
 namespace E2D;
 
+use Core\Config;
 use \Spyc;
 
 class E2DConfigFileGenerator extends \Core\FileGenerator
@@ -11,9 +12,12 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
     private E2DModelMaker $model;
     private string $pascalCaseModuleName;
 
-    public function __construct(string $moduleName, string  $pascalCaseModuleName, E2DModelMaker $model, string $controllerName)
+    public function __construct(string $moduleName, string  $pascalCaseModuleName, E2DModelMaker $model, string $controllerName, Config $config)
     {
-        parent::__construct($model->fileManager);
+        $this->config = $config;
+        $this->template = $model->getConfig()->get('template');
+        parent::__construct($model->getFileManager());
+
         $this->model = $model;
         $this->moduleName = $moduleName;
         $this->controllerName = $controllerName;
