@@ -30,14 +30,13 @@ class ModuleMakerFactory
         $modelName = $action === 'module' ? $moduleName: $this->askName($modelName);
 
         $config = new Config($moduleName, $modelName, $type);
-        $config->setFileManager($type->getTemplate());
-
         $config->initialize();
+        $config->setFileManager($config->get('template', $modelName) ?? $type->getTemplate());
 
         switch($action)
         {
             case 'module':
-                $model = $this->buildModel($moduleName, $modelName, 'generate', $config);
+                $model = $this->createModel($moduleName, $modelName, 'generate', $config);
                 $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'generate', [
                     'config' => $config,
@@ -46,7 +45,7 @@ class ModuleMakerFactory
                 $maker->generate();
                 break;
             case 'modele':
-                $model = $this->buildModel($moduleName, $modelName, 'addModel', $config);
+                $model = $this->createModel($moduleName, $modelName, 'addModel', $config);
                 ;
                 $model->generate();
                 $maker = new $moduleMaker($moduleName, $model, 'addModel', [
@@ -60,7 +59,7 @@ class ModuleMakerFactory
              *  Ajoute une action et une route et une action du controlleur une callback js une vue
              */
             case 'action':
-                $model = $this->buildModel($moduleName, $modelName, 'addAction', $config);
+                $model = $this->createModel($moduleName, $modelName, 'addAction', $config);
                 $maker = new $moduleMaker($moduleName, $model, 'action', [
                     'config' => $config,
                     'menuPath' => 'config/menu.yml',
@@ -82,7 +81,7 @@ class ModuleMakerFactory
      * @param $config
      * @return mixed
      */
-    public function buildModel($moduleName, $modelName, $creationMode, $config)
+    public function createModel($moduleName, $modelName, $creationMode, $config)
     {
         $params = [
             'config' => $config,

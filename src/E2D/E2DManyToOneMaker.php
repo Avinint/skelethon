@@ -23,7 +23,7 @@ trait E2DManyToOneMaker
                 $this->config->set('hasManyToOneRelation', $hasManyToOneRelation, $this->name);
             }
 
-            if ($hasManyToOneRelation) {
+            if ($this->config->get('hasManyToOneRelation')) {
                 if ($gotPotential) {
                     $this->askConvertToManyToOneFields($potentialFields);
                 }

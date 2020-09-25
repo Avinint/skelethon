@@ -17,7 +17,6 @@ abstract class ModuleMaker extends BaseMaker
     public function __construct(string $name, ModelMaker $model, $creationMode = 'generate', $params = [], FileManager $fileManager = null)
     {
         $this->setConfig($params);
-        $this->template = $this->config->get('template') ?? 'standard';
 
         parent::__construct($fileManager);
         $this->setModulePath($params['modulePath'] ?? null);
@@ -147,7 +146,7 @@ abstract class ModuleMaker extends BaseMaker
     function ensureFileExists(string $path)
     {
         $commonPath = str_replace('modules'.DS.$this->name, '', $path);
-        $templatePath = dirname(dirname(__DIR__)) . DS. 'templates' .DS.$this->template.DS.'module'.$commonPath;
+        $templatePath = dirname(dirname(__DIR__)) . DS. 'templates' .DS.$this->getFileManager()->getTemplate() . DS .'module'.$commonPath;
 
         $path = $this->getTrueFilePath($path);
        if (!array_contains('consultation', $this->model->getActions()) &&  strpos($templatePath, 'consultation_TABLE') !== false) {

@@ -91,8 +91,10 @@ class E2DJSFileGenerator extends FileGenerator
 
         $selectAjaxDefinitionText = '';
         $personalizeButtons = '';
+        $tinyMCE = '';
+        $tinyMCEDef = '';
         if (strpos($templatePath, 'Admin') > 0) {
-            if ($this->model->hasManyToOneRelation) {
+            if ($this->config->get('hasManyToOneRelation')) {
 
                 if ($fields = $this->model->getViewFieldsByType('foreignKey')) {
 
@@ -127,7 +129,6 @@ class E2DJSFileGenerator extends FileGenerator
             $personalizedButtonsTemplateSuffix = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton.' : 'NoConsultationButtons.';
             $personalizeButtons = file_get_contents($this->getTrueTemplatePath(str_replace('.', $personalizedButtonsTemplateSuffix, $path)));
 
-            $tinyMCE = '';
             $champs = $this->model->getConfig()->get('champsTinyMCE');
             foreach ($champs as $champ) {
                 $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path, 'EditionAppelTinyMCE.')));

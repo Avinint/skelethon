@@ -5,7 +5,7 @@ namespace Core;
 
 class FileManager
 {
-    private string $template;
+    private array $templates;
 
     public function createFile($path, $text = '', $write = false)
     {
@@ -30,29 +30,46 @@ class FileManager
      */
     public function getTrueTemplatePath($templatePath, $replace = '', $search = '.')
     {
-        if (!empty($replace)) {
-            $templatePath = str_replace_last($search, $replace, $templatePath);
-        }
+        $templatePath = $this->findRightTemplatePath($templatePath, $replace, $search);
 
-        if (!file_exists($templatePath) && isset($this->fallBackTemplate)) {
+        reset($this->templates);
 
-            // get fallback template ($this->>template)  returns gettrutemplate (next template)
-            $templatePath = str_replace($this->template, $this->fallBackTemplate, $templatePath);
-        }
-
-        if (!file_exists($templatePath)) {
-            $templatePath = str_replace($this->template, 'standard', $templatePath);
-        }
-
-//        if (!file_exists($templatePath)) {
-//            throw new \Exception("Fichier manquant : $templatePath");
-//        }
         return $templatePath;
     }
 
-    public function __construct($template)
+    /**
+     * Recherche récursif de template pour rechercher la template de fallback si le fichier n'existe pas sur ce template
+     * @param string $templatePath
+     * @param $search
+     * @param $replace
+     * @return string
+     */
+    function findRightTemplatePath(string $templatePath, $replace = '', $search = '') : string
     {
-        $this->template = $template;
+        if ($replace !== '')
+            $templatePath = str_replace_last($search, $replace, $templatePath);
+
+        if (!file_exists($templatePath) && $replace !== 'standard') {
+            $search = current($this->templates);
+            $replace = next($this->templates);
+            if ($replace === false)
+                return $this->getTemplatePath($templatePath, 'standard', $search);
+            else
+                return $this->getTemplatePath($templatePath, $replace, $search);
+        }
+
+        return $templatePath;
+    }
+
+    /**
+     * FileManager constructor.
+     * @param $templates
+     */
+    public function __construct($templates)
+    {
+        $template = explode("_", trim($templates, "_"));
+
+        $this->templates = $template;
     }
 
     /**
@@ -60,8 +77,8 @@ class FileManager
      */
     public function getTemplate(): string
     {
-        return $this->template;
-    }
 
+        return $this->templates[0];
+    }
 
 }

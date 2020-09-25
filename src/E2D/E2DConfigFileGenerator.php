@@ -54,8 +54,11 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
     private function generateRoutingConfigFiles(string $path): string
     {
         $texts = [];
-        foreach ($this->model->actions as $action) {
-            $templatePerActionPath = $this->getTrueTemplatePath(str_replace('.', '_' . $action . '.', $path));
+        foreach ($this->model->actions as $action)
+        {
+            if ($action === 'accueil' && strpos($path, 'routing') === false) continue;
+            if (!array_contains($action, ['consultation', 'edition']) && strpos($path, 'blocs') === false) continue;
+            $templatePerActionPath = $this->getTrueTemplatePath($path, '_' . $action . '.');
             if (file_exists($templatePerActionPath)) {
                 $texts[] = $this->getConfigTemplateForAction($templatePerActionPath, $path, $action);
             }

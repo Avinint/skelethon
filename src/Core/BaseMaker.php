@@ -21,12 +21,12 @@ abstract class BaseMaker extends CommandLineToolShelf
      */
     public function setFileManager(?FileManager $fileManager): void
     {
-        $this->fileManager = $fileManager ??  $this->config->getFileManager($this->template ?? 'standard');
+        $this->fileManager = $fileManager ??  $this->config->getFileManager($this->config->get('template') ?? 'standard');
     }
 
     public function __construct( FileManager $fileManager = null)
     {
-        $this->setFileManager($fileManager, $this->template );
+        $this->setFileManager($fileManager);
 
     }
 
@@ -89,6 +89,7 @@ abstract class BaseMaker extends CommandLineToolShelf
             throw new \Exception("File manager non initialisé");
         }
         return $this->fileManager->getTrueTemplatePath($templatePath, $replace, $search);
+
     }
 
     /**

@@ -188,7 +188,7 @@ abstract class ModelMaker extends BaseMaker
 
     public function getAttributes($template) :string
     {
-        return  implode(PHP_EOL, array_map(function (Field $field)  use ($template) {return $field->getFieldMapping($template);}, $this->fields));
+        return implode(PHP_EOL, array_map(function (Field $field)  use ($template) {return $field->getFieldMapping($template);}, $this->fields));
     }
 
     /**

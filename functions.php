@@ -39,7 +39,7 @@ function array_contains_array(array $needle, array $haystack, bool $any = false,
     return empty(array_diff($needle, $haystack));
 }
 
-function str_replace_first($search, $replace, $subject)
+function str_replace_first(string $search, string $replace, string $subject) : string
 {
     if (strpos($subject,  $search) !== false) {
         return substr_replace($subject, $replace, strpos($subject,  $search), strlen($search));
@@ -47,7 +47,7 @@ function str_replace_first($search, $replace, $subject)
     return $subject;
 }
 
-function str_replace_last($search, $replace, $subject)
+function str_replace_last(string $search, string $replace, string $subject) : string
 {
     if (strrpos($subject,  $search) !== false) {
         return substr_replace($subject, $replace, strrpos($subject,  $search), strlen($search));

@@ -24,10 +24,10 @@ class EtoModuleMaker extends E2DModuleMaker
         $jSFileGenerator          = $params['jSFileGenerator']         ?? EtoJSFileGenerator::class;
         $configFileGenerator      = $params['ConfigFileGenerator']     ?? EtoConfigFileGenerator::class;
 
-        $this->modelFileGenerator      = new $modelFileGenerator($this->name, $this->model);
-        $this->controllerFileGenerator = new $controllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
-        $this->jsFileGenerator         = new $jSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName());
-        $this->configFileGenerator     = new $configFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName());
-        $this->viewFileGenerator       = new $viewFileGenerator($this->name, $this->model, $this->getControllerName());
+        $this->modelFileGenerator      = new $modelFileGenerator($this->name, $this->model, $this->config);
+        $this->controllerFileGenerator = new $controllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName(), $this->config);
+        $this->jsFileGenerator         = new $jSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName(), $this->config);
+        $this->configFileGenerator     = new $configFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName(), $this->config);
+        $this->viewFileGenerator       = new $viewFileGenerator($this->name, $this->model, $this->getControllerName(), $this->config);
     }
 }

@@ -118,10 +118,10 @@ abstract class Field
         return array_map(function ($field) {return $field->getTableColumn();}, self::$collection);
     }
 
-    public static function getAttributes()
-    {
-        return array_map(function($field){ return $field->getFieldMapping(); }, self::$collection);
-    }
+//    public static function getAttributes()
+//    {
+//        return array_map(function($field){ return $field->getFieldMapping(); }, self::$collection);
+//    }
 
     public function isNumber()
     {

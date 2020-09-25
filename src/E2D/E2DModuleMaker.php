@@ -179,7 +179,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function getSubMenu(): array
     {
-        $template = file_exists(dirname(dirname(dirname(__DIR__))) . DS . 'templates' . DS . $this->template . DS . 'menu.yml') ? $this->template : 'standard';
+        $template = file_exists(dirname(dirname(dirname(__DIR__))) . DS . 'templates' . DS . $this->getFileManager()->getTemplate() . DS . 'menu.yml') ? $this->getFileManager()->getTemplate() : 'standard';
         $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
             $this->model->getTitre();
 

@@ -103,7 +103,8 @@ class E2DField extends Field
 
     public function getSearchCriterion($path)
     {
-        $template = file(str_replace_first( '.','_searchCriterion.', $path));
+//        $template = file(str_replace_first( '.','_searchCriterion.', $path));
+        $template = file($path);
 
         $aCritereRecherche = [];
         $indent = str_repeat("\x20", 8);
@@ -154,7 +155,8 @@ class E2DField extends Field
     public function getValidationCriterion($path)
     {
         $indent = str_repeat("\x20", 8);
-        $template = file(str_replace_first( '.','_validationCriterion.', $path));
+//        $template = file(str_replace_first( '.','_validationCriterion.', $path));
+        $template = file($path);
         $sCritere = $indent . str_replace('NAME', $this->name, $template[0]);
         if ($this->isNullable && !isset($this->maxLength)) {
             return '';
@@ -205,8 +207,8 @@ class E2DField extends Field
 
     public function getFieldMapping($templatePath)
     {
-        $path = str_replace_first('.', '_fieldmapping.', $templatePath);
-        return str_replace(['COLUMN', 'NAME'], [$this->column, $this->name], file_get_contents($path));
+//        $path = str_replace_first('.', '_fieldmapping.', $templatePath);
+        return str_replace(['COLUMN', 'NAME'], [$this->column, $this->name], file_get_contents($templatePath));
 //        return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
     }
 
