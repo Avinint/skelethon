@@ -12,6 +12,6 @@ class EtoModelMaker extends E2DModelMaker
         $actionHeader = empty($this->actions) ? '' : file_get_contents($this->getTrueTemplatePath($templatePath, '_actionheader.'));
         return implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {
                 return $field->getTableHeader($templatePath);
-            }, $this->fields)).PHP_EOL. $actionHeader;
+            }, $this->getFields('liste'))).PHP_EOL. $actionHeader;
     }
 }

@@ -158,7 +158,8 @@ class E2DModuleMaker extends ModuleMaker
         $subMenu = $this->getSubMenu();
 
         if (!empty($menu)) {
-            if (isset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()]) && !array_contains_array($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()], $subMenu['admin'][$this->name]['html_accueil_'.$this->model->getName()], ARRAY_ALL, true)) {
+            if (isset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()]) &&
+                !array_contains_array($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()], $subMenu['admin'][$this->name]['html_accueil_'.$this->model->getName()], ARRAY_ALL, true)) {
                 unset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()]);
             }
 
@@ -179,13 +180,12 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function getSubMenu(): array
     {
-        $template = file_exists(dirname(dirname(dirname(__DIR__))) . DS . 'templates' . DS . $this->getFileManager()->getTemplate() . DS . 'menu.yml') ? $this->getFileManager()->getTemplate() : 'standard';
+        $templatePath = $this->getTrueTemplatePath(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $this->getFileManager()->getTemplate() . DS . 'menu.yml');
         $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
             $this->model->getTitre();
 
-
         return Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
-            [$this->name, $this->model->getName(), $label], file_get_contents(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $template . DS . 'menu.yml')));
+            [$this->name, $this->model->getName(), $label], file_get_contents($templatePath)));
     }
 
     protected function getControllerName($case = 'pascal_case'): string

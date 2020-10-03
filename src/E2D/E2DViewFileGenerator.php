@@ -48,8 +48,8 @@ class E2DViewFileGenerator extends FileGenerator
     {
         $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_field.'));
         $fieldText = [];
-        foreach ($this->model->getViewFields() as $field) {
-            $fieldText[] = str_replace(['LABEL', 'FIELD'], [$field['label'], $field['field']], $fieldTemplate);
+        foreach ($this->model->getFields('consultation') as $field) {
+            $fieldText[] = str_replace(['LABEL', 'FIELD'], [$field->getLabel(), $field->getFormattedName()], $fieldTemplate);
         }
         $text = file_get_contents($this->getTrueTemplatePath($path));
         $text = $this->addModalTitle($text);
@@ -65,39 +65,38 @@ class E2DViewFileGenerator extends FileGenerator
     public function generateEditionView(string $path)
     {
         $fieldText = [];
-        foreach ($this->model->getViewFields() as $field) {
-            if (array_contains($field['type'], ['enum'])) {
+        foreach ($this->model->getFields('edition') as $field) {
+            if ($field->is('enum')) {
                 if ($this->model->usesSelect2) {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_enum_select2.'));
                 } else {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_enum.'));
                 }
-            } elseif (array_contains($field['type'], ['bool'])) {
+            } elseif ($field->is('bool')) {
                 if ($this->model->usesSwitches) {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_bool_switch.'));
                 } else {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_bool_radio.'));
                 }
-            } elseif (array_contains($field['type'], ['foreignKey'])) {
+            } elseif ($field->is('foreignKey')) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_enum_select_ajax.'));
-            } elseif (array_contains($field['type'], ['date', 'datetime'])) {
+            } elseif ($field->is(['date', 'datetime'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_date.'));
-            } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
+            } elseif ($field->is(['text', 'mediumtext', 'longtext'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_text.'));
-            } elseif (array_contains($field['type'], ['float', 'decimal', 'tinyint', 'int', 'smallint', 'double'])) {
+            } elseif ($field->is(['float', 'decimal', 'tinyint', 'int', 'smallint', 'double'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_number.'));
             } else {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_string.'));
             }
 
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME', 'COLUMN', 'STEP'],
-                [$field['label'], $field['field'], $field['type'], $field['name'], $field['column'],
-                    (isset($field['step']) ? ' step="'.$field['step'].'"' : '')], $fieldTemplate);
+                [$field->getLabel(), $field->getFormattedName(), $field->getType(), $field->getName(), $field->getColumn(),
+                    $field->getStep()], $fieldTemplate);
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($path));
         $text = $this->addModalTitle($text);
-
         $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->moduleName, implode(PHP_EOL, $fieldText)], $text);
         return $text;
     }
@@ -109,40 +108,36 @@ class E2DViewFileGenerator extends FileGenerator
     public function generateSearchView(string $path)
     {
         $fieldText = [];
-        foreach ($this->model->getViewFields() as $field) {
-            if (array_contains($field['type'], ['enum'])) {
+        foreach ($this->model->getFields('recherche') as $field) {
+            if ($field->is('enum')) {
                 if ($this->model->usesSelect2) {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_enum_select2.'));
                 } else {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_enum.'));
                 }
-            } elseif (array_contains($field['type'], ['bool'])) {
+            } elseif ($field->is('bool')) {
                 if ($this->model->usesSwitches) {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_bool_switch.'));
                 } else {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_bool_radio.'));
                 }
-            } elseif (array_contains($field['type'], ['foreignKey'])) {
+            } elseif ($field->is('foreignKey')) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_enum_select2.'));
-            } elseif (array_contains($field['type'], ['date', 'datetime'])) {
+            } elseif ($field->is(['date', 'datetime'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_date.'));
-            } elseif (array_contains($field['type'], ['text', 'mediumtext', 'longtext'])) {
+            } elseif ($field->is(['text', 'mediumtext', 'longtext'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_string.'));
-            } elseif (array_contains($field['type'], ['float', 'decimal', 'int', 'smallint', 'tinyint', 'double'])) {
-
+            } elseif ($field->is(['float', 'decimal', 'int', 'smallint', 'tinyint', 'double'])) {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_number.'));
-
             } else {
                 $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_string.'));
             }
 
-            $defautOui = $field['default'] === '1' ? ' checked' : '';
-            $defautNon = $field['default'] === '0' ? ' checked' : '';
+            $defautOui = $field->getDefaultValue() === '1' ? ' checked' : '';
+            $defautNon = $field->getDefaultValue() === '0' ? ' checked' : '';
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'NAME', 'COLUMN', 'STEP', 'DEFAUT_OUI', 'DEFAUT_NON'],
-                [$field['label'], $field['field'], $field['type'], $field['default'], $field['name'], $field['column'],
-                    (isset($field['step']) ? ' step="'.$field['step'].'"' : ''), $defautOui, $defautNon], $fieldTemplate);
-
-
+                [$field->getLabel(), $field->getFormattedName(), $field->getType(), $field->getDefaultValue(), $field->getName(), $field->getColumn(),
+                    $field->getStep(), $defautOui, $defautNon], $fieldTemplate);
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($path));

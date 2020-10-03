@@ -15,6 +15,9 @@ abstract class ModelMaker extends BaseMaker
     protected $module;
     private $table = [];
     private $mappingChamps = [];
+    /**
+     * @var Field[] $fields
+     */
     protected $fields;
     protected $primaryKey;
     protected $idField;
@@ -64,17 +67,10 @@ abstract class ModelMaker extends BaseMaker
 
     private function askTableName()
     {
-//        $prefix = $this->config->get('prefix') ?? null;
-//        if (!isset($prefix) && ($this->config->get('prefix') ?? true)) {
-//            $prefix = $this->askPrefix();
-//        }
-
         if ($this->config->has('tableName')) {
             $this->tableName = $this->config->get('tableName');
             return;
         }
-
-//        var_dump($this->config); die();
 
         $prefix = $this->config->get('prefix') ?? $this->askPrefix();
 
@@ -97,20 +93,21 @@ abstract class ModelMaker extends BaseMaker
         foreach ($this->table as $field => $data) {
             if ('PRI' === $data->Key) {
                 $this->primaryKey = $data->Field;
+                $data->sType = 'primaryKey';
                 $this->idField = $data->sChamp;
             }
 
             $this->addField($data);
+
             $this->addModalTitle($data);
         }
-
+        $this->config->get('champs') ?? $this->askFieldsPerView();
         $this->askModifySpecificData();
     }
 
     private function addField($data)
     {
         $params = [
-            'pk' => 'PRI' === $data->Key,
             'is_nullable' => $data->Null !== 'NO',
             'enum' => $data->Type
         ];
@@ -132,6 +129,11 @@ abstract class ModelMaker extends BaseMaker
             $this,
             $params
         );
+
+        if ($this->config->has('champs', $this->name)) {
+            $this->fields[$data->Field]->setViews($this->config->get('champs')[$data->Field]);
+        }
+
     }
 
     /**
@@ -186,9 +188,9 @@ abstract class ModelMaker extends BaseMaker
         return $this->actions;
     }
 
-    public function getAttributes($template) :string
+    public function getAttributes($template, $view = '') :string
     {
-        return implode(PHP_EOL, array_map(function (Field $field)  use ($template) {return $field->getFieldMapping($template);}, $this->fields));
+        return implode(PHP_EOL, array_map(function (Field $field)  use ($template) {return $field->getFieldMapping($template);}, $this->getFields('base')));
     }
 
     /**
@@ -207,12 +209,38 @@ abstract class ModelMaker extends BaseMaker
         return $this->idField;
     }
 
+    /**`
+     * Retourne la liste des champs en fonction de la vue et autres paramètres
+     * @param false $showIdField
+     * @return Field[]
+     */
+    public function getFields($view = '',  $type = '', $showIdField  = false) : array
+    {
+        return array_filter($this->fields, function ($field) use ($view, $type, $showIdField) {
+            return $this->filterFieldsAccordingToViewOrType($field, $view, $type, $showIdField);
+        });
+    }
+
+    /**
+     *  Filtre le champs en fonction de la vue et du type et si pas précisé si on veut afficher le champ id
+     * @param Field $field
+     * @param string|array $view
+     * @param $type
+     * @param bool $showIdField
+     * @return bool
+     */
+    public function filterFieldsAccordingToViewOrType(Field $field, $view = '', $type = '', bool $showIdField) : bool
+    {
+        return ($view === '' || $field->hasView($view))
+        && (($type === '' &&  (!$field->isPrimaryKey || $showIdField)) || $field->is($type));
+    }
+
     /**
      * @return array
      */
     public function getSearchCriteria($path): string
     {
-        return implode(PHP_EOL, array_filter(array_map(function (Field $field) use($path) {return $field->getSearchCriterion($path);}, $this->fields)));
+        return implode(PHP_EOL, array_filter(array_map(function (Field $field) use($path) {return $field->getSearchCriterion($path);}, $this->getFields('recherche'))));
 //        return implode(PHP_EOL, $this->fieldClass::getSearchCriteria()); TODO remove
     }
 
@@ -221,21 +249,28 @@ abstract class ModelMaker extends BaseMaker
      */
     public function getValidationCriteria($path): string
     {
-        return implode(PHP_EOL, array_filter(array_map(function (Field $field) use ($path) {return $field->getValidationCriterion($path);}, $this->fields)));
+        return implode(PHP_EOL, array_filter(array_map(function (Field $field) use ($path) {return $field->getValidationCriterion($path);}, $this->getFields('edition'))));
     }
 
-    public function getViewFields($showIdField = false)
+    /**
+     * @param string $view
+     * @param $type
+     * @param bool $showIdField
+     * @return array|array[]
+     */
+    public function getViewFields(string $view = '',  $type = '', bool $showIdField = false)
     {
         return array_map(function (Field $field) {
-            return $field->getViewField();}, array_filter($this->fields, function ($field) use ($showIdField) { return !$field->isPrimaryKey || $showIdField;}));
-//        return $this->fieldClass::getViewFields($showIdField); TODO remove
+            return $field->getViewField();}, $this->getFields($view, $type, $showIdField));
     }
 
-    // TODO rendre liste de champs parametrables
+    /**
+     * @return array|Field[]
+     */
     public function getInsertFields()
     {
         return array_map(function (Field $field) {
-            return $field;}, array_filter($this->fields, function ($field)  { return !$field->isPrimaryKey;}));
+            return $field;}, array_filter($this->getFields('edition'), function ($field)  { return !$field->isPrimaryKey;}));
     }
 
     // TODO rendre liste de champs parametrrables independamment de getInsertFields
@@ -244,23 +279,15 @@ abstract class ModelMaker extends BaseMaker
         return $this->getInsertFields();
     }
 
-    public function getViewFieldsByType($type)
+    public function getFieldsByType($type, $view = '')
     {
-        return array_filter($this->getViewFields(), function ($field) use ($type) {
-            if (is_array($type)) {
-                return array_contains($field['type'], $type);
-            }
-            return $field['type'] === $type;
-        });
+        return $this->getFields($view, $type);
     }
 
-    public function getViewFieldsExcludingType($type)
+    public function getFieldsExcludingType($type, $view = '')
     {
-        return array_filter($this->getViewFields(), function ($field) use ($type) {
-            if (is_array($type)) {
-                return !array_contains($field['type'], $type);
-            }
-            return $field['type'] !== $type;
+        return array_filter($this->getFields($view), function ($field) use ($type) {
+            return !$field->is($type);
         });
     }
 
@@ -271,7 +298,7 @@ abstract class ModelMaker extends BaseMaker
     {
         //$fields =  implode(','.PHP_EOL, $this->fieldClass::getSelectFields());
 //        return $fields;
-        return  implode(','.PHP_EOL, array_map(function (Field $field) use ($template) {return $field->getSelectField($template);}, $this->fields));
+        return  implode(','.PHP_EOL, array_map(function (Field $field) use ($template) {return $field->getSelectField($template);}, $this->getFields('base')));
     }
 
     /**
@@ -371,10 +398,7 @@ abstract class ModelMaker extends BaseMaker
 
     protected function getFieldByColumn($columnName)
     {
-        if (!isset($this->fields[$columnName])) {
-            return false;
-        }
-        return $this->fields[$columnName];
+        return $this->fields[$columnName] ?? false;
     }
 
     /**
@@ -394,5 +418,29 @@ abstract class ModelMaker extends BaseMaker
 
         return $res;
     }
+
+    /**
+     * Pour demander a l'utilisateur dans quelles vues le champ apparait et sauvegarder cette information également cette information
+     * @return array
+     */
+    public function askFieldsPerView()
+    {
+        $listeChamps = [];
+        $reponseFiltrageChamps = $this->prompt('Voulez vous sélectionner quels champs seront utilisés dans chaque vue ?',  ['o', 'n']) === 'o';
+        if ($reponseFiltrageChamps) {
+            foreach ($this->fields as $field) {
+                $views = $field->askViews($this->actions);
+                if (isset($views))
+                    $listeChamps[$field->getColumn()] = $views;
+            }
+
+            $this->config->set('champs', $listeChamps, $this->name);
+        } else {
+            $this->config->set('champs', false, $this->name);
+        }
+
+        return $listeChamps;
+    }
+
 
 }

@@ -10,11 +10,37 @@ class CommandLineToolShelf
 
     protected static $verbose;
 
-    public static function msg(string $text, $type = '', $hasDisplayYesNo = false, $verboseCondition = true, $important = false)
+    /**
+     * @param array $validValues
+     * @return string
+     */
+    private static function displayValidNumericAnswers(array $validValues): string
+    {
+        $display = '';
+        if (array_contains_array($validValues, range(1, count($validValues)))) {
+            $valueArray = [];
+            foreach ($validValues as $key => $value) {
+                $colors = ['success', 'error', 'info', 'important', 'warning'];
+                $color = $colors[$key] ?? 'warning';
+                //$color = ($value == 1 ? 'success' : ($value == 2 ? 'error' : ($value == 3 ? 'warning' : 'info')));
+                $valueArray[] = static::highlight($value, $color);
+            }
+            $display = '[' . implode('/', $valueArray) . ']';
+        }
+        return $display;
+    }
+
+    public static function msg(string $text, $type = '', $validValues = [], $verboseCondition = true, $important = false)
     {
         if ((self::$verbose && $verboseCondition) || empty($type) || $important) {
-            $displayYesNo = $hasDisplayYesNo ? ' ['.static::highlight('O', 'success').'/'.static::highlight('N', 'error').']' : '';
-            echo ($type? static::frame(strtoupper($type), $type).' ' : '')  . $text . $displayYesNo . PHP_EOL. ($type ? '' : '==> ');
+            if (!empty($validValues)) {
+                $display = $validValues === ['o', 'n'] ? ' ['.static::highlight('O', 'success').'/'.static::highlight('N', 'error').']' : '';
+                if (empty($display)) {
+                    $display = self::displayValidNumericAnswers($validValues);
+                }
+            }
+
+            echo ($type? static::frame(strtoupper($type), $type).' ' : '')  . $text . $display  . ($type ? '' : ' :').PHP_EOL;
         }
 
         return !empty($type);
@@ -51,18 +77,18 @@ class CommandLineToolShelf
         return $color;
     }
 
-    public function prompt($msg, $validValues = [], $keepCase = false)
+    public static function prompt($msg, $validValues = [], $keepCase = false)
     {
         echo PHP_EOL;
         $result = '';
         if (empty($validValues)) {
             while($result === '' || $result === null) {
-                $result = readline($this->msg($msg));
+                $result = readline(self::msg($msg));
             }
         } else {
             $result = false;
             while (!array_contains($result, $validValues)) {
-                $tempResult = readline($this->msg($msg, '', $validValues === ['o', 'n']));
+                $tempResult = readline(self::msg($msg, '',  $validValues));
                 $result = $keepCase ? $result : strtolower($tempResult);
             }
         }
@@ -76,13 +102,15 @@ class CommandLineToolShelf
      * @param array $choices
      * @return bool|string
      */
-    protected function askMultipleChoices(string $key, array $choices, $defaultValue = false, $reference  = '')
+    protected function askMultipleChoices(string $key, array $choices, $defaultValue = false, $reference  = '', $freeChoice = false)
     {
         $msgDefault = $defaultValue !== false ? PHP_EOL . 'En cas de chaine vide, Le ' . $key . ' ' . $this->frame($defaultValue, 'success') . ' sera sélectionné par défaut.' : '';
         $texteReference  = empty($reference) ? '' : ' ('.$reference.') ';
-        $selection = $this->prompt('Choisir un/e ' . $key . ' dans la liste suivante'. $texteReference.' :' . PHP_EOL . $this->displayList($choices, 'info') . $msgDefault, array_merge($choices, ['']));
+        $allowedValues = $freeChoice ? [] : array_merge($choices, ['']);
+
+        $selection = $this->prompt('Choisir un/e ' . $key . ' dans la liste suivante'. $texteReference.' :' . PHP_EOL . $this->displayList($choices, 'info') . $msgDefault, $allowedValues);
         if ($defaultValue !== false && $selection === '') {
-            $selection = $defaultValue ;
+            $selection = $defaultValue;
         }
         return $selection;
     }

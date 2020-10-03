@@ -24,7 +24,12 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
         $this->pascalCaseModuleName = $pascalCaseModuleName;
     }
 
-    // action de génération des fichiers
+    /**
+     * action de génération des fichiers
+     * @param string $path
+     * @return string
+     * @throws \Exception
+     */
     public function generate(string $path) : string
     {
         $modelName = '';
@@ -144,13 +149,14 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
     private function addEnumsToConfig(string $templatePath, string $modelName): string
     {
         $enumText = '';
-        $fields = $this->model->getViewFieldsByType('enum');
+        $fields = $this->model->getFields('', 'enum');
+
         if (!empty($fields)) {
             foreach ($fields as $field) {
                 $enumLines = file(str_replace('conf.', 'conf_enum.', $templatePath));
-                $enumHandle = str_replace(['MODEL', 'COLUMN'], [$modelName, $field['column']], $enumLines[0]);
+                $enumHandle = str_replace(['MODEL', 'COLUMN'], [$modelName, $field->getColumn()], $enumLines[0]);
                 $enumText .= $enumHandle . PHP_EOL;
-                foreach ($field['enum'] as $value) {
+                foreach ($field->getEnum() as $value) {
                     $enumKeyValuePair = str_replace(['VALEUR', 'LIBELLE'], [$value, $this->labelize($value)], $enumLines[1]);
                     $enumText .= $enumKeyValuePair . PHP_EOL;
                 }

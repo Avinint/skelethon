@@ -31,7 +31,7 @@ class ModuleMakerFactory
 
         $config = new Config($moduleName, $modelName, $type);
         $config->initialize();
-        $config->setFileManager($config->get('template', $modelName) ?? $type->getTemplate());
+        $config->setFileManager($config->get('template', $modelName) ?? $config->askTemplate());
 
         switch($action)
         {
@@ -124,8 +124,8 @@ class ModuleMakerFactory
     {
         echo PHP_EOL;
         if ($name === '') {
-            $name = readline($this->msg('Veuillez renseigner en '.$this->highlight('snake_case').' le nom du modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
-                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').'')) ? : $this->module;
+            $name = readline(ModuleMaker::msg('Veuillez renseigner en '.ModuleMaker::highlight('snake_case').' le nom du modèle'.PHP_EOL.' (' . ModuleMaker::highlight('minuscules') . ' et ' . ModuleMaker::highlight('underscores').')'.
+                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. ModuleMaker::frame($this->module, 'success').'')) ? : $this->module;
         }
 
         return $name;

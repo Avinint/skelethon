@@ -17,7 +17,8 @@ class ESMModuleMaker extends E2DModuleMaker
         $menu = Spyc::YAMLLoad($this->menuPath);
         $subMenu = $this->getSubMenu();
         if (!empty($menu)) {
-            if (isset($menu[$this->name]['html_accueil_'.$this->model->getName()]) && !array_contains_array($menu[$this->name]['html_accueil_'.$this->model->getName()], $subMenu[$this->name]['html_accueil_'.$this->model->getName()], ARRAY_ALL, true)) {
+            if (isset($menu[$this->name]['html_accueil_'.$this->model->getName()]) &&
+                !array_contains_array($menu[$this->name]['html_accueil_'.$this->model->getName()], $subMenu[$this->name]['html_accueil_'.$this->model->getName()], ARRAY_ALL, true)) {
                 unset($menu[$this->name]['html_accueil_'.$this->model->getName()]);
             }
 

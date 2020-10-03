@@ -53,9 +53,9 @@ class FileManager
             $search = current($this->templates);
             $replace = next($this->templates);
             if ($replace === false)
-                return $this->getTemplatePath($templatePath, 'standard', $search);
+                return $this->findRightTemplatePath($templatePath, 'standard', $search);
             else
-                return $this->getTemplatePath($templatePath, $replace, $search);
+                return $this->findRightTemplatePath($templatePath, $replace, $search);
         }
 
         return $templatePath;

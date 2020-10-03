@@ -46,6 +46,10 @@ abstract class ModuleMaker extends BaseMaker
         $this->namespaceName = $this->pascalize($name);
     }
 
+    /**
+     * Génére les fichiers du module
+     * @return bool
+     */
     public function generate()
     {
         if ('addModel' === $this->creationMode) {
@@ -64,13 +68,6 @@ abstract class ModuleMaker extends BaseMaker
             return $this->executeSpecificModes();
         }
         $success = $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure);
-
-        $configFields = array_map(function($field) {return $field['column'];}, array_values($this->model->getViewFields(true)));
-//        Config::write($this->name, [
-//                'template' => $this->template,
-//                'models' => [ $this->model->getName() => ['fields' => $configFields]]
-//            ]);
-        // TODO gestion plus fine des champs comme pouvoir selectionner les champs qu'on souhaite utiliser dans l'appli et sauvegarder ou limiter les champs qui apparraissent dans les vues
 
         $this->displayCompletionMessage($success);
 

@@ -30,7 +30,6 @@ trait E2DManyToOneMaker
 
                 foreach ($foreignKeys as $column => $fieldData ) {
                     $this->getFieldByColumn($column)->changeToManyToOneField($fieldData);
-                    //$this->fieldClass::changeToManyToOneField($column, $fieldData); TODO remove
                 }
             }
 
@@ -44,9 +43,12 @@ trait E2DManyToOneMaker
      */
     private function getPotentialFields(array $foreignKeys): array
     {
-        $filterIdSuffixes = $this->config->get('foreign_keys_start_with_id_only') ?? true;
-        $potentialFields = array_filter($this->getViewFieldsByType(['int', 'smallint', 'tinyint']), function ($field) use ($filterIdSuffixes, $foreignKeys) {
-            return (preg_match('/^id_[a-z]*/', $field['column']) || $filterIdSuffixes === false) && !array_key_exists($field['column'], $foreignKeys);
+        $filterWithIdPrefix = $this->config->get('foreign_keys_start_with_id') ?? true;
+        $filterWithIdSuffix = $this->config->get('foreign_keys_ends_with_id') ?? true;
+        $potentialFields = array_filter($this->getFieldsByType(['int', 'smallint', 'tinyint']), function ($field) use ($filterWithIdPrefix, $filterWithIdSuffix, $foreignKeys) {
+            $startsWithIdPrefix = preg_match('/^id_[a-z]*/', $field->getColumn());
+            $endsWithIdSuffix = preg_match('/[a-z]*_id^/', $field->getColumn());
+            return (($startsWithIdPrefix  || $filterWithIdPrefix  === false) || ($endsWithIdSuffix || $filterWithIdSuffix  === false)) && !array_key_exists($field->getColumn(), $foreignKeys);
         });
 
         return $potentialFields;
@@ -78,13 +80,17 @@ trait E2DManyToOneMaker
     {
         $childTable = str_replace('id_', '', $field['column']);
         $tables = $this->databaseAccess->getSimilarTableList($childTable);
+
         if (count($tables) > 1) {
             $default = $this->config->has('prefix') && array_contains($this->config->get('prefix') . '_' .  $childTable, $tables) ?
                 $this->config->get('prefix') . '_' . $childTable :
                 (array_contains($childTable, $tables) ? $childTable : false);
             $childTable = $this->askMultipleChoices('table', $tables, $default, $field['column']);
-        } else {
+        } elseif (count($tables) === 1) {
             $childTable = $tables[0];
+        } else {
+            $tables = $this->databaseAccess->getTableList();
+            $childTable = $this->askMultipleChoices('table', array_keys($tables), false, $field['column']);
         }
 
         $tableExists = count($tables) > 0 && !empty($childTable);
@@ -96,8 +102,9 @@ trait E2DManyToOneMaker
 
             foreach ($table as $column) {
                 $displayFields = $this->getAjaxLabelField($column, $displayFields, $childTable);
-                if ($column->Field === $field['column'] && 'PRI' === $column->Key) {
+                if ('PRI' === $column->Key) {
                     $primaryKeyExists = true;
+                    $primaryKey = $column->Field;
                 }
             }
 
@@ -120,8 +127,7 @@ trait E2DManyToOneMaker
             $alias = $this->generateAlias($childTable);
 
             if ($primaryKeyExists) {
-
-                return ['table' => $childTable, 'pk' => $field['column'], 'label' => $displayField, 'alias' => $alias, 'childTableAlias' => $childTableAlias,  'id' => $idField];
+                return ['table' => $childTable, 'pk' => $primaryKey, 'label' => $displayField, 'alias' => $alias, 'childTableAlias' => $childTableAlias,  'id' => $idField];
             } else {
                 return false;
             }
@@ -137,11 +143,9 @@ trait E2DManyToOneMaker
     private function convertToManyToOneField($fieldColumn, array $manyToOneFieldData): void
     {
         $this->getFieldByColumn($fieldColumn)->changeToManyToOneField($manyToOneFieldData);
-        //$this->fieldClass::changeToManyToOneField($fieldColumn, $manyToOneFieldData); TODD remove
         if (!$this->config->has('manyToOne', $this->name)) {
             $this->config->set('manyToOne', [], $this->name);
         }
-        //$this->config->set('hasManyToOneRelation', true);
 
         $this->config->addTo('manyToOne', $fieldColumn, $manyToOneFieldData , $this->name);
     }
@@ -188,6 +192,8 @@ trait E2DManyToOneMaker
             $displayFields[] = $column->Field;
         } elseif ($column->Field === $childTable) {
             $displayFields[] = $childTable;
+        } elseif ($column->Field === 'valeur') {
+            $displayFields[] = $column->Field;
         }
         return $displayFields;
     }
@@ -201,4 +207,99 @@ trait E2DManyToOneMaker
         return 's'. $this->pascalize($tableName);
     }
 
+    /**
+     * @param string $templatePath
+     * @param string $path
+     * @param string $select2SearchText
+     * @param string $select2EditText
+     * @param array $selectAjaxDefinition
+     * @return array
+     * @throws \Exception
+     */
+    public function addSelectAjaxToJavaScript(string $templatePath, string $select2SearchText, string $select2EditText, array $selectAjaxDefinition): array
+    {
+        $fields = $this->getFieldsByType('foreignKey', ['recherche', 'edition']);
+
+        $selectAjaxCallSearchTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath, 'RechercheSelectAjaxCall.'));
+        $selectAjaxCallEditTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath, 'EditionSelectAjaxCall.'));
+        $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath($templatePath, 'SelectAjaxDefinition.'));
+
+        foreach ($fields as $field) {
+            $foreignClassName = substr($field->getManyToOne()['childTableAlias'], 1);
+            if ($field->hasView('recherche')) {
+                $select2SearchText .= $this->addSelectAjaxSearch($field, $selectAjaxCallSearchTextTemp, $foreignClassName);
+
+            }
+            if ($field->hasView('edition')) {
+                $select2EditText .= $this->addSelectAjaxEdition($field, $selectAjaxCallEditTextTemp, $foreignClassName);
+            }
+
+            $this->addSelectAjaxMethodDefinition($field, $selectAjaxDefinitionTemp, $selectAjaxDefinition, $foreignClassName);
+        }
+
+        $selectAjaxDefinitionText = PHP_EOL . implode(PHP_EOL, $selectAjaxDefinition) . PHP_EOL;
+        return array($select2SearchText, $select2EditText, $selectAjaxDefinitionText);
+    }
+
+    /**
+     * @param E2DField $field
+     * @param string $selectAjaxCallTextTemp
+     * @param string $foreignClassName
+     * @return string
+     */
+    private function addSelectAjaxSearch(E2DField $field, string $selectAjaxCallTextTemp, string $foreignClassName):  string
+    {
+        return str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field->getName(), 'true'], $selectAjaxCallTextTemp);
+
+    }
+
+    /**
+     * @param E2DField $field
+     * @param string $selectAjaxCallEditTextTemp
+     * @param string $foreignClassName
+     * @return string
+     */
+    private function addSelectAjaxEdition(E2DField $field,  string $selectAjaxCallEditTextTemp, string $foreignClassName): string
+    {
+        $allowClear = $field->isNullable() ? 'true' : 'false';
+
+        return str_replace(['MODEL', 'FORM', 'NAME', 'FIELD', 'ALLOWCLEAR'],
+            [$foreignClassName, 'oParams.eFormulaire', $field->getName(), $field->getFormattedName(), $allowClear], $selectAjaxCallEditTextTemp);
+    }
+
+    /**
+     * @param array $selectAjaxDefinition
+     * @param E2DField $field
+     * @param string $selectAjaxDefinitionTemp
+     * @param string $foreignClassName
+     * @return array
+     */
+    private function addSelectAjaxMethodDefinition(E2DField $field, string $selectAjaxDefinitionTemp, array &$selectAjaxDefinition, string $foreignClassName)
+    {
+        $label = $field->getManyToOne()['label'];
+        if (is_array($label)) {
+            $label = $this->generateConcatenatedColumn($label);
+        }
+
+        if (!isset($selectAjaxDefinition[$field->getColumn()])) {
+            $selectAjaxDefinition[$field->getColumn()] = str_replace(['MODEL', 'PK', 'LABEL', 'TABLE', 'ORDERBY'],
+                [$foreignClassName, $field->getColumn(), $label, $field->getManyToOne()['table'], $field->getColumn()], $selectAjaxDefinitionTemp);
+        }
+
+    }
+
+    /**
+     * @param array $column
+     * @param string $alias
+     * @return string
+     */
+    public function generateConcatenatedColumn(array $columns, $alias = ''): string
+    {
+        if ($alias !== '') {
+            $alias = $alias. '.';
+
+            $columns = array_map(function($part) use ($alias) {return $alias.$part;}, $columns);
+        }
+        return "CONCAT_WS(\' \', " . implode(", ",  $columns) . ')';
+    }
 }

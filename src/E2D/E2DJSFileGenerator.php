@@ -71,59 +71,35 @@ class E2DJSFileGenerator extends FileGenerator
 
         $select2SearchText = PHP_EOL;
         $select2EditText = '';
-        if ($fields = $this->model->getViewFieldsByType('enum')) {
-            if ($this->model->usesSelect2 && strpos($templatePath, 'Admin') > 0) {
 
-                $select2DefautTemplate = file($this->getTrueTemplatePath(str_replace('.', 'RechercheSelect2.', $path)));
-                $select2RechercheTemplate = array_shift($select2DefautTemplate);
+        if ($this->model->usesSelect2 && strpos($templatePath, 'Admin') > 0) {
 
-                $select2EditTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'EditionSelect2.', $path)));
+            $select2DefautTemplate = file($this->getTrueTemplatePath(str_replace('.', 'RechercheSelect2.', $path)));
+            $select2RechercheTemplate = array_shift($select2DefautTemplate);
+            $select2EditTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'EditionSelect2.', $path)));
 
-                foreach ($fields as $field) {
+            $editionFields = $this->model->getFields('edition', 'enum');
+            $searchFields = $this->model->getFields('recherche', 'enum');
 
-                    $select2SearchText .= str_replace(['NAME'], [$field['name']], $select2RechercheTemplate);
-                    $select2EditText .= str_replace(['NAME'], [$field['name']], $select2EditTemplate).PHP_EOL;
-                }
-                $select2SearchText .= implode('', $select2DefautTemplate).PHP_EOL;
+            foreach ($editionFields as $field) {
+                $select2EditText .= str_replace(['NAME'], [$field->getName()], $select2EditTemplate).PHP_EOL;
             }
-            // [$select2Template, $selectClass] = $this->model->usesSelect2 ? [file_get_contents(str_replace('.', 'Select2.', $templatePath)), 'select2'] : ['', 'selectmenu'];
+
+            foreach ($searchFields as $field) {
+                $select2SearchText .= str_replace(['NAME'], [$field->getName()], $select2RechercheTemplate);
+            }
+
+            $select2SearchText .= implode('', $select2DefautTemplate).PHP_EOL;
         }
 
         $selectAjaxDefinitionText = '';
+        $selectAjaxDefinition = [];
         $personalizeButtons = '';
         $tinyMCE = '';
         $tinyMCEDef = '';
         if (strpos($templatePath, 'Admin') > 0) {
             if ($this->config->get('hasManyToOneRelation')) {
-
-                if ($fields = $this->model->getViewFieldsByType('foreignKey')) {
-
-                    $selectAjaxDefinition = [];
-                    foreach ($fields as $field) {
-                        $foreignClassName = substr($field['manyToOne']['childTableAlias'], 1);
-                        $label = $field['manyToOne']['label'];
-                        if (is_array($label)) {
-                            $label = $this->model->generateConcatenatedColumn($label);
-                        }
-
-                        $ajaxSearchTextTemp = PHP_EOL.file_get_contents($this->getTrueTemplatePath(str_replace('.', 'RechercheSelectAjaxCall.', $templatePath)));
-                        $select2SearchText .= str_replace(['MODEL', 'FORM', 'NAME', 'ALLOWCLEAR'], [$foreignClassName, 'eFormulaire', $field['name'], 'true'], $ajaxSearchTextTemp);
-                        $allowClear = $field['is_nullable'] ? 'true' : 'false';
-
-                        $selectAjaxCallEditTextTemp = PHP_EOL.file_get_contents($this->getTrueTemplatePath(str_replace('.', 'EditionSelectAjaxCall.', $templatePath)));
-
-
-                        $select2EditText .= str_replace(['MODEL', 'FORM', 'NAME', 'FIELD', 'ALLOWCLEAR'], [$foreignClassName, 'oParams.eFormulaire', $field['name'], $field['field'], $allowClear], $selectAjaxCallEditTextTemp);
-
-                        $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'SelectAjaxDefinition.', $path)));
-                        $selectAjaxDefinition[] = str_replace(['MODEL', 'PK', 'LABEL', 'TABLE', 'ORDERBY'],
-                            [$foreignClassName, $field['column'], $label, $field['manyToOne']['table'], $field['column']], $selectAjaxDefinitionTemp);
-                    }
-
-                    $selectAjaxDefinitionText = PHP_EOL . implode(PHP_EOL, $selectAjaxDefinition) . PHP_EOL;
-
-
-                }
+                [$select2SearchText, $select2EditText, $selectAjaxDefinitionText] = $this->model->addSelectAjaxToJavaScript($templatePath, $select2SearchText, $select2EditText, $selectAjaxDefinition);
             }
 
             $personalizedButtonsTemplateSuffix = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton.' : 'NoConsultationButtons.';

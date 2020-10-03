@@ -14,7 +14,7 @@ class ESMModelMakerLegacy extends ESMModelMaker
      */
     public function getInsertColumns()
     {
-        return implode(','.PHP_EOL, array_map(function($field) { return str_repeat("\x20", 16) .$field['column'];}, $this->getViewFields()));
+        return implode(','.PHP_EOL, array_map(function($field) { return str_repeat("\x20", 16) .$field['column'];}, $this->getViewFields('edition')));
     }
 
     public function getInsertValues()

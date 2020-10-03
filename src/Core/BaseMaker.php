@@ -48,36 +48,6 @@ abstract class BaseMaker extends CommandLineToolShelf
     }
 
     /**
-     * L'application donne des choix aux utilisateurs, les réponses sont stockées en config, permet a l'application de ne pas redemander une information déja stockée
-     *
-     * @param string $key
-     * @param array $choices
-     * @param $function
-     * @param bool $defaultValue
-     * @param bool $multiple
-     * @return mixed
-     * @throws \Exception
-     */
-    protected function askConfig(string $key, array $choices, $function, $defaultValue = false, $multiple = false)
-    {
-        if (count($choices) === 1) {
-            return $choices[0];
-        } elseif (count($choices) > 1) {
-            if ($this->config->get($key) !== null && array_contains($this->config->get($key), $choices)) {
-                $selection = $this->config->get($key);
-            } else {
-                $selection = $this->$function($key, $choices, $defaultValue);
-
-                $this->config->saveChoice($key, $selection);
-            }
-
-            return $selection;
-        } else {
-            throw new \Exception("Pas de $key disponible");
-        }
-    }
-
-    /**
      * Remplace le chemin du template choisi par le chemin du template standard ou le template de fallback  s'il n'y a pas de template personnalisé
      *
      * @param $templatePath

@@ -30,7 +30,7 @@ class E2DModelMaker extends ModelMaker
     {
         $actionHeader = empty($this->actions) ? '' : file_get_contents(str_replace('.', '_actionheader.', $templatePath)).PHP_EOL;
         return $actionHeader.implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {
-            return $field->getTableHeader($templatePath);}, $this->fields));
+            return $field->getTableHeader($templatePath);}, $this->getFields('liste')));
     }
 
     /**
@@ -38,7 +38,7 @@ class E2DModelMaker extends ModelMaker
      */
      public function getTableColumns($templatePath)
      {
-         return implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {return $field->getTableColumn($templatePath);}, $this->fields));
+         return implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {return $field->getTableColumn($templatePath);}, $this->getFields('liste')));
      }
 
     /**
@@ -81,21 +81,19 @@ class E2DModelMaker extends ModelMaker
         $this->askAddManyToOneField();
     }
 
-
     /**
      * @return array
      */
     private function askChampTinyMCE()
     {
-        $champsTexte = $this->getViewFieldsByType('text');
+        $champsTexte = $this->getFields('', 'text');
         $champsSelectionnes = [];
 
         foreach ($champsTexte as $unChamp) {
-                $unChamp = $unChamp['column'];
-                $reponse = $this->prompt('Voulez vous transformer le champ "' . $unChamp . '" en champs tinyMCE ?', ['o', 'n']);
+                $reponse = $this->prompt('Voulez vous transformer le champ "' . $unChamp->getColumn() . '" en champs tinyMCE ?', ['o', 'n']);
 
             if ('o' === $reponse) {
-                $champsSelectionnes[] = $unChamp;
+                $champsSelectionnes[] = $unChamp->getColumn();
             }
         }
 
@@ -150,7 +148,6 @@ class E2DModelMaker extends ModelMaker
     public function getJoins(string $template)
     {
         $joinText = '';
-//        $joins = [];
         $joinList = $this->config->get('manyToOne');
 
         if (!empty($joinList)) {
@@ -164,23 +161,6 @@ class E2DModelMaker extends ModelMaker
 
         return $joinText;
     }
-
-    /**
-     * @param array $column
-     * @param string $alias
-     * @return string
-     */
-    public function generateConcatenatedColumn(array $columns, $alias = ''): string
-    {
-        if ($alias !== '') {
-            $alias = $alias. '.';
-
-            $columns = array_map(function($part) use ($alias) {return $alias.$part;}, $columns);
-        }
-        return "CONCAT_WS(\' \', " . implode(", ",  $columns) . ')';
-    }
-
-
 
     /**
      * Pour @ModelFile
@@ -209,4 +189,5 @@ class E2DModelMaker extends ModelMaker
             }
         }
     }
+
 }

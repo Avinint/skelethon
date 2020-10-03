@@ -12,10 +12,10 @@ class E2DField extends Field
     {
         parent::__construct($type, $name, $columnName, $defaultValue, $alias, $model, $params);
 
-        $this->formatted = array_contains($type, array('float', 'decimal', 'date', 'datetime', 'time', 'double', 'bool', 'enum', 'foreignKey'));
+        $this->formatted = $this->is(['float', 'decimal', 'date', 'datetime', 'time', 'double', 'bool', 'enum', 'foreignKey']);
     }
 
-    protected function getFormattedName()
+    public function getFormattedName()
     {
         if ($this->formatted) {
             if ($this->type === 'foreignKey') {
@@ -27,7 +27,7 @@ class E2DField extends Field
         return $this->name;
     }
 
-    protected function getFormattedColumn()
+    public function getFormattedColumn()
     {
         if ($this->formatted) {
             if ($this->type === 'foreignKey') {
@@ -109,9 +109,9 @@ class E2DField extends Field
         $aCritereRecherche = [];
         $indent = str_repeat("\x20", 8);
 
-        if (array_contains($this->type, array('tinyint', 'smallint', 'int', 'float', 'decimal', 'double', 'foreignKey'))) {
+        if ($this->isNumber()) {
 
-            if (!preg_match('/^nId([A-Z]{1}([a-z]*))$/', $this->name)) {
+            if (!$this->is('primaryKey', 'foreignKey')) {
                 $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
                     [$template[7], $template[0], ($this->isInteger() ? $template[11] : $template[12]), $template[1], $template[2]]));
                 $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
@@ -226,17 +226,6 @@ class E2DField extends Field
         $this->manyToOne = $manyToOneParams;
         $this->formatted = true;
 
-    }
-
-    /**
-     * Transforme un champ clé étrangère en select2 Ajax
-     * @param $properties
-     */
-    protected function handleAssociations(&$properties)
-    {
-        if (isset($this->manyToOne)) {
-            $properties['manyToOne'] = $this->manyToOne;
-        }
     }
 
     /**

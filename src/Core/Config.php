@@ -33,10 +33,13 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         if ($fileManager === null) {
             $this->template = $template ?? $this->get('template', $this->currentModel);
             $this->fileManager = new FileManager($template);
-
         } else {
             $this->fileManager = $fileManager;
         }
+
+//        if (!empty($this->data)) {
+//            $this->write($this->module);
+//        }
 
         $this->ensureDirectoryExists(dirname($this->getPath('for_project')));
 
@@ -44,7 +47,19 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             $this->fileManager->createFile($this->getPath('for_project', Spyc::YAMLDump([], 4, 40, true), true));
         }
 
-        $this->set('template', $template,  'for_project');
+        if ($this->has('portee_template')) {
+            if ('modele' === $this->get('portee_template')) {
+                $this->set('template', $template, $this->currentModel);
+            } elseif ('projet' === $this->get('portee_template')) {
+                $this->set('template', $template, 'for_project', true);
+            } elseif ('application' === $this->get('portee_template')) {
+                $this->set('template', $template, '', true);
+            } else {
+                $this->set('template', $template);
+            }
+        } else {
+            $this->set('template', $template);
+        }
     }
 
     public function setTemplate(string $template)
@@ -160,6 +175,9 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 
     public function write($module = '')
     {
+        if (is_null($this->fileManager)) {
+            return;
+        }
         if ($module === 'for_project') {
             $path = $this->getPath('for_project');
             $data = $this->data[$this->subDir];
@@ -232,9 +250,6 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      */
     public function get(string $field, string $model = null)
     {
-        //var_dump($this->data[$field] );
-        // Quand on set le model de façon explicite
-        // celui ci prévaut sur l'ordre canonique : app / module / model
         if (isset($model)) {
             return $this->getValueFromModelConfig($field, $model);
         }
@@ -304,12 +319,11 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      * @param string $key
      * @param array $choices
      * @param $function
-     * @param bool $defaultValue
-     * @param bool $multiple
+     * @param mixed|bool $defaultValue
      * @return mixed
      * @throws \Exception
      */
-    protected function askConfig(string $key, array $choices, $function, $defaultValue = false, $model = '')
+    protected function askConfig(string $key, array $choices, $function, $defaultValue = false, $freeChoice = false)
     {
         if (count($choices) === 1) {
             return $choices[0];
@@ -317,9 +331,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             if ($this->has($key) && array_contains($this->get($key), $choices)) {
                 $selection = $this->get($key);
             } else {
-                $selection = $this->$function($key, $choices, $defaultValue);
-
-                $this->saveChoice($key, $selection, $model);
+                $selection = $this->$function($key, $choices, $defaultValue, '', $freeChoice);
             }
 
             return $selection;
@@ -336,9 +348,9 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
    public function saveChoice(string $key, $selection, string $model = ''): void
     {
         if (empty($model)) {
-            $applyChoiceToAllModules = $this->get('memorizeChoices') ?? $this->prompt('Voulez vous appliquer ce choix à tous les modules créés à l\'avenir?', ['o', 'n']) === 'o';
+            $applyChoiceToAllModules = $this->get('memorizeChoices') ?? $this->prompt('Voulez vous appliquer ce choix à tous les modules créés à l\'avenir pour ce projet?', ['o', 'n']) === 'o';
             if ($applyChoiceToAllModules) {
-                $this->set($key, $selection, '', true);
+                $this->set($key, $selection, 'for_project');
             }
             $this->set($key, $selection);
         } else {
@@ -360,7 +372,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     public function askTemplate()
     {
         $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
-        $res = $this->askConfig('template', $templates, 'askMultipleChoices', $this->type->getTemplate());
+        $res = $this->askConfig('template', $templates, 'askMultipleChoices', $this->type->getTemplate(), true);
         return $res;
     }
 
