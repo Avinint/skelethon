@@ -15,11 +15,11 @@ class E2DControllerFileGenerator extends FileGenerator
 
     public function __construct(string $moduleName, string $pascalCaseModuleName, E2DModelMaker $model, string $controllerName, Config $config)
     {
-        $this->config = $config;
+        $this->config               = $config;
         parent::__construct($model->getFileManager());
-        $this->model = $model;
-        $this->moduleName = $moduleName;
-        $this->controllerName = $controllerName;
+        $this->model                = $model;
+        $this->moduleName           = $moduleName;
+        $this->controllerName       = $controllerName;
         $this->pascalCaseModuleName = $pascalCaseModuleName;
     }
     
@@ -48,17 +48,19 @@ class E2DControllerFileGenerator extends FileGenerator
         $rechercheActionInitPathHandle = $noRecherche ? 'SansFormulaireRecherche' : 'AvecFormulaireRecherche';
         $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath(str_replace('Action.', 'Action' .  $rechercheActionInitPathHandle  . '.', $path)));
 
-        $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
-
-        if ($this->model->usesSelect2) {
-            $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnumSelect2.', $path));
-        } else {
-            $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnum.', $path));
-        }
-
-        $fieldTemplatePath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEditionChamps.', $path));
-
         if (file_exists($path = $this->getTrueTemplatePath($path))) {
+            if ($this->model->usesSelect2) {
+                $enumPath = $this->getTrueTemplatePath($path, 'ActionEnumSelect2.', 'Action.');
+            } else {
+                $enumPath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEnumSelectMenu.', $path));
+            }
+            $parametrePath = $this->getTrueTemplatePath($enumPath, 'Parametre', 'Enum');
+
+            $fieldTemplatePath = $this->getTrueTemplatePath(str_replace('Action.', 'ActionEditionChamps.', $path));
+
+            $paths = [$enumPath, $parametrePath, $fieldTemplatePath];
+            $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
+
             $exceptions = [];
             $defaults = [];
             $allEnumEditLines = [];
@@ -66,6 +68,7 @@ class E2DControllerFileGenerator extends FileGenerator
             $exceptionText = '';
 
             $fields = $this->model->getFields('edition');
+
             $fieldsNotNullableText = '';
             $fieldsNotNullable = [];
             $fieldsNullableText = '';
@@ -75,7 +78,7 @@ class E2DControllerFileGenerator extends FileGenerator
              * @var E2DField $field
              */
             foreach ($fields as $field) {
-                $fieldText = $this->handleControllerField($field, $exceptions, $defaults, $fieldTemplatePath,$enumPath, $allEnumEditLines, $allEnumSearchLines);
+                $fieldText = $this->handleControllerField($field, $exceptions, $defaults, $paths, $allEnumEditLines, $allEnumSearchLines);
                 if ($field->isNullable() === true) {
                     $fieldsNullable[] = $fieldText.PHP_EOL;
                 } else {
@@ -92,10 +95,17 @@ class E2DControllerFileGenerator extends FileGenerator
                 $fieldsNotNullableText = PHP_EOL.str_repeat("\x20", 12).implode(PHP_EOL.str_repeat("\x20", 12), $fieldsNotNullable).PHP_EOL.str_repeat("\x20", 8);
             }
 
+
+            $parametreInitLine = str_repeat("\x20", 8) . "\$oParametre = \$this->oNew('Parametre');";
+            if ($this->model->getFields('recherche', 'parametre')) {
+                array_unshift($allEnumSearchLines, $parametreInitLine);
+            }
+
+            if ($this->model->getFields('edition', 'parametre')) {
+                array_unshift($allEnumEditLines, $parametreInitLine);
+            }
             $enumEditText = implode(PHP_EOL, $allEnumEditLines);
             $enumSearchText = implode(PHP_EOL, $allEnumSearchLines);
-            //$enumSearchText .= implode('', $defaults);
-            //$defaults = array_merge($enumDefaults, $defaults);
 
             if ($exceptions) {
                 $exceptionText = ', [';
@@ -142,8 +152,9 @@ class E2DControllerFileGenerator extends FileGenerator
      * @param array $allEnumEditLines
      * @param array $allEnumSearchLines
      */
-    private function handleControllerField(E2DField $field, array &$exceptions, array &$defaults, $fieldTemplatePath, $enumPath, array &$allEnumEditLines, array &$allEnumSearchLines): string
+    private function handleControllerField(E2DField $field, array &$exceptions, array &$defaults, array $paths, array &$allEnumEditLines, array &$allEnumSearchLines): string
     {
+        [$enumPath, $parametrePath, $fieldTemplatePath] = $paths;
         $templateFields = file($fieldTemplatePath, FILE_IGNORE_NEW_LINES);
         $nullableFieldTemplatePath = str_replace('Champs.', 'ChampsNullable.', $fieldTemplatePath);
         $templateNullableFields = file_get_contents($nullableFieldTemplatePath);
@@ -165,10 +176,11 @@ class E2DControllerFileGenerator extends FileGenerator
             $exceptions['aTimes'][] = $field->getName();
         }
 
-        elseif ($field->is('enum')) {
+        elseif ($field->is('enum') || $field->is('parametre')) {
             $template = [$templateFields[0], $templateFields[1]];
             $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-            $this->handleControllerEnumField($enumPath, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
+            $path = $field->is('enum') ? $enumPath : $parametrePath;
+            $this->handleControllerEnumField($path, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
         } elseif ($field->isInteger()) {
             $template = [$templateFields[0], $templateFields[1]];
             $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
@@ -197,25 +209,19 @@ class E2DControllerFileGenerator extends FileGenerator
 
     /**
      * @param $enumPath
-     * @param $enum
+     * @param E2DField $field
      * @param array $allEnumEditLines
      * @param array $allEnumSearchLines
      * @param array $enumDefaults
      * @return array
      */
-    protected function handleControllerEnumField($enumPath, $enum, array &$allEnumEditLines, array &$allEnumSearchLines, array &$enumDefaults)
+    protected function handleControllerEnumField($enumPath, E2DField $field, array &$allEnumEditLines, array &$allEnumSearchLines, array &$enumDefaults)
     {
         $enumLines = $enumSearchLines = file($enumPath);
-        $enumEditionLine = $enumLines[0];
-        $default = $enum->getDefaultValue() ?? '';
+        $enumEditionLines = $enumLines[0];
+        $default = $field->getDefaultValue() ?? '';
 
-        if ($default) {
-            $enumSearchLines = $enumLines;
-            $enumDefault = $enumLines[2];
-        } else {
-            $enumSearchLines = [$enumLines[0]];
-        }
-
+        // TODO finit d'intégrer les differences pour les champs parametres
         if ($this->model->usesSelect2) {
             if ($default) {
                 $enumSearchLines = array_slice($enumLines, 0, 3);
@@ -223,19 +229,30 @@ class E2DControllerFileGenerator extends FileGenerator
             } else {
                 $enumSearchLines = array_slice($enumLines, 0, 1);
             }
+        } else {
+            if ($default) {
+                $enumSearchLines = $enumLines;
+                $enumDefault = $enumLines[2];
+            } else {
+                $enumSearchLines = [$enumLines[0]];
+            }
         }
 
-        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
-        $replacements = [$enum->getName(), $this->moduleName, $this->model->getName(), $enum->getColumn(), $default];
+        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT', 'TYPE'];
 
-        $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLine);
+        $replacements = [$field->getName(), $this->moduleName, $this->model->getName(), $field->getColumn(), $default, $field->getParametre('type')];
+
+        $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLines);
         $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));
+
+
         if ($default) {
             $enumDefaults[] = str_replace($searches, $replacements, $enumDefault);
         }
 
         //return $enumSearchLines;
     }
+
 
     /**
      * @param $path

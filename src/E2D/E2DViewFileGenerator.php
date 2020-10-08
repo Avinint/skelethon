@@ -66,7 +66,8 @@ class E2DViewFileGenerator extends FileGenerator
     {
         $fieldText = [];
         foreach ($this->model->getFields('edition') as $field) {
-            if ($field->is('enum')) {
+
+            if ($field->is(['enum', 'parametre'])) {
                 if ($this->model->usesSelect2) {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_enum_select2.'));
                 } else {
@@ -109,7 +110,7 @@ class E2DViewFileGenerator extends FileGenerator
     {
         $fieldText = [];
         foreach ($this->model->getFields('recherche') as $field) {
-            if ($field->is('enum')) {
+            if ($field->is(['enum', 'parametre'])) {
                 if ($this->model->usesSelect2) {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path, '_enum_select2.'));
                 } else {

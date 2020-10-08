@@ -74,12 +74,12 @@ class E2DJSFileGenerator extends FileGenerator
 
         if ($this->model->usesSelect2 && strpos($templatePath, 'Admin') > 0) {
 
-            $select2DefautTemplate = file($this->getTrueTemplatePath(str_replace('.', 'RechercheSelect2.', $path)));
+            $select2DefautTemplate = file($this->getTrueTemplatePath($path, 'RechercheSelect2.'));
             $select2RechercheTemplate = array_shift($select2DefautTemplate);
-            $select2EditTemplate = file_get_contents($this->getTrueTemplatePath(str_replace('.', 'EditionSelect2.', $path)));
+            $select2EditTemplate = file_get_contents($this->getTrueTemplatePath($path, 'EditionSelect2.'));
 
-            $editionFields = $this->model->getFields('edition', 'enum');
-            $searchFields = $this->model->getFields('recherche', 'enum');
+            $editionFields = $this->model->getFields('edition', ['enum', 'parametre']);
+            $searchFields = $this->model->getFields('recherche', ['enum', 'parametre']);
 
             foreach ($editionFields as $field) {
                 $select2EditText .= str_replace(['NAME'], [$field->getName()], $select2EditTemplate).PHP_EOL;

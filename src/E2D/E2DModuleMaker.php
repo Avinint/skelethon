@@ -34,6 +34,7 @@ class E2DModuleMaker extends ModuleMaker
         $this->initializeFileGenerators($params);
         $this->setMenuPath($params['menuPath']);
         $this->addMenu();
+        $this->addSecurity();
     }
 
     protected function initializeFileGenerators($params)
@@ -169,7 +170,7 @@ class E2DModuleMaker extends ModuleMaker
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
-            $this->createFile($this->menuPath, $menu, true);
+            $this->fileManager->createFile($this->menuPath, $menu, true);
         }
     }
 
@@ -201,9 +202,27 @@ class E2DModuleMaker extends ModuleMaker
         }
     }
 
-    private function addManyToOne()
+    private function addSecurity()
     {
-        // Get fields that can become select ajax
+        if ($this->config->has('updateSecurity') && !$this->config->get('updateSecurity')) {
+            $this->msg('Génération de fichier ' . $this->highlight('securite.yml', 'neutral') . ' désactivée', 'important');
+            return;
+        }
+
+        $securityPath = getcwd() . DS . 'config/securite.yml';
+
+        if (!file_exists($securityPath)) {
+            return;
+        }
+
+        $security = new E2DSecurityFileGenerator($this->getControllerName('snake_case'), $this->name, $this->fileManager);
+        if ($this->config->get('updateSecurity') === 'generate') {
+            $security->generate($securityPath);
+        } elseif ($this->config->get('updateSecurity') === 'print') {
+            $security->print($securityPath);
+        }
+
+        $this->config->set('updateSecurity', false, $this->model->getName());
     }
 
 }

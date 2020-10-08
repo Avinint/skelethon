@@ -298,7 +298,7 @@ abstract class ModelMaker extends BaseMaker
     {
         //$fields =  implode(','.PHP_EOL, $this->fieldClass::getSelectFields());
 //        return $fields;
-        return  implode(','.PHP_EOL, array_map(function (Field $field) use ($template) {return $field->getSelectField($template);}, $this->getFields('base')));
+        return  implode(','.PHP_EOL, array_map(function (Field $field) use ($template) {return $field->getSelectField($template);}, $this->getFields('base', '', true)));
     }
 
     /**
@@ -409,7 +409,6 @@ abstract class ModelMaker extends BaseMaker
     protected function askBool($param, $message) : bool
     {
         if ($this->config->has($param)) {
-
             $res = $this->config->get($param);
         } else {
             $res = $this->prompt($message, ['o', 'n']) === 'o';

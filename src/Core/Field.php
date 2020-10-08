@@ -173,21 +173,9 @@ abstract class Field
         return $this->isDate() || $this->type === 'enum';
     }
 
-    protected static function getFieldByColumn($columnName)
-    {
-        return array_values(array_filter(self::$collection, function($field) use ($columnName) {
-            return $field->column === $columnName;
-        }))[0];
-    }
-
     protected function set($field, $value)
     {
         $this->$field = $value;
-    }
-
-    public static function changeFieldType($columnName, $type)
-    {
-        static::getFieldByColumn($columnName)->set('type', $type);
     }
 
     /**

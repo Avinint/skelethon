@@ -50,7 +50,7 @@ abstract class DatabaseAccess implements DatabaseAccessInterface
         $data = null;
 
         $req = $this->getPDO()->query($statement);
-        if (is_null($class)) {
+        if (is_null($class) && $array === false) {
             $req->setFetchMode(PDO::FETCH_OBJ);
         } elseif($array) {
             $req->setFetchMode(PDO::FETCH_ASSOC);
@@ -95,9 +95,9 @@ abstract class DatabaseAccess implements DatabaseAccessInterface
             }
         }
 
-        if($one){
+        if ($one) {
             $data = $req->fetch();
-        } else if($one === false){
+        } else {
             $data = $req->fetchAll();
         }
 

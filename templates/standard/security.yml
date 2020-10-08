@@ -1,0 +1,22 @@
+controller:
+    discipline:
+        mode: []
+            accueil_discipline_enseignant:
+                cle:        accueil-discipline-a-valider
+                libelle:    Accueil des disciplines à valider par l'enseignant
+            accueil_discipline:
+                cle:        accueil-discipline
+                libelle:    Accueil du module discipline
+        action: []
+            dynamisation_consultation:
+                cle:        ouverture-consultation-discipline
+                libelle:    Consultation des disciplines
+            dynamisation_consultation_planning_enseignant:
+                cle:        dynamisation-validation-planning
+                libelle:    Dynamisation du calque de validation des plannings
+            dynamisation_edition:
+                cle:        dynamisation-edition-discipline
+                libelle:    Dynamisation du calque d'édition d'une discipline
+            suppression:
+                cle:        suppression-discipline
+                libelle:    Suppression d'une discipline

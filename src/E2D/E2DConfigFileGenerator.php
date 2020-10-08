@@ -62,7 +62,7 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
         foreach ($this->model->actions as $action)
         {
             if ($action === 'accueil' && strpos($path, 'routing') === false) continue;
-            if (!array_contains($action, ['consultation', 'edition']) && strpos($path, 'blocs') === false) continue;
+            if (!array_contains($action, ['consultation', 'edition']) && strpos($path, 'blocs')) continue;
             $templatePerActionPath = $this->getTrueTemplatePath($path, '_' . $action . '.');
             if (file_exists($templatePerActionPath)) {
                 $texts[] = $this->getConfigTemplateForAction($templatePerActionPath, $path, $action);

@@ -16,5 +16,5 @@
             ]
         });
 
-        tinymce.editors['sChamp'].settings["language"] =  "fr_FR";
+        // tinymce.editors['sChamp'].settings["language"] =  "fr_FR";
     };

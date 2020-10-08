@@ -28,7 +28,7 @@ class ESMModuleMaker extends E2DModuleMaker
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
-            $this->createFile($this->menuPath, $menu, true);
+            $this->fileManager->createFile($this->menuPath, $menu, true);
         }
     }
 

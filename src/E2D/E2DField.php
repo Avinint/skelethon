@@ -7,6 +7,7 @@ use Core\Field;
 class E2DField extends Field
 {
     protected $formatted;
+    protected $parametre;
     
     public function __construct($type, $name, $columnName, $defaultValue, $alias, $model, $params = [])
     {
@@ -282,6 +283,27 @@ class E2DField extends Field
         $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
             [$this->alias, $this->column, '<=', $this->name . 'Fin', $sSuffixeFin, $sFormat], $texteCritere);
         return $aCritereRecherche;
+    }
+
+
+    public function changerEnChampParametre($type, $lignes = [])
+    {
+        $this->type = 'parametre';
+        $this->parametre = new \stdClass();
+        $this->parametre->type = $type;
+        $this->parametre->lignes = [];
+        foreach ($lignes as $ligne) {
+            $this->parametre->lignes[] = [$ligne['code'], $ligne['valeur']];
+        }
+
+    }
+
+    public function getParametre($property = '')
+    {
+        if ($property)
+            return $this->parametre->$property;
+        else
+            return $this->parametre;
     }
 
 }
