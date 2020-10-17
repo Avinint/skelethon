@@ -16,10 +16,10 @@ templates:
         themes:
             defaut:
                 css:
-                    TABLE.css
+                    mODEL.css
 vues:
-    accueil_TABLE.html
-    liste_TABLE.html
-    consultation_TABLE.html
-    edition_TABLE.html
-    recherche_TABLE.html
+    accueil_mODEL.html
+    liste_mODEL.html
+    consultation_mODEL.html
+    edition_mODEL.html
+    recherche_mODEL.html

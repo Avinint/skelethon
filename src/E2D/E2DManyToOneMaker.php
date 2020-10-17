@@ -61,7 +61,7 @@ trait E2DManyToOneMaker
     private function askConvertToManyToOneFields(array $potentialFields)
     {
         $listNames = implode('', array_map(function ($field) {
-            return $this->highlight($field['name'], 'info') . PHP_EOL;
+            return $this->highlight($field->getName(), 'info') . PHP_EOL;
         }, $potentialFields));
         $askConvertAll = $this->prompt('Voulez-vous convertir tous les champs suivants :' . PHP_EOL . $listNames . 'en Select Ajax ?', ['o', 'n']) === 'o';
         foreach ($potentialFields as &$field) {
@@ -69,8 +69,8 @@ trait E2DManyToOneMaker
             if ($manyToOneFieldData === false) {
                 $this->msg('Champ invalide comme clé étrangère', 'error');
             } else {
-                if ($askConvertAll || $this->prompt('Voulez-vous convertir le champ ' . $this->highlight($field['name']) . ' en Select Ajax ?', ['o', 'n']) === 'o') {
-                    $this->convertToManyToOneField($field['column'], $manyToOneFieldData);
+                if ($askConvertAll || $this->prompt('Voulez-vous convertir le champ ' . $this->highlight($field->getName()) . ' en Select Ajax ?', ['o', 'n']) === 'o') {
+                    $this->convertToManyToOneField($field->getColumn(), $manyToOneFieldData);
                 }
             }
         }
@@ -78,19 +78,19 @@ trait E2DManyToOneMaker
 
     private function getDataForManyToOneField($field)
     {
-        $childTable = str_replace('id_', '', $field['column']);
+        $childTable = str_replace('id_', '', $field->getColumn());
         $tables = $this->databaseAccess->getSimilarTableList($childTable);
 
         if (count($tables) > 1) {
             $default = $this->config->has('prefix') && array_contains($this->config->get('prefix') . '_' .  $childTable, $tables) ?
                 $this->config->get('prefix') . '_' . $childTable :
                 (array_contains($childTable, $tables) ? $childTable : false);
-            $childTable = $this->askMultipleChoices('table', $tables, $default, $field['column']);
+            $childTable = $this->askMultipleChoices('table', $tables, $default, $field->getColumn());
         } elseif (count($tables) === 1) {
             $childTable = $tables[0];
         } else {
             $tables = $this->databaseAccess->getTableList();
-            $childTable = $this->askMultipleChoices('table', array_keys($tables), false, $field['column']);
+            $childTable = $this->askMultipleChoices('table', array_keys($tables), false, $field->getColumn());
         }
 
         $tableExists = count($tables) > 0 && !empty($childTable);
@@ -109,7 +109,7 @@ trait E2DManyToOneMaker
             }
 
             if (empty($displayFields)) {
-                $displayFields[] = $field['column'];
+                $displayFields[] = $field->getColumn();
             }
 
             $concat = count($displayFields) > 1;
@@ -122,7 +122,7 @@ trait E2DManyToOneMaker
                 $displayField = array_shift($displayFields);
             }
 
-            $idField = 'n' . $this->pascalize($field['column']);
+            $idField = 'n' . $this->pascalize($field->getColumn());
 
             $alias = $this->generateAlias($childTable);
 

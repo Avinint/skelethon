@@ -2,9 +2,9 @@
 
 namespace E2D;
 
-use Core\Config;
+use Core\App;
 use Core\FileGenerator;
-use E2d\E2DField;
+
 class E2DControllerFileGenerator extends FileGenerator
 {
     private string $pascalCaseModuleName;
@@ -12,15 +12,19 @@ class E2DControllerFileGenerator extends FileGenerator
      * @var E2DModelMaker
      */
     private E2DModelMaker $model;
+    protected App $app;
 
-    public function __construct(string $moduleName, string $pascalCaseModuleName, E2DModelMaker $model, string $controllerName, Config $config)
+    public function __construct(App $app)
     {
-        $this->config               = $config;
-        parent::__construct($model->getFileManager());
-        $this->model                = $model;
-        $this->moduleName           = $moduleName;
-        $this->controllerName       = $controllerName;
-        $this->pascalCaseModuleName = $pascalCaseModuleName;
+        $this->app                  = $app;
+        $this->config               = $app->getConfig();
+//        parent::__construct($app->getFileManager());
+        $this->model                = $app->getModelMaker();
+        $this->moduleName           = $app->getModuleMaker()->getName();
+        $this->controllerName       = $app->getModuleMaker()->getControllerName();
+        $this->pascalCaseModuleName = $app->getModuleMaker()->getNamespaceName();
+
+
     }
     
     public function generate(string $path) : string
@@ -266,7 +270,7 @@ class E2DControllerFileGenerator extends FileGenerator
             $text = file_get_contents($templatePath);
 
             $recherche = array_contains('recherche', $this->model->actions) ? file_get_contents($this->getTrueTemplatePath($path, 'Recherche.class.php', '.class.php')) : '';
-            $tinyMCE =  array_contains('edition', $this->model->actions) && $this->model->getConfig()->has('champsTinyMCE') ? file_get_contents($this->getTrueTemplatePath($path, 'TinyMCE.class.php', '.class.php')) : '';
+            $tinyMCE =  array_contains('edition', $this->model->actions) && $this->app->getConfig()->has('champsTinyMCE') ? file_get_contents($this->getTrueTemplatePath($path, 'TinyMCE.class.php', '.class.php')) : '';
 
             $text = str_replace(['//RECHERCHE', '//TINYMCE'], [$recherche, $tinyMCE], $text);
             $text = str_replace(['MODULE', 'CONTROLLER', 'mODULE', 'TABLE'], [$this->pascalCaseModuleName, $this->controllerName, $this->moduleName, $this->model->getName()], $text);

@@ -11,10 +11,9 @@ class E2DModelMaker extends ModelMaker
 
     private $modalTitle = [];
 
-    public function __construct($fieldClass, $module, $name, $creationMode = 'generate', array $params = [], $databaseAccess)
+    public function __construct($fieldClass, $module, $name, $creationMode = 'generate', $app)
     {
-        $this->applyChoicesForAllModules = $params['applyChoicesForAllModules'];
-        parent::__construct($fieldClass, $module, $name, $creationMode, $params, $databaseAccess);
+        parent::__construct($fieldClass, $module, $name, $creationMode, $app);
 
     }
 
@@ -47,8 +46,7 @@ class E2DModelMaker extends ModelMaker
     /**
      * Questions sur details spécifiques au type de projet généré nécessaire à la génération, posées dans le constructeur.
      */
-    protected function askSpecifics()
-    : void
+    protected function askSpecifics() : void
     {
         $this->usesMultiCalques           = $this->askMulti();
         $this->usesSelect2                = $this->askSelect2();
@@ -57,24 +55,22 @@ class E2DModelMaker extends ModelMaker
         $this->usesSecurity               = $this->config->get('updateSecurity') ?? $this->askGenerateSecurity();
     }
 
-    private function askMulti()
-    : bool
+    private function askMulti() : bool
     {
         return $this->askBool('usesMulti', 'Voulez-vous pouvoir ouvrir plusieurs calques en même temps ? (multi/concurrent)');
     }
 
-    private function askSelect2()
+    private function askSelect2() : bool
     {
         return $this->askBool('usesSelect2', 'Voulez-vous utiliser les Select2 pour générer les champs Enum ?');
     }
 
-    private function askSwitches()
-    : bool
+    private function askSwitches() : bool
     {
         return $this->askBool('usesSwitches', 'Voulez-vous pouvoir générer des champs switch plutôt que radio pour les booléens ? (switch/radio)');
     }
 
-    private function askCallbackListe()
+    private function askCallbackListe() : bool
     {
         return $this->askBool('noCallbackListeElenent', 'Voulez-vous un template qui n\'utilise pas le callback liste ? (Utile si vous avez des valeurs de recherche par défaut)');
     }
@@ -238,7 +234,8 @@ class E2DModelMaker extends ModelMaker
      */
     protected function initialiserParametresDepuisConfig()
     {
-        $champsParametres = $this->config->get('champsParametres') ?? [];
+        $champsParametres = $this->config->get('champsParametres') ?: [];
+
         foreach ($champsParametres as $colonne => $parametre) {
             $field     = $this->getFieldByColumn($colonne);
             $type      = key($parametre);
@@ -308,7 +305,7 @@ class E2DModelMaker extends ModelMaker
         if ($presenceModuleParametre === false) {
             shell_exec('cp -r ' . dirname(dirname(__DIR__)) . '/modules/parametre  ' . getcwd() . DS . 'modules' . DS . '.');
         } else {
-            $this->msg("ON a le module parametre", 'error');
+            $this->msg("Le module paramètre est présent, pas besoin de le générer", 'important');
         }
     }
 

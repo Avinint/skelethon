@@ -6,6 +6,22 @@ namespace Core;
 class FileManager
 {
     private array $templates;
+    private App $app;
+    private Path $templatePath;
+    private Path $projectPath;
+
+    /**
+     * FileManager constructor.
+     * @param $templates
+     */
+    public function __construct($app, $templates)
+    {
+        $this->app = $app;
+        $this->templates = explode("_", trim($templates, "_"));
+
+        $this->setTemplate($templates);
+//        $this->templates = $templates;
+    }
 
     public function createFile($path, $text = '', $write = false)
     {
@@ -49,6 +65,7 @@ class FileManager
         if ($replace !== '')
             $templatePath = str_replace_last($search, $replace, $templatePath);
 
+
         if (!file_exists($templatePath) && $replace !== 'standard') {
             $search = current($this->templates);
             $replace = next($this->templates);
@@ -62,15 +79,17 @@ class FileManager
     }
 
     /**
-     * FileManager constructor.
-     * @param $templates
+     * Transmet les templates à la configuration et crée un path pour chaque template
+     * @param string $templates
      */
-    public function __construct($templates)
+    public function setTemplate(string $templates)
     {
-        $template = explode("_", trim($templates, "_"));
+        if (!$this->app->getConfig()->has('template'))
+            $this->app->getConfig()->setTemplate($templates);
 
-        $this->templates = $template;
+
     }
+
 
     /**
      * @return string
@@ -79,6 +98,78 @@ class FileManager
     {
 
         return $this->templates[0];
+    }
+
+    public function getTemplates(): array
+    {
+        return $this->templates;
+    }
+
+    /**
+     * @param string|null $template
+     */
+    public function ensureConfigFileExists() : void
+    {
+        $this->ensureDirectoryExists(dirname($this->app->getConfig()->getPath('for_project')));
+
+        if (!file_exists($this->app->getConfig()->getPath('for_project'))) {
+            $this->fileManager->createFile($this->app->getConfig()->getPath('for_project', Spyc::YAMLDump([], 4, 40, true), true));
+        }
+
+    }
+
+    private function ensureDirectoryExists(string $path): void
+    {
+        if (!is_dir($path)) {
+            if (!mkdir($path) && !is_dir($path)) {
+                throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
+            }
+        }
+    }
+
+    /**
+     * @return Path
+     */
+    public function getTemplatePath() : Path
+    {
+        return $this->templatePath;
+    }
+
+    /**
+     * Chemin des templates dans l'application
+     * @param Path $path
+     */
+    public function setTemplatePath(Path $path) : void
+    {
+        $this->templatePath = $path;
+
+        $prevTemplate = null;
+
+        foreach ($this->templates as $template) {
+            $this->templatePath->addChild($template.DS.'module', $template);
+            $templatePathObject = $this->templatePath->getChild('templates')->getChild($template);
+
+            if (isset($prevTemplate)) {
+                $prevTemplate->setTwinPath(
+                    $templatePathObject
+                );
+            }
+
+            $prevTemplate = $templatePathObject;
+        }
+    }
+
+    public function setProjectPath(Path $path) : void
+    {
+        $this->projectPath = $path;
+    }
+
+    /**
+     * @return PathNode
+     */
+    public function getProjectPath() : PathNode
+    {
+        return $this->projectPath;
     }
 
 }

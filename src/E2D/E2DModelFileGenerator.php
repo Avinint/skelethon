@@ -3,18 +3,21 @@
 
 namespace E2D;
 
+use Core\App;
 use Core\BaseMaker;
 use Core\FileGenerator;
 
 class E2DModelFileGenerator extends FileGenerator
 {
+    protected App $app;
 
-    public function __construct(string $moduleName, object $model, $config)
+    public function __construct(App $app)
     {
-        $this->config = $config;
-        BaseMaker::__construct($model->getFileManager());
-        $this->model = $model;
-        $this->moduleName = $moduleName;
+        $this->app= $app;
+        $this->config = $app->getConfig();
+        //BaseMaker::__construct($app->getFileManager());
+        $this->model = $app->getModelMaker();
+        $this->moduleName = $app->getModuleMaker()->getName();
     }
 
     public function generate(string $path) : string
@@ -46,7 +49,7 @@ class E2DModelFileGenerator extends FileGenerator
 
     public function getMethods($path)
     {
-        if ($this->model->getConfig()->get('displayModelSqlMethods') ?? false) {
+        if ($this->app->getConfig()->get('displayModelSqlMethods') ?? false) {
             return file_get_contents(str_replace_first('.', '_methods.', $path));
         }
 

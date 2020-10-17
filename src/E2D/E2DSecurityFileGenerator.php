@@ -2,16 +2,17 @@
 
 
 namespace E2D;
+use Core\App;
 use Core\BaseMaker;
 use \Spyc;
 
 class E2DSecurityFileGenerator extends BaseMaker
 {
-    public function __construct($controllerName, $module, $fileManager)
+    public function __construct(App $app)
     {
-        $this->module = $module;
-        $this->controller = $controllerName;
-        parent::__construct($fileManager);
+        $this->module = $app->getModuleMaker()->getName();
+        $this->controller = $app->getModuleMaker()->getControllerName('snake_case');
+        parent::__construct($app->getFileManager());
     }
 
     /**

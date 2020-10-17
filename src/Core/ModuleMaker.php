@@ -13,27 +13,25 @@ abstract class ModuleMaker extends BaseMaker
     protected $specificField;
     protected $modulePath;
     protected FileManager $fileManager;
+    protected $app;
 
-    public function __construct(string $name, ModelMaker $model, $creationMode = 'generate', $params = [], FileManager $fileManager = null)
+    public function __construct(string $name, App $app, $creationMode = 'generate')
     {
-        $this->setConfig($params);
-
-        parent::__construct($fileManager);
-        $this->setModulePath($params['modulePath'] ?? null);
+        $this->app = $app;
+        $app->setModuleMaker($this);
+        $this->setConfig($app->getConfig());
 
         static::$verbose = $this->config->get('verbose') ?? true;
-        if (empty($name)) {
-            $name = $this->askName();
-        }
+
+        $this->setName($name ?: $this->askName());
 
         // cPour les modes qui génèrent un champs précis
         if (isset($params['specific_fields'])) {
             $this->specificField = $params['specific_fields'];
         }
 
-        $this->setName($name);
         $this->creationMode = $creationMode;
-        $this->model = $model;
+        $this->model = $app->getModelMaker();
         $this->initializeModule($params);
     }
 
@@ -67,7 +65,7 @@ abstract class ModuleMaker extends BaseMaker
         if (!array_contains($this->creationMode, ['generate', 'addModel'])) {
             return $this->executeSpecificModes();
         }
-        $success = $this->addSubDirectories('modules'.DS.$this->name, $moduleStructure);
+        $success = $this->addSubDirectories($moduleStructure);
 
         $this->displayCompletionMessage($success);
 
@@ -79,7 +77,7 @@ abstract class ModuleMaker extends BaseMaker
      * @param $modelName
      * @throws \Exception
      */
-    protected function initializeModule($params): void
+    protected function initializeModule(): void
     {
         $this->model->setDatabaseConnection(new Database());
     }
@@ -89,17 +87,38 @@ abstract class ModuleMaker extends BaseMaker
         return $this->prompt('Veuillez renseigner le nom du module :');
     }
 
-    function addSubDirectories($path, $structure)
+    function addSubDirectories($structure, $pathToFile = '')
     {
         $result = true;
         foreach ($structure as $key => $value) {
+
+
             if (is_array($value)) {
-                if ($result = ($result && $this->ensureDirExists($path.DS.$key, true))) {
-                    $this->addSubDirectories($path.DS.$key, $value);
+
+                //$modulePath->getChild($key)->share($templatePath);
+
+
+                if ($result = ($result && $this->ensureDirExists($pathToFile.DS.$key, true))) {
+                    $this->addSubDirectories($value, $pathToFile.DS.$key);
                 }
             } else {
                 // crée fichier
-                [$message, $type] = $this->ensureFileExists($path.DS.$value);
+
+//                var_dump($value);
+//                var_dump(''.$path->getName());
+//                var_dump(''.$path->getPath());
+
+               // $path = new Path($path->getFullPath(), 'config');
+
+                $projectFilePath = $this->modulePath->addChild(ltrim($pathToFile, DS), dirname($pathToFile))->addFile($value);
+
+//                $modulePath->addFile($value);
+//                $templatePath->addFile($value);
+
+                $templatePath = $this->templatePath->addChild(ltrim($pathToFile, DS), dirname($pathToFile))->addFile($value);
+                [$message, $type] = $this->ensureFileExists(
+                    $projectFilePath,
+                    $templatePath);
                 $this->msg($message, $type);
                 $result = $result && $type !== 'error';
             }
@@ -113,44 +132,55 @@ abstract class ModuleMaker extends BaseMaker
      */
     private function addModule() : bool
     {
-        return $this->ensureDirExists($this->modulePath);
+        return $this->ensureDirExists($this->modulePath, false, false);
     }
 
     /**
      * Crée répertoire s'il n'existe pas
      *
-     * @param string $dirname
+     * @param PathNode $dir
      * @param bool $recursive
      * @return bool
      */
-    private function ensureDirExists(string $dirname, bool $recursive = false) : bool
+    private function ensureDirExists(string $dir, bool $recursive = false, $prepend = true) : bool
     {
-        if(!is_dir($dirname)) {
-            return mkdir($dirname, 0777, $recursive) && is_dir($dirname) && $this->msg($this->highlight('Création').' du répertoire: '.$dirname, 'success');;
+        $dir = ($prepend ? $this->modulePath : '') . $dir;
+
+        if(!is_dir($dir)) {
+            return mkdir($dir, 0777, $recursive) && is_dir($dir) && $this->msg($this->highlight('Création').' du répertoire: '.$dir, 'success');;
         }
 
-        $this->msg('Le répertoire: '.''.$this->highlight($dirname). ' existe déja.', 'warning', false, $this->creationMode === 'generate');
+        $this->msg('Le répertoire: '.''.$this->highlight($dir). ' existe déja.', 'warning', false, $this->creationMode === 'generate');
 
         return true;
+    }
+
+    private function prependModulePath(string $path)
+    {
+        return $path !== $this->modulePath->getFullPath() ? $this->modulePath.$path : $path;
     }
 
     /**
      * Crée fichier s'il n'existe pas
      *
-     * @param string $path
+     * @param FilePath $path
      * @return bool|string
      */
-    function ensureFileExists(string $path)
+    function ensureFileExists(FilePath $path, FilePath $templatePath)
     {
-        $commonPath = str_replace('modules'.DS.$this->name, '', $path);
-        $templatePath = dirname(dirname(__DIR__)) . DS. 'templates' .DS.$this->getFileManager()->getTemplate() . DS .'module'.$commonPath;
+//        var_dump($templatePath);
+       // $commonPath = str_replace($path, $this->modulePath, '');
 
+//        $commonPath = Path::detach($this->modulePath->getChild('config'), 'root');
+//        var_dump($commonPath); die();
+        //$templatePath = dirname(dirname(__DIR__)) . DS. 'templates' .DS.$this->app->getFileManager()->getTemplate() . DS .'module'.$commonPath;
         $path = $this->getTrueFilePath($path);
+
        if (!array_contains('consultation', $this->model->getActions()) &&  strpos($templatePath, 'consultation_TABLE') !== false) {
            return ['Pas de vue créé pour la consultation', 'important'];
        }
 
-        if ($this->fileShouldNotbeCreated($path)) {
+        if ($this->fileShouldNotBeCreated($path)) {
             return ['Le fichier ' . $this->highlight($path, 'info') . ' existe déja', 'warning'];
         }
 
@@ -159,6 +189,12 @@ abstract class ModuleMaker extends BaseMaker
         return $this->saveFile($path, $text);
     }
 
+    /**
+     * Gère la sauvegarde de tout fichier dans l'application
+     * @param $path
+     * @param false $text
+     * @return array|string[]
+     */
     protected function saveFile($path, $text = false)
     {
         $modifiable = $this->fileIsUpdateable($path) && file_exists($path);
@@ -167,7 +203,7 @@ abstract class ModuleMaker extends BaseMaker
         if ($text === false) {
             $message = 'Fichier invalide';
         } else {
-            $message = $modified || !$modifiable ? $this->fileManager->createFile($path, $text, true) : '';
+            $message = $modified || !$modifiable ? $this->app->getFileManager()->createFile($path, $text, true) : '';
             if (empty($message)) {
                 if ($modified) {
                     $message = [$this->highlight('Mise à jour', 'info') . ' du fichier: ' . $this->highlight($path), 'success'];
@@ -184,7 +220,12 @@ abstract class ModuleMaker extends BaseMaker
         return [$message, 'error'];
     }
 
-    protected function fileShouldNotbeCreated($path)
+    /**
+     * Les fichiers ne peuvent pas être recréés s'ils existent mais peuvent être mis à jour
+     * @param $path
+     * @return bool
+     */
+    protected function fileShouldNotBeCreated($path)
     {
         return file_exists($path) && !$this->fileIsUpdateable($path);
     }
@@ -221,17 +262,16 @@ abstract class ModuleMaker extends BaseMaker
         return $this->namespaceName;
     }
 
-
     /**
      * Modifie le chemin du template
      * pour récupérer le chemin
      * d'un fichier existant dans le projet,
      * afin de le modifier
      *
-     * @param string $path
-     * @return string
+     * @param FilePath $file
+     * @return FilePath
      */
-    abstract protected function getTrueFilePath(string $path) : string;
+    abstract protected function getTrueFilePath(FilePath $file) :FilePath;
 
     /**
      * @param bool $success
@@ -246,11 +286,24 @@ abstract class ModuleMaker extends BaseMaker
         }
     }
 
-    public function setModulePath($modulePath = null)
-    {
-        if (is_null($modulePath))
-            $modulePath = "modules/$this->name";
 
-        $this->modulePath = $modulePath;
+    /**
+     * @return bool|null
+     *
+     * Permet de demander si on veut appliquer les réponses au choix à tous les modules
+     *
+     * TODO (utiliser)
+     */
+    protected function askApplyChoiceForAllModules()
+    {
+        $reply = $this->prompt('Voulez-vous sauvegarder les choix sélectionnés pour les appliquer lors de la création de nouveaux modules? '
+                .PHP_EOL.'['.$this->highlight('o', 'success').'/'.$this->highlight('n', 'error').'] ou '.$this->highlight('réponse vide').
+                ' pour choisir au fur et à mesure', ['o', 'n']) === 'o';
+
+        $this->config->set('memorizeChoices',  $reply);
+
+        return$reply;
     }
+
+    abstract protected function initializePaths();
 }

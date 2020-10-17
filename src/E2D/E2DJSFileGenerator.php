@@ -2,6 +2,7 @@
 
 namespace E2D;
 
+use Core\App;
 use Core\Config;
 use Core\FileGenerator;
 
@@ -13,15 +14,17 @@ class E2DJSFileGenerator extends FileGenerator
     private E2DModelMaker $model;
     private string $moduleName;
     private string $pascalCaseModuleName;
+    protected App $app;
 
-    public function __construct(string $moduleName, string $pascalCaseModuleName, E2DModelMaker $model, string $controllerName, Config $config)
+    public function __construct(App $app)
     {
-        $this->config = $config;
-        parent::__construct($model->getFileManager());
-        $this->model = $model;
-        $this->moduleName = $moduleName;
-        $this->controllerName = $controllerName;
-        $this->pascalCaseModuleName = $pascalCaseModuleName;
+        $this->app                  = $app;
+        $this->config               = $app->getConfig();
+//        parent::__construct($app->getFileManager());
+        $this->model                = $app->getModelMaker();
+        $this->moduleName           = $app->getModuleMaker()->getName();
+        $this->controllerName       = $app->getModuleMaker()->getControllerName();
+        $this->pascalCaseModuleName = $app->getModuleMaker()->getNamespaceName();
     }
     
     public function generate(string $path) : string
@@ -49,7 +52,7 @@ class E2DJSFileGenerator extends FileGenerator
         }
 
         $noRecherche = true;
-        $usesRechercheNoCallback = $this->model->getConfig()->get('noCallbackListeElenent') ?? true;
+        $usesRechercheNoCallback = $this->app->getConfig()->get('noCallbackListeElenent') ?? true;
         foreach ($this->model->actions as $action) {
             $templatePerActionPath =  $this->getTrueTemplatePath($path, $this->pascalize($action) . '.');
             if ($action === 'recherche') {
@@ -105,12 +108,12 @@ class E2DJSFileGenerator extends FileGenerator
             $personalizedButtonsTemplateSuffix = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton.' : 'NoConsultationButtons.';
             $personalizeButtons = file_get_contents($this->getTrueTemplatePath(str_replace('.', $personalizedButtonsTemplateSuffix, $path)));
 
-            $champs = $this->model->getConfig()->get('champsTinyMCE');
+            $champs = $this->app->getConfig()->get('champsTinyMCE') ?: [];
             foreach ($champs as $champ) {
                 $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path, 'EditionAppelTinyMCE.')));
             }
 
-            $tinyMCEDef = $this->model->getConfig()->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path, 'EditionDefinitionTinyMCE.')) : '';
+            $tinyMCEDef = $this->app->getConfig()->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path, 'EditionDefinitionTinyMCE.')) : '';
         }
 
         $text = str_replace([ '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',

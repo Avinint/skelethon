@@ -8,13 +8,16 @@ require __DIR__.DS.'lib'.DS.'Spyc'.DS.'Spyc.php';
 spl_autoload_register('autoloader');
 [$type, $arguments] = getArguments($argv);
 
-if (!array_contains($type, ['e2d', 'esm', 'eto'])) {
+$allowed_types = ['e2d', 'esm', 'eto'];
+
+if (!array_contains($type, $allowed_types)) {
     throw new InvalidArgumentException('type d\'application incorrect');
 }
 
-$type = new ProjectType($type, basename(getcwd()));
+$projectType = new ProjectType($type, basename(getcwd()));
+$moduleMakerFactory = $projectType->getConcreteClassName('ModuleMakerFactory');
 
-new Core\ModuleMakerFactory($type, $arguments);
+new $moduleMakerFactory($projectType, $arguments, __DIR__);
 //if ($type === 'eto')  {
 //    new Core\ModuleMakerFactory($type, $arguments, Eto\EtoModuleMaker::class, Eto\EtoModelMaker::class, Eto\EtoField::class, Eto\EtoDatabaseAccess::class);
 //} elseif ($type === 'esm') {

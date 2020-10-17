@@ -24,35 +24,22 @@ class ESMModuleMaker extends E2DModuleMaker
 
             if (!isset($menu[$this->name]['html_accueil_'.$this->model->getName()])) {
                 $menu = Spyc::YAMLDump(array_merge_recursive($menu, $subMenu), false, 0, true);
-                $this->fileManager->createFile($this->menuPath, $menu, true);
+                $this->app->getFileManager()->createFile($this->menuPath, $menu, true);
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
-            $this->fileManager->createFile($this->menuPath, $menu, true);
+            $this->app->getFileManager()->createFile($this->menuPath, $menu, true);
         }
     }
 
-    /**
-     * @param mixed $fileManager
-     */
-    public function setFileManager(?FileManager $fileManager): void
-    {
-        $this->fileManager = $fileManager ?? $this->config->getFileManager($this->template);
+//    /**
+//     * @param mixed $fileManager
+//     */
+//    public function setFileManager(?FileManager $fileManager): void
+//    {
+//        $this->fileManager = $fileManager ?? $this->app->getFileManager($this->template);
+//
+//    }
 
-    }
 
-    protected function initializeFileGenerators($params)
-    {
-        $modelFileGenerator       = $params['modelFileGenerator'] ?? ESMModelFileGenerator::class;
-        $controllerFileGenerator  = $params['controllerFileGenerator'] ?? ESMControllerFileGenerator::class;
-        $viewFileGenerator        = $params['viewFileGenerator'] ?? ESMViewFileGenerator::class;
-        $jSFileGenerator          = $params['jSFileGenerator'] ?? ESMJSFileGenerator::class;
-        $configFileGenerator      = $params['ConfigFileGenerator'] ?? ESMConfigFileGenerator::class;
-
-        $this->modelFileGenerator      = new $modelFileGenerator($this->name, $this->model, $this->config);
-        $this->controllerFileGenerator = new $controllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName(), $this->config);
-        $this->jsFileGenerator         = new $jSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName(), $this->config);
-        $this->configFileGenerator     = new $configFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName(), $this->config);
-        $this->viewFileGenerator       = new $viewFileGenerator($this->name, $this->model, $this->getControllerName(), $this->config);
-    }
 }

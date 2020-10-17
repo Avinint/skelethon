@@ -26,46 +26,14 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     }
 
     /**
-     * @param FileManager|null $fileManager
+     * @return mixed
      */
-    public function setFileManager(?string $template = null, ?FileManager $fileManager = null): void
+    public function getModule()
     {
-        if ($fileManager === null) {
-            $this->template = $template ?? $this->get('template', $this->currentModel);
-            $this->fileManager = new FileManager($template);
-        } else {
-            $this->fileManager = $fileManager;
-        }
-
-//        if (!empty($this->data)) {
-//            $this->write($this->module);
-//        }
-
-        $this->ensureDirectoryExists(dirname($this->getPath('for_project')));
-
-        if (!file_exists($this->getPath('for_project'))) {
-            $this->fileManager->createFile($this->getPath('for_project', Spyc::YAMLDump([], 4, 40, true), true));
-        }
-
-        if ($this->has('portee_template')) {
-            if ('modele' === $this->get('portee_template')) {
-                $this->set('template', $template, $this->currentModel);
-            } elseif ('projet' === $this->get('portee_template')) {
-                $this->set('template', $template, 'for_project', true);
-            } elseif ('application' === $this->get('portee_template')) {
-                $this->set('template', $template, '', true);
-            } else {
-                $this->set('template', $template);
-            }
-        } else {
-            $this->set('template', $template);
-        }
+        return $this->module;
     }
 
-    public function setTemplate(string $template)
-    {
-        $this->set('template', $template,  'for_project');
-    }
+
 
     public function __construct($module, $model, ProjectType $type)
     {
@@ -205,7 +173,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      * @param string $name app, project ou nom de module spécifique
      * @return string
      */
-    private function getPath($name = 'for_app')
+    public function getPath($name = 'for_app')
     {
         if ($name === 'for_app') {
             return dirname(dirname(__DIR__)) . DS . 'config' . DS . 'config.yml';
@@ -250,12 +218,11 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      */
     public function get(string $field, string $model = null)
     {
-        if (isset($model)) {
-            return $this->getValueFromModelConfig($field, $model);
-        }
+//        if (isset($model)) {
+//            $result = $this->getValueFromModelConfig($field, $model);
+//        }
 
-        $result = $this->data[$this->type->getName()][$field] ?? $this->getValueFromModuleConfig($field) ?? $this->getValueFromModelConfig($field) ?? $this->data[$field] ?? null;
-        return $result;
+        return $this->getValueFromModelConfig($field) ?? $this->getValueFromModuleConfig($field) ?? $this->data[$this->type->getName()][$field] ?? $this->data[$field] ?? null;;
     }
 
     /**
@@ -345,8 +312,11 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      * @param $selection
      * @param string $model
      */
-   public function saveChoice(string $key, $selection, string $model = ''): void
+   public function saveChoice(string $key, $selection, string $model = '', $emptyArray = false): void
     {
+        if (!$selection && $emptyArray) {
+            $selection = [];
+        }
         if (empty($model)) {
             $applyChoiceToAllModules = $this->get('memorizeChoices') ?? $this->prompt('Voulez vous appliquer ce choix à tous les modules créés à l\'avenir pour ce projet?', ['o', 'n']) === 'o';
             if ($applyChoiceToAllModules) {
@@ -397,17 +367,57 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 //            $this->data[$this->subDir]['modules'] = [$this->module => []];
 //        }
         $data[$this->subDir] = $projectData;
-        $data[$this->subDir]['modules'] = [$this->module => $moduleData];
+        $data[$this->subDir]['modules'][$this->module] = $moduleData;
+
 
         $this->data = $data;
     }
 
-    private function ensureDirectoryExists(string $path): void
+
+
+    /**
+     * @param string|null $template
+     */
+//    protected function ensureConfigFileExists(?string $template) : void
+//    {
+//        $this->ensureDirectoryExists(dirname($this->getPath('for_project')));
+//
+//        if (!file_exists($this->getPath('for_project'))) {
+//            $this->fileManager->createFile($this->getPath('for_project', Spyc::YAMLDump([], 4, 40, true), true));
+//        }
+//
+//        $this->setTemplate($template);
+//    }
+
+    /**
+     * @param string|null $template
+     */
+    public function setTemplate(?string $template, $portee = '') : void
     {
-        if (!is_dir($path)) {
-            if (!mkdir($path) && !is_dir($path)) {
-                throw new \RuntimeException(sprintf('Directory "%s" was not created', $path));
-            }
+        if (empty($portee) && $this->has('portee_template')) {
+            $portee = $this->get('portee_template');
+
+        }
+        if ($portee) {
+            if ('modele' === $portee)
+                $this->set('template', $template, $this->currentModel);
+            elseif ('projet' === $portee)
+                $this->set('template', $template, 'for_project', true);
+            elseif ('application' === $portee)
+                $this->set('template', $template, '', true);
+            else $this->set('template', $template);
+        } else {
+            $this->set('template', $template);
         }
     }
+
+    /**
+     * @return mixed
+     */
+    public function getCurrentModel()
+    {
+        return $this->currentModel;
+    }
+
+
 }

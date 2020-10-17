@@ -4,6 +4,7 @@
 namespace E2D;
 
 
+use Core\App;
 use Core\Config;
 use Core\FileGenerator;
 
@@ -12,14 +13,16 @@ class E2DViewFileGenerator extends FileGenerator
     protected string $moduleName;
     protected string $controllerName;
     protected E2DModelMaker $model;
+    protected App $app;
 
-    public function __construct(string $moduleName, E2DModelMaker $model, string $controllerName, Config $config)
+    public function __construct(App $app)
     {
-        $this->config = $config;
-        parent::__construct($model->getFileManager());
-        $this->model = $model;
-        $this->moduleName = $moduleName;
-        $this->controllerName = $controllerName;
+        $this->app                  = $app;
+        $this->config               = $app->getConfig();
+//        parent::__construct($app->getFileManager());
+        $this->model                = $app->getModelMaker();
+        $this->moduleName           = $app->getModuleMaker()->getName();
+        $this->controllerName       = $app->getModuleMaker()->getControllerName();
     }
 
     public function generate(string $path) : string
@@ -149,7 +152,7 @@ class E2DViewFileGenerator extends FileGenerator
     private function addModalTitle($text)
     {
         if ($this->model->usesMultiCalques) {
-            list($search, $replace) = ['h2', 'h2 class="sTitreLibelle"'];
+            [$search, $replace] = ['h2', 'h2 class="sTitreLibelle"'];
             $pos = strpos($text, $search);
             if ($pos !== false) {
                 return substr_replace($text, $replace, $pos, strlen($search));

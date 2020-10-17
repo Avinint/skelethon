@@ -3,6 +3,9 @@
 namespace E2D;
 
 use Core\FileGenerator;
+use Core\FilePath;
+use Core\Path;
+use Core\PathNode;
 use PhpOffice\Common\File;
 use \Spyc;
 use Core\ModuleMaker;
@@ -16,40 +19,28 @@ class E2DModuleMaker extends ModuleMaker
     protected FileGenerator $configFileGenerator;
     protected FileGenerator $viewFileGenerator;
 
-    /**
-     * @param mixed $menuPath
-     */
-    public function setMenuPath($menuPath): void
-    {
-        $this->menuPath = getcwd() .DS. $menuPath;
-    }
 
     /**
      * @param $modelName
      * @throws \Exception
      */
-    protected function initializeModule($params): void
+    protected function initializeModule(): void
     {
         $this->applyChoicesForAllModules = $this->config->get('memorizeChoices') ?? $this->askApplyChoiceForAllModules();
-        $this->initializeFileGenerators($params);
-        $this->setMenuPath($params['menuPath']);
+        $this->initializeFileGenerators();
+        $this->initializePaths();
         $this->addMenu();
         $this->addSecurity();
     }
 
-    protected function initializeFileGenerators($params)
+    protected function initializeFileGenerators()
     {
-        $modelFileGenerator       = $params['modelFileGenerator'] ?? E2DModelFileGenerator::class;
-        $controllerFileGenerator  = $params['controllerFileGenerator'] ?? E2DControllerFileGenerator::class;
-        $viewFileGenerator        = $params['viewFileGenerator'] ?? E2DViewFileGenerator::class;
-        $jSFileGenerator          = $params['jSFileGenerator'] ?? E2DJSFileGenerator::class;
-        $configFileGenerator      = $params['ConfigFileGenerator'] ?? E2DConfigFileGenerator::class;
 
-        $this->modelFileGenerator      = new $modelFileGenerator($this->name, $this->model, $this->config);
-        $this->controllerFileGenerator = new $controllerFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName(), $this->config);
-        $this->jsFileGenerator         = new $jSFileGenerator($this->name, $this->namespaceName, $this->model, $this->getControllerName(), $this->config);
-        $this->configFileGenerator     = new $configFileGenerator($this->name, $this->namespaceName,$this->model, $this->getControllerName(), $this->config);
-        $this->viewFileGenerator       = new $viewFileGenerator($this->name, $this->model, $this->getControllerName(), $this->config);
+        $this->modelFileGenerator      = new $this->app->modelFileGeneratorClass($this->app);
+        $this->controllerFileGenerator = new $this->app->controllerFileGeneratorClass($this->app);
+        $this->jsFileGenerator         = new $this->app->jSFileGeneratorClass($this->app);
+        $this->configFileGenerator     = new $this->app->configFileGeneratorClass($this->app);
+        $this->viewFileGenerator       = new $this->app->viewFileGeneratorClass($this->app);
     }
 
     protected function executeSpecificModes()
@@ -59,15 +50,15 @@ class E2DModuleMaker extends ModuleMaker
     }
 
     /**
-     * @param string $path
-     * @return string
+     * @param FilePath $file
+     * @return FilePath
      */
-    protected function getTrueFilePath(string $path) : string
+    protected function getTrueFilePath(FilePath $file) : FilePath
     {
-        if (strpos($path, '.yml') === false) {
-            $path = str_replace(['CONTROLLER', 'MODEL', 'TABLE'], [$this->getControllerName(), $this->model->getClassName(), $this->model->getName()], $path);
+        if($file->getType() !== 'yml') {
+            $file->setName(str_replace(['CONTROLLER', 'MODEL', 'mODEL'], [$this->getControllerName(), $this->model->getClassName(), $this->model->getName()], $file->getName()));
         }
-        return $path;
+        return $file;
     }
 
     /**
@@ -117,15 +108,15 @@ class E2DModuleMaker extends ModuleMaker
                $this->msg($message, $type);
             }
             $text = $this->jsFileGenerator->generate($templatePath);
-        } elseif (strpos($templatePath, 'accueil_TABLE.html')) {
+        } elseif (strpos($templatePath, 'accueil_mODEL.html')) {
             $text = file_get_contents($this->getTrueTemplatePath($templatePath));
-        } elseif (strpos($templatePath, 'liste_TABLE.html')) {
+        } elseif (strpos($templatePath, 'liste_mODEL.html')) {
             $text = $this->viewFileGenerator->generate($templatePath);
-        } elseif (strpos($templatePath, 'consultation_TABLE.html')) {
+        } elseif (strpos($templatePath, 'consultation_mODEL.html')) {
             $text = $this->viewFileGenerator->generateConsultationView($templatePath);
-        } elseif (strpos($templatePath, 'edition_TABLE.html')) {
+        } elseif (strpos($templatePath, 'edition_mODEL.html')) {
             $text = $this->viewFileGenerator->generateEditionView($templatePath);
-        } elseif (strpos($templatePath, 'recherche_TABLE.html')) {
+        } elseif (strpos($templatePath, 'recherche_mODEL.html')) {
             $text = $this->viewFileGenerator->generateSearchView($templatePath);
         }
 
@@ -181,7 +172,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function getSubMenu(): array
     {
-        $templatePath = $this->getTrueTemplatePath(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $this->getFileManager()->getTemplate() . DS . 'menu.yml');
+        $templatePath = $this->getTrueTemplatePath(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $this->app->getFileManager()->getTemplate() . DS . 'menu.yml');
         $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
             $this->model->getTitre();
 
@@ -189,7 +180,7 @@ class E2DModuleMaker extends ModuleMaker
             [$this->name, $this->model->getName(), $label], file_get_contents($templatePath)));
     }
 
-    protected function getControllerName($case = 'pascal_case'): string
+    public function getControllerName($case = 'pascal_case'): string
     {
         if ('pascal_case' === $case) {
             return $this->creationMode === 'generate' ? $this->namespaceName : $this->model->getClassName();
@@ -202,6 +193,9 @@ class E2DModuleMaker extends ModuleMaker
         }
     }
 
+    /**
+     * Génère le fichier sécurite ou imprime un snippet à copier coller dans le fichier securite
+     */
     private function addSecurity()
     {
         if ($this->config->has('updateSecurity') && !$this->config->get('updateSecurity')) {
@@ -209,20 +203,64 @@ class E2DModuleMaker extends ModuleMaker
             return;
         }
 
-        $securityPath = getcwd() . DS . 'config/securite.yml';
 
-        if (!file_exists($securityPath)) {
+        if (!file_exists($this->securityPath)) {
+            // TODO comportement configurable
             return;
         }
 
-        $security = new E2DSecurityFileGenerator($this->getControllerName('snake_case'), $this->name, $this->fileManager);
+        $security = new E2DSecurityFileGenerator($this->app);
         if ($this->config->get('updateSecurity') === 'generate') {
-            $security->generate($securityPath);
+            $security->generate($this->securityPath);
         } elseif ($this->config->get('updateSecurity') === 'print') {
-            $security->print($securityPath);
+            $security->print($this->securityPath);
         }
 
         $this->config->set('updateSecurity', false, $this->model->getName());
+    }
+
+    protected function initializePaths($otherModuleName = null)
+    {
+        $this->setProjectPath();
+        $this->setModulePath();
+        $this->setMenuPath();
+        $this->setSecurityPath();
+
+        $this->templatePath = $this->app->getFileManager()->getTemplatePath()->getChild($this->app->getFileManager()->getTemplate());
+        //$this->modulePath->setTwinPath($this->templatePath);
+    }
+
+    /**
+     * initialise le chemin du menu
+     */
+    public function setMenuPath(): void
+    {
+        $this->projectPath->addChild('config')->addFile('menu', 'yml');
+        $this->menuPath = $this->projectPath->getChild('config')->getFile('menu');
+    }
+
+    /**
+     * Initialise le chemin du fichier sécurité
+     */
+    public function setSecurityPath(): void
+    {
+        $this->projectPath->getChild('config')->addFile('securite','yml');
+        $this->securityPath = $this->projectPath->getChild('config')->getFile('securite');
+    }
+
+    /**
+     *  initialise le chemin du module
+     */
+    public function setModulePath()
+    {
+        $this->projectPath->addChild('modules/' . $this->name, $this->name);
+        $this->modulePath = $this->projectPath->getChild($this->name);
+    }
+
+    public function setProjectPath()
+    {
+        $this->projectPath = new Path(getcwd(), 'projectPath');
+        $this->app->getFileManager()->setProjectPath($this->projectPath);
     }
 
 }

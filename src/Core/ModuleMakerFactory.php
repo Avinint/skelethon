@@ -4,18 +4,19 @@ namespace Core;
 
 use E2D\E2DModelMaker;
 
-class ModuleMakerFactory
+abstract class ModuleMakerFactory
 {
-    private $databaseAccess;
-    private $modelMaker;
-    private $fieldClass;
+    protected $app;
+    protected $moduleMaker;
+    protected $modelMaker;
+    protected $fieldClass;
+    protected $databaseAccess;
 
-    public function __construct(ProjectType $type, $arguments)
+    public function __construct(ProjectType $type, $arguments, $appDir)
     {
-        $this->databaseAccess = $type.'DatabaseAccess';
-        $this->modelMaker = $type.'ModelMaker';
-        $moduleMaker = $type.'ModuleMaker';
-        $this->fieldClass = $type.'Field';
+//        $this->modelMaker = $type.'ModelMaker';
+//        $moduleMaker = $type.'ModuleMaker';
+//        $this->fieldClass = $type.'Field';
 
         if (!is_dir('modules')) {
             ModuleMaker::msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
@@ -26,32 +27,63 @@ class ModuleMakerFactory
         if (!array_contains($action, ['module', 'modele'])) {
             $this->displayHelpPage();
         }
-
         $modelName = $action === 'module' ? $moduleName: $this->askName($modelName);
 
         $config = new Config($moduleName, $modelName, $type);
+        $config->setCurrentModel($modelName);
         $config->initialize();
-        $config->setFileManager($config->get('template', $modelName) ?? $config->askTemplate());
 
-        switch($action)
-        {
+        $app = new App();
+        $app->setConfig($config);
+
+        $app->setFileManager($config->get('template', $modelName) ?? $config->askTemplate());
+        $templatePath = new Path($appDir.'/templates', 'templatePath');
+        $app->getFileManager()->setTemplatePath($templatePath);
+
+        $app->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
+        $this->initializeFileGenerators($app);
+        $this->generate($action, $moduleName, $modelName, $app, $config);
+    }
+
+
+    private function askName($name = '')
+    {
+        echo PHP_EOL;
+        if ($name === '') {
+            $name = readline(ModuleMaker::msg('Veuillez renseigner en '.ModuleMaker::highlight('snake_case').' le nom du modèle'.PHP_EOL.' (' . ModuleMaker::highlight('minuscules') . ' et ' . ModuleMaker::highlight('underscores').')'.
+                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. ModuleMaker::frame($this->module, 'success').'')) ? : $this->module;
+        }
+
+        return $name;
+    }
+
+    /**
+     * @param string $action
+     * @param $moduleName
+     * @param string $modelName
+     * @param App $app
+     * @param Config $config
+     */
+    protected function generate(string $action, $moduleName, string $modelName, App $app, Config $config) : void
+    {
+        switch ($action) {
             case 'module':
-                $model = $this->createModel($moduleName, $modelName, 'generate', $config);
+                $model = $this->createModel($moduleName, $modelName, 'generate', $app);
                 $model->generate();
-                $maker = new $moduleMaker($moduleName, $model, 'generate', [
-                    'config' => $config,
+                $maker = new $this->moduleMaker($moduleName, $app, 'generate', [
                     'menuPath' => 'config/menu.yml',
                 ]);
+                $app->setModuleMaker($maker);
                 $maker->generate();
                 break;
             case 'modele':
-                $model = $this->createModel($moduleName, $modelName, 'addModel', $config);
-                ;
+                $model = $this->createModel($moduleName, $modelName, 'addModel', $app);
                 $model->generate();
-                $maker = new $moduleMaker($moduleName, $model, 'addModel', [
-                    'config' => $config,
+                $maker = new $this->moduleMaker($moduleName, $app, 'addModel', [
+
                     'menuPath' => 'config/menu.yml',
                 ]);
+                $app->setModuleMaker($maker);
                 $maker->generate();
                 break;
             /**
@@ -59,11 +91,11 @@ class ModuleMakerFactory
              *  Ajoute une action et une route et une action du controlleur une callback js une vue
              */
             case 'action':
-                $model = $this->createModel($moduleName, $modelName, 'addAction', $config);
-                $maker = new $moduleMaker($moduleName, $model, 'action', [
-                    'config' => $config,
+                $model = $this->createModel($moduleName, $modelName, 'addAction', $app);
+                $maker = new $this->moduleMaker($moduleName, $model, 'action', [
                     'menuPath' => 'config/menu.yml',
                 ]);
+                $app->setModuleMaker($maker);
                 $maker->generateAction();
                 break;
 
@@ -71,36 +103,38 @@ class ModuleMakerFactory
 //                $moduleMaker::create($module, $model, 'AddManyToOne');
 //                break;
         }
-
     }
 
     /**
      * @param $moduleName
      * @param $modelName
      * @param $creationMode
-     * @param $config
+     * @param App $app
      * @return mixed
      */
-    public function createModel($moduleName, $modelName, $creationMode, $config)
+    public function createModel($moduleName, $modelName, $creationMode, App $app)
     {
         $params = [
-            'config' => $config,
-            'applyChoicesForAllModules' => (!$config->has('memorizeChoices') || $config->get('memorizeChoices')),
+            'app' => $app,
+            'applyChoicesForAllModules' => (!$app->getConfig()->has('memorizeChoices') || $app->getConfig()->get('memorizeChoices')),
         ];
 
-        if ($config->askLegacy($modelName)) {
+        if ($app->getConfig()->askLegacy($modelName)) {
             $modelMakerLegacy = $this->modelMaker. 'Legacy';
-            $model = new $modelMakerLegacy($this->fieldClass, $moduleName, $modelName . 'Legacy', $creationMode, $params, $this->databaseAccess::getDatabaseParams(), null);
+            $model = new $modelMakerLegacy($this->fieldClass, $moduleName, $modelName . 'Legacy', $creationMode, $app);
         } else {
-            $model = new $this->modelMaker($this->fieldClass, $moduleName, $modelName, $creationMode, $params, $this->databaseAccess::getDatabaseParams(), null);
+            $model = new $this->modelMaker($this->fieldClass, $moduleName, $modelName, $creationMode, $app);
         }
 
-        $model->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
+        //$model->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
 
 
         return $model;
     }
 
+    /**
+     * Message affiché si l'utilisateur fait n'importe quoi en appelant l'application
+     */
     private function displayHelpPage(): void
     {
         ModuleMaker::msg('
@@ -119,17 +153,4 @@ class ModuleMakerFactory
 
         die();
     }
-
-    private function askName($name = '')
-    {
-        echo PHP_EOL;
-        if ($name === '') {
-            $name = readline(ModuleMaker::msg('Veuillez renseigner en '.ModuleMaker::highlight('snake_case').' le nom du modèle'.PHP_EOL.' (' . ModuleMaker::highlight('minuscules') . ' et ' . ModuleMaker::highlight('underscores').')'.
-                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. ModuleMaker::frame($this->module, 'success').'')) ? : $this->module;
-        }
-
-        return $name;
-    }
-
-
 }

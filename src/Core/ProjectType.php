@@ -27,8 +27,22 @@ class ProjectType
 
     public function __toString()
     {
+        return $this->classPrefix();
+    }
+
+    /**
+     *  Génère le préfixe qui transforme un nom de classe abstraite en nom de classe concrète
+     */
+    public function classPrefix()
+    {
         return ('\\'.strtoupper($this->type).'\\'.strtoupper($this->type));
     }
+
+    public function getConcreteClassName($abstractClassName)
+    {
+        return $this->classPrefix().$abstractClassName;
+    }
+
 
     public function getName()
     {

@@ -27,13 +27,15 @@ abstract class ModelMaker extends BaseMaker
     protected $fieldClass;
 
 
-    public function __construct($fieldClass, $module, $name, $mode, array $params = [], DatabaseAccess $databaseAccess,  $fileManager = null)
+    public function __construct($fieldClass, $module, $name, $mode, App $app)
     {
         $this->name = $name;
-        $this->setConfig($params);
+        $this->app = $app;
+        $app->setModeleMaker($this);
+        $this->setConfig($app->getConfig());
 
-        parent::__construct($fileManager);
-        $this->databaseAccess = $databaseAccess;
+        $this->databaseAccess = $app->getDatabaseAccess();
+
         static::$verbose = $this->config->get('verbose') ?? true;
         $this->creationMode = $mode;
         $this->fieldClass = $fieldClass;
@@ -406,13 +408,13 @@ abstract class ModelMaker extends BaseMaker
      * @param $message
      * @return bool
      */
-    protected function askBool($param, $message) : bool
+    protected function askBool($param, $message, $emptyArray = false) : bool
     {
         if ($this->config->has($param)) {
             $res = $this->config->get($param);
         } else {
             $res = $this->prompt($message, ['o', 'n']) === 'o';
-            $this->config->saveChoice($param, $res, $this->name);
+            $this->config->saveChoice($param, $res, $this->name, $emptyArray);
         }
 
         return $res;
