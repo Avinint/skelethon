@@ -53,13 +53,6 @@ abstract class Field
         $this->maxLength = isset($params['maxlength']) ? ($params['maxlength']) : null;
         //$this->step = isset($params['step']) ? ($params['step']) : null;
 
-       // self::$collection[] = $this;
-    }
-
-    // TODO remove
-    public static function getSelectFields($template)
-    {
-        return array_map(function ($field) use ($template) {return $field->getSelectField($template);}, self::$collection);
     }
 
     protected function parseEnumValues($enum)
@@ -121,10 +114,6 @@ abstract class Field
         return array_map(function ($field) {return $field->getTableColumn();}, self::$collection);
     }
 
-//    public static function getAttributes()
-//    {
-//        return array_map(function($field){ return $field->getFieldMapping(); }, self::$collection);
-//    }
     /**
      * @return bool
      */

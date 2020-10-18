@@ -15,7 +15,7 @@ class ESMModuleMakerLegacy extends ESMModuleMaker
             $text = file_get_contents($templatePath);
         }
 
-        $joinTemplate = file_get_contents($this->getTrueTemplatePath(str_replace_first('.', 'Joins.', $templatePath)));
+        $joinTemplate = file_get_contents($this->getTrueTemplatePath($templatePath, 'Joins'));
         $text = str_replace(['MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', 'LEFTJOINS', '//RECHERCHE', '//VALIDATION', 'EDITCHAMPS', 'INSERTCOLUMNS', 'INSERTVALUES'], [
             $this->namespaceName,
             $this->model->getClassName(),

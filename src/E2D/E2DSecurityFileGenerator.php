@@ -4,6 +4,7 @@
 namespace E2D;
 use Core\App;
 use Core\BaseMaker;
+use Core\FilePath;
 use \Spyc;
 
 class E2DSecurityFileGenerator extends BaseMaker
@@ -50,7 +51,7 @@ class E2DSecurityFileGenerator extends BaseMaker
 
     /**
      */
-    public function generate($path): void
+    public function generate(FilePath $path): void
     {
         $this->updateSecurityData($path);
 

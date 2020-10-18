@@ -9,18 +9,18 @@ class FileManager
     private App $app;
     private Path $templatePath;
     private Path $projectPath;
+    private string $templateNodeClass;
 
     /**
      * FileManager constructor.
      * @param $templates
      */
-    public function __construct($app, $templates)
+    public function __construct($app, $templates, $templateNodeClass = '')
     {
         $this->app = $app;
-        $this->templates = explode("_", trim($templates, "_"));
-
+        $this->templates = explode("_", trim($templates.'_standard', "_"));
+        $this->templateNodeClass = $templateNodeClass ?:  TemplateNode::class;
         $this->setTemplate($templates);
-//        $this->templates = $templates;
     }
 
     public function createFile($path, $text = '', $write = false)
@@ -39,14 +39,15 @@ class FileManager
     }
 
     /**
-     * Remplace le chemin du template choisi par le chemin du template standard ou le template de fallback  s'il n'y a pas de template personnalisé
-     *
-     * @param $templatePath
-     * @return string|string[]
+     * Remplace le chemin du template choisi par le chemin du template standard ou le template de fallback s'il n'y a pas de template personnalisé
+     * @param FilePath $templatePath
+     * @param string $fileSuffix
+     * @param string $search
+     * @return PathNode $templatePath
      */
-    public function getTrueTemplatePath($templatePath, $replace = '', $search = '.')
+    public function getTrueTemplatePath(FilePath $templatePath, $fileSuffix = '')
     {
-        $templatePath = $this->findRightTemplatePath($templatePath, $replace, $search);
+        $templatePath = $this->findRightTemplatePath($templatePath->add($fileSuffix));
 
         reset($this->templates);
 
@@ -58,21 +59,19 @@ class FileManager
      * @param string $templatePath
      * @param $search
      * @param $replace
-     * @return string
+     * @return ?FilePath
      */
-    function findRightTemplatePath(string $templatePath, $replace = '', $search = '') : string
+    function findRightTemplatePath(FilePath $templatePath, $template = '') : ?FilePath
     {
-        if ($replace !== '')
-            $templatePath = str_replace_last($search, $replace, $templatePath);
+        if (!file_exists($templatePath)) {
 
+            $nextTemplate = next($this->templates);
+            if ($nextTemplate === false) {
+                return null;
+            }
+            $templatePath->setFallbackTemplate($nextTemplate);
 
-        if (!file_exists($templatePath) && $replace !== 'standard') {
-            $search = current($this->templates);
-            $replace = next($this->templates);
-            if ($replace === false)
-                return $this->findRightTemplatePath($templatePath, 'standard', $search);
-            else
-                return $this->findRightTemplatePath($templatePath, $replace, $search);
+            return $this->findRightTemplatePath($templatePath, $nextTemplate);
         }
 
         return $templatePath;
@@ -86,10 +85,7 @@ class FileManager
     {
         if (!$this->app->getConfig()->has('template'))
             $this->app->getConfig()->setTemplate($templates);
-
-
     }
-
 
     /**
      * @return string
@@ -142,21 +138,9 @@ class FileManager
     public function setTemplatePath(Path $path) : void
     {
         $this->templatePath = $path;
-
-        $prevTemplate = null;
-
-        foreach ($this->templates as $template) {
-            $this->templatePath->addChild($template.DS.'module', $template);
-            $templatePathObject = $this->templatePath->getChild('templates')->getChild($template);
-
-            if (isset($prevTemplate)) {
-                $prevTemplate->setTwinPath(
-                    $templatePathObject
-                );
-            }
-
-            $prevTemplate = $templatePathObject;
-        }
+        $this->templatePath->addChildTemplateNode(
+            new $this->templateNodeClass($this->templates, $this->templates[0])
+        );
     }
 
     public function setProjectPath(Path $path) : void

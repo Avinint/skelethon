@@ -41,8 +41,6 @@ abstract class ModelMaker extends BaseMaker
         $this->fieldClass = $fieldClass;
         $this->module = Field::$module = $module;
 
-//        $this->name = $mode === 'module' ? $module : $this->askName($name);
-
         $this->setClassName($this->name);
         $this->setDbTable();
 
@@ -50,22 +48,6 @@ abstract class ModelMaker extends BaseMaker
 
         $this->askSpecifics();
     }
-
-//    private function askName($name = '')
-//    {
-//        echo PHP_EOL;
-//        if ($name === '') {
-//            $name = readline($this->msg('Veuillez renseigner en '.$this->highlight('snake_case').' le nom du modèle'.PHP_EOL.' ('.$this->highlight('minuscules', 'warning') . ' et ' . $this->highlight('underscores', 'warning').')'.
-//                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').'')) ? : $this->module;
-//        }
-//
-//    //        if ($name === '') {
-//    //            $name = $this->module;
-//    //        }
-//
-//        return $name;
-//    }
-
 
     private function askTableName()
     {
@@ -243,7 +225,6 @@ abstract class ModelMaker extends BaseMaker
     public function getSearchCriteria($path): string
     {
         return implode(PHP_EOL, array_filter(array_map(function (Field $field) use($path) {return $field->getSearchCriterion($path);}, $this->getFields('recherche'))));
-//        return implode(PHP_EOL, $this->fieldClass::getSearchCriteria()); TODO remove
     }
 
     /**
@@ -298,8 +279,6 @@ abstract class ModelMaker extends BaseMaker
      */
     public function getSqlSelectFields($template): string
     {
-        //$fields =  implode(','.PHP_EOL, $this->fieldClass::getSelectFields());
-//        return $fields;
         return  implode(','.PHP_EOL, array_map(function (Field $field) use ($template) {return $field->getSelectField($template);}, $this->getFields('base', '', true)));
     }
 
@@ -357,6 +336,7 @@ abstract class ModelMaker extends BaseMaker
     {
         $this->databaseAccess = $databaseAccess;
     }
+
     // modifie certains champs en fonction des choix de l'utilisateur aprèz intiialisation
     private function setClassName(string $name)
     {

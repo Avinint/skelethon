@@ -2,10 +2,10 @@
 
 namespace E2D;
 
-use Core\App;
+use Core\{App, FileGenerator, FilePath};
 use \Spyc;
 
-class E2DConfigFileGenerator extends \Core\FileGenerator
+class E2DConfigFileGenerator extends FileGenerator
 {
     private string $moduleName;
     private string $controllerName;
@@ -17,7 +17,6 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
         $this->app                  = $app;
         $this->config               = $app->getConfig();
         $this->template             = $this->config->get('template');
-//        parent::__construct($app->getFileManager());
         $this->model                = $app->getModelMaker();
         $this->moduleName           = $app->getModuleMaker()->getName();
         $this->controllerName       = $app->getModuleMaker()->getControllerName();
@@ -30,7 +29,7 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
      * @return string
      * @throws \Exception
      */
-    public function generate(string $path) : string
+    public function generate(FilePath $path) : string
     {
         $modelName = '';
         $enumText = '';
@@ -56,14 +55,14 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
      * @return string
      * @throws \Exception
      */
-    private function generateRoutingConfigFiles(string $path): string
+    private function generateRoutingConfigFiles(FilePath $path): string
     {
         $texts = [];
         foreach ($this->model->actions as $action)
         {
             if ($action === 'accueil' && strpos($path, 'routing') === false) continue;
             if (!array_contains($action, ['consultation', 'edition']) && strpos($path, 'blocs')) continue;
-            $templatePerActionPath = $this->getTrueTemplatePath($path, '_' . $action . '.');
+            $templatePerActionPath = $this->getTrueTemplatePath($path, '_' . $action);
             if (file_exists($templatePerActionPath)) {
                 $texts[] = $this->getConfigTemplateForAction($templatePerActionPath, $path, $action);
             }
@@ -75,12 +74,12 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
 
     /**
      * Modifie fichiers existants pour prendre en compte l'ajout de nouveaux fichiers
-     * @param $templatePath
-     * @param $filePath
+     * @param FilePath $templatePath
+     * @param FilePath$filePath
      * @return string
      * @throws \Exception
      */
-    public function modify($templatePath, $filePath)
+    public function modify(FilePath $templatePath, FilePath $filePath)
     {
         $config = Spyc::YAMLLoad($filePath);
         if (strpos($templatePath, 'conf.yml') === false ) {
@@ -94,15 +93,16 @@ class E2DConfigFileGenerator extends \Core\FileGenerator
 
     /**
      *  Modifie les fichiers de routing (actions, routing, bloc)
-     * @param $templatePath
+     * @param FilePath $templatePath
      * @param array $config
      * @return array
      * @throws \Exception
      */
-    private function modifyRoutingConfigFiles($templatePath, array $config): array
+    private function modifyRoutingConfigFiles(FilePath $templatePath, array $config): array
     {
         foreach ($this->model->actions as $action) {
-            $templatePerActionPath = $this->getTrueTemplatePath(str_replace('.', '_' . $action . '.', $templatePath));
+
+            $templatePerActionPath = $this->getTrueTemplatePath($templatePath,  '_' . $action);
             if (file_exists($templatePerActionPath)) {
                 $template = file_get_contents($templatePerActionPath) . $this->makeMultiModalBlock($templatePath, $action, $templatePerActionPath);
 

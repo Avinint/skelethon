@@ -11,6 +11,7 @@ abstract class ModuleMakerFactory
     protected $modelMaker;
     protected $fieldClass;
     protected $databaseAccess;
+    protected $templateNodeClass;
 
     public function __construct(ProjectType $type, $arguments, $appDir)
     {
@@ -36,7 +37,7 @@ abstract class ModuleMakerFactory
         $app = new App();
         $app->setConfig($config);
 
-        $app->setFileManager($config->get('template', $modelName) ?? $config->askTemplate());
+        $app->setFileManager($config->get('template', $modelName) ?? $config->askTemplate(), $this->templateNodeClass);
         $templatePath = new Path($appDir.'/templates', 'templatePath');
         $app->getFileManager()->setTemplatePath($templatePath);
 
@@ -125,9 +126,6 @@ abstract class ModuleMakerFactory
         } else {
             $model = new $this->modelMaker($this->fieldClass, $moduleName, $modelName, $creationMode, $app);
         }
-
-        //$model->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
-
 
         return $model;
     }

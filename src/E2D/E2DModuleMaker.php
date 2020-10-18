@@ -6,6 +6,7 @@ use Core\FileGenerator;
 use Core\FilePath;
 use Core\Path;
 use Core\PathNode;
+use Core\TemplateNode;
 use PhpOffice\Common\File;
 use \Spyc;
 use Core\ModuleMaker;
@@ -79,10 +80,11 @@ class E2DModuleMaker extends ModuleMaker
     }
 
     /**
-     * @param string $templatePath
+     * @param FilePath $templatePath
+     * @param FilePath $path
      * @return string
      */
-    protected function generateFileContent(string $templatePath, string $path) : string
+    protected function generateFileContent(FilePath $templatePath, string $path) : string
     {
         $text = '';
         if (strpos($templatePath, '.yml')) {
@@ -172,7 +174,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function getSubMenu(): array
     {
-        $templatePath = $this->getTrueTemplatePath(dirname(dirname(__DIR__)) . DS . 'templates' . DS . $this->app->getFileManager()->getTemplate() . DS . 'menu.yml');
+        $templatePath = $this->getTrueTemplatePath($this->menuPath);
         $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
             $this->model->getTitre();
 
@@ -225,9 +227,9 @@ class E2DModuleMaker extends ModuleMaker
         $this->setModulePath();
         $this->setMenuPath();
         $this->setSecurityPath();
+        $fileManager = $this->app->getFileManager();
 
-        $this->templatePath = $this->app->getFileManager()->getTemplatePath()->getChild($this->app->getFileManager()->getTemplate());
-        //$this->modulePath->setTwinPath($this->templatePath);
+        $this->templatePath = $fileManager->getTemplatePath();
     }
 
     /**

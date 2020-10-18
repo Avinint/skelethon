@@ -220,9 +220,9 @@ trait E2DManyToOneMaker
     {
         $fields = $this->getFieldsByType('foreignKey', ['recherche', 'edition']);
 
-        $selectAjaxCallSearchTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath, 'RechercheSelectAjaxCall.'));
-        $selectAjaxCallEditTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath, 'EditionSelectAjaxCall.'));
-        $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath($templatePath, 'SelectAjaxDefinition.'));
+        $selectAjaxCallSearchTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath, 'RechercheSelectAjaxCall'));
+        $selectAjaxCallEditTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath, 'EditionSelectAjaxCall'));
+        $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath($templatePath, 'SelectAjaxDefinition'));
 
         foreach ($fields as $field) {
             $foreignClassName = substr($field->getManyToOne()['childTableAlias'], 1);

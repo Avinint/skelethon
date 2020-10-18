@@ -27,11 +27,11 @@ class App
     /**
      * @param FileManager|null $fileManager
      */
-    public function setFileManager( ?string $template = null, ?FileManager $fileManager = null): void
+    public function setFileManager( ?string $template = null, string $templateNodeClass = '', ?FileManager $fileManager = null): void
     {
         if ($fileManager === null) {
             $this->templates ??= $template;
-            $this->fileManager = new FileManager($this,  $this->templates);
+            $this->fileManager = new FileManager($this, $this->templates, $templateNodeClass);
         } else {
             $this->fileManager = $fileManager;
         }
@@ -108,4 +108,13 @@ class App
         $this->config = $config;
     }
 
+    public function get($property, $scope)
+    {
+        return $this->getConfig()->get($property, $scope);
+    }
+
+    public function getTemplate()
+    {
+        return $this->getFileManager()->getTemplate();
+    }
 }

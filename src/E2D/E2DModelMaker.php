@@ -130,8 +130,6 @@ class E2DModelMaker extends ModelMaker
         $indent = str_repeat("\x20", 16);
         $fields = '\'' . PHP_EOL . parent::getSqlSelectFields($template) . PHP_EOL . $indent . '\'';
 
-        //  $fields = str_replace_last(' . \''.PHP_EOL.$indent.'\'', '', $fields);
-
         return $fields;
     }
 

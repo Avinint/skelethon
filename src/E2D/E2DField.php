@@ -104,7 +104,6 @@ class E2DField extends Field
 
     public function getSearchCriterion($path)
     {
-//        $template = file(str_replace_first( '.','_searchCriterion.', $path));
         $template = file($path);
 
         $aCritereRecherche = [];
@@ -156,7 +155,6 @@ class E2DField extends Field
     public function getValidationCriterion($path)
     {
         $indent = str_repeat("\x20", 8);
-//        $template = file(str_replace_first( '.','_validationCriterion.', $path));
         $template = file($path);
         $sCritere = $indent . str_replace('NAME', $this->name, $template[0]);
         if ($this->isNullable && !isset($this->maxLength)) {
@@ -165,13 +163,6 @@ class E2DField extends Field
         if (!$this->isNullable) {
             $sCritere .= $indent.$template[1].$indent.$template[2];
         }
-
-//        $sCritere = $indent . "\$aConfig['" . $this->name . '\'] = array(' . PHP_EOL;
-//        if (!$this->isNullable) {
-//            $sCritere .=
-//                str_repeat("\x20", 12) . "'required' => '1'," . PHP_EOL .
-//                str_repeat("\x20", 12) . "'minlength' => '1'," . PHP_EOL;
-//        }
 
         if (isset($this->maxLength)) {
             $maxLength = str_replace(' unsigned', '', $this->maxLength);
@@ -182,8 +173,6 @@ class E2DField extends Field
                 $maxLength += (int)$aLength[1];
             }
             $sCritere .= $indent . str_replace('MAX', $maxLength, $template[3]);
-
-            //$sCritere .= str_repeat("\x20", 12) . "'maxlength' => '$maxLength'," . PHP_EOL;
         }
 
         return $sCritere . $indent .$template[4] . PHP_EOL;
@@ -208,9 +197,7 @@ class E2DField extends Field
 
     public function getFieldMapping($templatePath)
     {
-//        $path = str_replace_first('.', '_fieldmapping.', $templatePath);
         return str_replace(['COLUMN', 'NAME'], [$this->column, $this->name], file_get_contents($templatePath));
-//        return str_repeat("\x20", 12)."'$this->column' => '$this->name',";;
     }
 
     public function changeToManyToOneField($manyToOneParams)
@@ -226,7 +213,6 @@ class E2DField extends Field
 
         $this->manyToOne = $manyToOneParams;
         $this->formatted = true;
-
     }
 
     /**
@@ -285,7 +271,6 @@ class E2DField extends Field
         return $aCritereRecherche;
     }
 
-
     public function changerEnChampParametre($type, $lignes = [])
     {
         $this->type = 'parametre';
@@ -295,7 +280,6 @@ class E2DField extends Field
         foreach ($lignes as $ligne) {
             $this->parametre->lignes[] = [$ligne['code'], $ligne['valeur']];
         }
-
     }
 
     public function getParametre($property = '')
