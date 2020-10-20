@@ -24,6 +24,8 @@ abstract class ModuleMakerFactory
             die();
         }
 
+
+
         [$action, $moduleName, $modelName] = $arguments;
         if (!array_contains($action, ['module', 'modele'])) {
             $this->displayHelpPage();
@@ -34,10 +36,15 @@ abstract class ModuleMakerFactory
         $config->setCurrentModel($modelName);
         $config->initialize();
 
+        if ($config->get('showLogo')?? false) {
+            echo ModuleMaker::highlight($this->display_logo(), 'white');
+        }
+
         $app = new App();
         $app->setConfig($config);
-
         $app->setFileManager($config->get('template', $modelName) ?? $config->askTemplate(), $this->templateNodeClass);
+        $config->setFileManager($app->getFileManager());
+
         $templatePath = new Path($appDir.'/templates', 'templatePath');
         $app->getFileManager()->setTemplatePath($templatePath);
 

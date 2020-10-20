@@ -62,7 +62,7 @@ class E2DConfigFileGenerator extends FileGenerator
         {
             if ($action === 'accueil' && strpos($path, 'routing') === false) continue;
             if (!array_contains($action, ['consultation', 'edition']) && strpos($path, 'blocs')) continue;
-            $templatePerActionPath = $this->getTrueTemplatePath($path, '_' . $action);
+            $templatePerActionPath = $this->getTrueTemplatePath($path->add($action));
             if (file_exists($templatePerActionPath)) {
                 $texts[] = $this->getConfigTemplateForAction($templatePerActionPath, $path, $action);
             }
@@ -102,7 +102,7 @@ class E2DConfigFileGenerator extends FileGenerator
     {
         foreach ($this->model->actions as $action) {
 
-            $templatePerActionPath = $this->getTrueTemplatePath($templatePath,  '_' . $action);
+            $templatePerActionPath = $this->getTrueTemplatePath($templatePath->add($action));
             if (file_exists($templatePerActionPath)) {
                 $template = file_get_contents($templatePerActionPath) . $this->makeMultiModalBlock($templatePath, $action, $templatePerActionPath);
 

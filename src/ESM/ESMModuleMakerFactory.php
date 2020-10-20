@@ -31,6 +31,5 @@ class ESMModuleMakerFactory extends E2DModuleMakerFactory
         $this->modelMaker = ESMModelMaker::class;
         $this->moduleMaker = ESMModuleMaker::class;
         $this->fieldClass = ESMField::class;
-
     }
 }

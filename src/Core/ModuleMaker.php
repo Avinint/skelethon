@@ -32,7 +32,7 @@ abstract class ModuleMaker extends BaseMaker
 
         $this->creationMode = $creationMode;
         $this->model = $app->getModelMaker();
-        $this->initializeModule($params);
+        $this->initializeModule();
     }
 
     /**

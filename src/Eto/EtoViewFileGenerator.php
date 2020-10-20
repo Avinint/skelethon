@@ -40,21 +40,21 @@ class EtoViewFileGenerator extends E2DViewFileGenerator
 //    {
 //        $actionText = [];
 //        if (array_contains('consultation', $this->model->getActions())) {
-//            $consultationTemplatePath = $this->getTrueTemplatePath($path, '_consultation.');
+//            $consultationTemplatePath = $this->getTrueTemplatePath($path, 'consultation');
 //            $actionText[] = file_get_contents($consultationTemplatePath);
 //        } else {
 //            if (array_contains('edition', $this->model->getActions())) {
-//                $editionTemplatePath = $this->getTrueTemplatePath($path, '_edition.');
+//                $editionTemplatePath = $this->getTrueTemplatePath($path, 'edition');
 //                $actionText[] = file_get_contents($editionTemplatePath);
 //            }
 //
 //            if (array_contains('suppression', $this->model->getActions())) {
-//                $suppressionTemplatePath = $this->getTrueTemplatePath($path, '_suppression.');
+//                $suppressionTemplatePath = $this->getTrueTemplatePath($path, 'suppression');
 //                $actionText[] = file_get_contents($suppressionTemplatePath);
 //            }
 //        }
 //
-//        return str_replace('ACTION', implode(PHP_EOL, $actionText), file_get_contents($this->getTrueTemplatePath($path,  '_actionblock.')));
+//        return str_replace('ACTION', implode(PHP_EOL, $actionText), file_get_contents($this->getTrueTemplatePath($path,  'actionbloc')));
 //    }
 //
 //    /**
@@ -66,7 +66,7 @@ class EtoViewFileGenerator extends E2DViewFileGenerator
 //    {
 //        $actionBarText = '';
 //        if (array_contains_array(['edition', 'consultation'], $this->model->getActions(), true)) {
-//            $actionBarTemplatePath = $this->getTrueTemplatePath($path, '_actionbar.');
+//            $actionBarTemplatePath = $this->getTrueTemplatePath($path, 'actionbar');
 //            $actionBarText = file_get_contents($actionBarTemplatePath);
 //        }
 //        return $actionBarText;

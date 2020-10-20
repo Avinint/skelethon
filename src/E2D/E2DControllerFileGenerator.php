@@ -10,7 +10,7 @@ class E2DControllerFileGenerator extends FileGenerator
     /**
      * @var E2DModelMaker
      */
-    private E2DModelMaker $model;
+    protected E2DModelMaker $model;
     protected App $app;
 
     public function __construct(App $app)
@@ -28,16 +28,16 @@ class E2DControllerFileGenerator extends FileGenerator
         $text = '';
         $methodText = '';
         $noRecherche = true;
-        $switchCaseList = [file_get_contents($this->getTrueTemplatePath($path, 'SwitchCaseAccueil'))];
+        $switchCaseList = [file_get_contents($this->getTrueTemplatePath($path->add('switchCase')->add('accueil')))];
 
         foreach ($this->model->actions as $action) {
-            $schemaMethodsPerActionPath = $this->getTrueTemplatePath($path, $this->pascalize($action));
+            $schemaMethodsPerActionPath = $this->getTrueTemplatePath($path->add($this->camelize($action)));
             if (isset($schemaMethodsPerActionPath)) {
                 $methodText .= file_get_contents($schemaMethodsPerActionPath) . PHP_EOL;
             }
 
             if ($action !== 'accueil') {
-                $switchCaseList[] =  file_get_contents($this->getTrueTemplatePath($path, 'SwitchCase' . $this->pascalize($action)));
+                $switchCaseList[] =  file_get_contents($this->getTrueTemplatePath($path->get('switchCase')->add($this->camelize($action))));
             }
 
             if ($action === 'recherche') {
@@ -45,20 +45,20 @@ class E2DControllerFileGenerator extends FileGenerator
             }
         }
 
-        $rechercheActionInitPathHandle = $noRecherche ? 'SansFormulaireRecherche' : 'AvecFormulaireRecherche';
-        $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath($path, $rechercheActionInitPathHandle));
+        $rechercheActionInitPathHandle = $noRecherche ? 'sansFormulaireRecherche' : 'avecFormulaireRecherche';
+        $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath($path->add($rechercheActionInitPathHandle)));
 
         if (file_exists($path = $this->getTrueTemplatePath($path))) {
             if ($this->model->usesSelect2) {
-                $enumPath = $this->getTrueTemplatePath($path, 'EnumSelect2');
-                $parametrePath = $this->getTrueTemplatePath($enumPath, 'ParametreSelect2');
+                $enumPath = $this->getTrueTemplatePath($path->add('enum_select2'));
+                $parametrePath = $this->getTrueTemplatePath($enumPath->add('parametre_select2'));
             } else {
-                $enumPath = $this->getTrueTemplatePath($path, 'EnumSelectMenu');
-                $parametrePath = $this->getTrueTemplatePath($enumPath,'ParametreSelectMenu');
+                $enumPath = $this->getTrueTemplatePath($path->add('enum_selectMenu'));
+                $parametrePath = $this->getTrueTemplatePath($enumPath->add('parametre_selectMenu'));
             }
 
 
-            $fieldTemplatePath = $this->getTrueTemplatePath($path, 'EditionChamps');
+            $fieldTemplatePath = $this->getTrueTemplatePath($path->get('edition')->add('champs'));
 
             $paths = [$enumPath, $parametrePath, $fieldTemplatePath];
             $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
@@ -121,7 +121,7 @@ class E2DControllerFileGenerator extends FileGenerator
                 [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsNotNullableText, $fieldsNullableText, $this->model->getIdField()], $methodText);
 
             $text .= file_get_contents($path);
-            $concurrentText = $this->model->usesMultiCalques ? file_get_contents(str_replace('Action.', 'ActionMulti.', $path)): '';
+            $concurrentText = $this->model->usesMultiCalques ? file_get_contents($this->getTrueTemplatePath($path->add('multi'))): '';
             $text = str_replace(['MODULE', 'CONTROLLER', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
                 [$this->pascalCaseModuleName, $this->controllerName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
         }
@@ -139,7 +139,7 @@ class E2DControllerFileGenerator extends FileGenerator
     {
         $exceptions['aBooleens'][] = $field->getFormattedName();
         $defaultValue = $field->getDefaultValue() ?? 'nc';
-        $defaultLines = file(str_replace('ActionEditionChamps.', 'ActionEditionDefaut.',$fieldTemplatePath));
+        $defaultLines = file($this->getTrueTemplatePath($fieldTemplatePath->add('defaut')));
         $defaults[] = str_replace(['FIELD', 'VALUE'], [$field->getName(), $defaultValue], $defaultLines[0]);
     }
 
@@ -158,7 +158,7 @@ class E2DControllerFileGenerator extends FileGenerator
         [$enumPath, $parametrePath, $fieldTemplatePath] = $paths;
         $templateFields = file($fieldTemplatePath, FILE_IGNORE_NEW_LINES);
 
-        $nullableFieldTemplatePath = $this->getTrueTemplatePath($fieldTemplatePath, 'Nullable');
+        $nullableFieldTemplatePath = $this->getTrueTemplatePath($fieldTemplatePath->add('nullable'));
         $templateNullableFields = file_get_contents($nullableFieldTemplatePath);
 
         if ($field->is('bool')) {
@@ -241,9 +241,13 @@ class E2DControllerFileGenerator extends FileGenerator
             }
         }
 
-        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT', 'TYPE'];
+        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
+        $replacements = [$field->getName(), $this->moduleName, $this->model->getName(), $field->getColumn(), $default];
 
-        $replacements = [$field->getName(), $this->moduleName, $this->model->getName(), $field->getColumn(), $default, $field->getParametre('type')];
+        if ($field->is('parametre')) {
+            $searches[] = 'TYPE';
+            $replacements[] = $field->getParametre('type');
+        }
 
         $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLines);
         $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));
@@ -267,8 +271,8 @@ class E2DControllerFileGenerator extends FileGenerator
         if (file_exists($templatePath = $this->getTrueTemplatePath($path))) {
             $text = file_get_contents($templatePath);
 
-            $recherche = array_contains('recherche', $this->model->actions) ? file_get_contents($this->getTrueTemplatePath($path, 'Recherche')) : '';
-            $tinyMCE =  array_contains('edition', $this->model->actions) && $this->app->getConfig()->has('champsTinyMCE') ? file_get_contents($this->getTrueTemplatePath($path, 'TinyMCE')) : '';
+            $recherche = array_contains('recherche', $this->model->actions) ? file_get_contents($this->getTrueTemplatePath($path->add('recherche'))) : '';
+            $tinyMCE =  array_contains('edition', $this->model->actions) && $this->app->getConfig()->has('champsTinyMCE') ? file_get_contents($this->getTrueTemplatePath($path->add('tinyMCE'))) : '';
 
             $text = str_replace(['//RECHERCHE', '//TINYMCE'], [$recherche, $tinyMCE], $text);
             $text = str_replace(['MODULE', 'CONTROLLER', 'mODULE', 'TABLE'], [$this->pascalCaseModuleName, $this->controllerName, $this->moduleName, $this->model->getName()], $text);

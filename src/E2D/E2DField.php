@@ -47,8 +47,7 @@ class E2DField extends Field
     {
         $indent = str_repeat("\x20", 20);
         $lines = [];
-
-        $template = file(str_replace_first('_selectFields.', '.', $path), FILE_IGNORE_NEW_LINES);
+        $template = file($path, FILE_IGNORE_NEW_LINES);
         if (!$template) {
             return '';
         }

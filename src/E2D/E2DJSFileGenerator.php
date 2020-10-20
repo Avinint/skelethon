@@ -31,7 +31,7 @@ class E2DJSFileGenerator extends FileGenerator
     {
         $text = '';
         $templatePath = $this->getTrueTemplatePath($path);
-        if (file_exists($templatePath)) {
+        if (isset($templatePath)) {
             $text = file_get_contents($templatePath);
         }
 
@@ -45,21 +45,15 @@ class E2DJSFileGenerator extends FileGenerator
             }
         }
 
-        if (array_contains_array(['edition', 'consultation'], $this->model->actions, ARRAY_ALL) && strpos($path, 'Admin')) {
-            $closeConsultationModal = PHP_EOL.file_get_contents($this->getTrueTemplatePath($path, 'EditionFermetureCalqueConsultation'));
-        } else {
-            $closeConsultationModal = '';
-        }
-
         $noRecherche = true;
         $usesRechercheNoCallback = $this->app->getConfig()->get('noCallbackListeElenent') ?? true;
         foreach ($this->model->actions as $action) {
-            $templatePerActionPath =  $this->getTrueTemplatePath($path, $this->pascalize($action));
+            $templatePerActionPath =  $this->getTrueTemplatePath($path->add($this->camelize($action)));
             if (isset($templatePerActionPath)) {
                 if ($action === 'recherche') {
                     $noRecherche = false;
                     if ($usesRechercheNoCallback) {
-                        $templatePerActionPath =  $this->getTrueTemplatePath($templatePerActionPath, '_nocallback');
+                        $templatePerActionPath =  $this->getTrueTemplatePath($templatePerActionPath->add('nocallback'));
                     }
                 }
 
@@ -67,8 +61,14 @@ class E2DJSFileGenerator extends FileGenerator
             }
         }
 
+        if (array_contains_array(['edition', 'consultation'], $this->model->actions, ARRAY_ALL) && strpos($path, 'Admin')) {
+            $closeConsultationModal = PHP_EOL.file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('fermetureCalqueConsultation')));
+        } else {
+            $closeConsultationModal = '';
+        }
+
         if ($noRecherche && $path->getName() === 'CONTROLLERAdmin') {
-            $noRechercheText = file_get_contents($this->getTrueTemplatePath($path, 'NoRecherche.'));
+            $noRechercheText = file_get_contents($this->getTrueTemplatePath($path->add('noRecherche')));
             $actionMethodText = $noRechercheText.$actionMethodText;
         }
 
@@ -77,9 +77,9 @@ class E2DJSFileGenerator extends FileGenerator
 
         if ($this->model->usesSelect2 && strpos($templatePath, 'Admin') > 0) {
 
-            $select2DefautTemplate = file($this->getTrueTemplatePath($path, 'RechercheSelect2'));
+            $select2DefautTemplate = file($this->getTrueTemplatePath($path->get('recherche')->add('select2')));
             $select2RechercheTemplate = array_shift($select2DefautTemplate);
-            $select2EditTemplate = file_get_contents($this->getTrueTemplatePath($path, 'EditionSelect2'));
+            $select2EditTemplate = file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('select2')));
 
             $editionFields = $this->model->getFields('edition', ['enum', 'parametre']);
             $searchFields = $this->model->getFields('recherche', ['enum', 'parametre']);
@@ -97,7 +97,7 @@ class E2DJSFileGenerator extends FileGenerator
 
         $selectAjaxDefinitionText = '';
         $selectAjaxDefinition = [];
-        $personalizeButtons = '';
+        $personalizedButtons = '';
         $tinyMCE = '';
         $tinyMCEDef = '';
         if (strpos($templatePath, 'Admin') > 0) {
@@ -105,20 +105,21 @@ class E2DJSFileGenerator extends FileGenerator
                 [$select2SearchText, $select2EditText, $selectAjaxDefinitionText] = $this->model->addSelectAjaxToJavaScript($templatePath, $select2SearchText, $select2EditText, $selectAjaxDefinition);
             }
 
-            $personalizedButtonsTemplateSuffix = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton' : 'NoConsultationButtons';
-            $personalizeButtons = file_get_contents($this->getTrueTemplatePath($path, $personalizedButtonsTemplateSuffix));
+            $bHasConsultation = array_contains('consultation', $this->model->getActions()) ;
+//            $personalizedButtonsTemplate = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton' : 'NoConsultationButtons';
+            $personalizedButtons = file_get_contents($this->getTrueTemplatePath($path->add($bHasConsultation ? 'consultationButton' : 'noConsultationButtons')));
 
             $champs = $this->app->getConfig()->get('champsTinyMCE') ?: [];
             foreach ($champs as $champ) {
-                $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path, 'EditionAppelTinyMCE')));
+                $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('appelTinyMCE'))));
             }
 
-            $tinyMCEDef = $this->app->getConfig()->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path, 'EditionDefinitionTinyMCE')) : '';
+            $tinyMCEDef = $this->app->getConfig()->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('definitionTinyMCE'))) : '';
         }
 
         $text = str_replace([ '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
             'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT' , 'TINYMCEDEF', 'TINYMCE', 'SELECT2', 'SELECTAJAX',],
-            [$personalizeButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
+            [$personalizedButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
                 $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $tinyMCEDef, $tinyMCE, $select2SearchText, $selectAjaxDefinitionText], $text);
 
         return $text;
@@ -126,7 +127,7 @@ class E2DJSFileGenerator extends FileGenerator
 
     public function modify($templatePath, $filePath)
     {
-        $textApplyNewJSClass = str_replace('MODEL', $this->model->getClassName(), file_get_contents($this->getTrueTemplatePath($templatePath, 'MultiFichier')));
+        $textApplyNewJSClass = str_replace('MODEL', $this->model->getClassName(), file_get_contents($this->getTrueTemplatePath($templatePath->add('multiFichier'))));
         $filePath  = str_replace($this->model->getClassName(), $this->pascalCaseModuleName, $filePath);
 
         if (file_exists($filePath)) {

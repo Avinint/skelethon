@@ -45,9 +45,9 @@ class FileManager
      * @param string $search
      * @return PathNode $templatePath
      */
-    public function getTrueTemplatePath(FilePath $templatePath, $fileSuffix = '')
+    public function getTrueTemplatePath(FilePath $templatePath)
     {
-        $templatePath = $this->findRightTemplatePath($templatePath->add($fileSuffix));
+        $templatePath = $this->findRightTemplatePath($templatePath);
 
         reset($this->templates);
 
@@ -61,7 +61,7 @@ class FileManager
      * @param $replace
      * @return ?FilePath
      */
-    function findRightTemplatePath(FilePath $templatePath, $template = '') : ?FilePath
+    function findRightTemplatePath(FilePath $templatePath) : ?FilePath
     {
         if (!file_exists($templatePath)) {
 
@@ -71,7 +71,7 @@ class FileManager
             }
             $templatePath->setFallbackTemplate($nextTemplate);
 
-            return $this->findRightTemplatePath($templatePath, $nextTemplate);
+            return $this->findRightTemplatePath($templatePath);
         }
 
         return $templatePath;

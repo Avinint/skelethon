@@ -36,4 +36,23 @@ class E2DModuleMakerFactory extends ModuleMakerFactory
         $this->moduleMaker = E2DModuleMaker::class;
         $this->fieldClass = E2DField::class;
     }
+
+    protected function display_logo()
+    {
+        return PHP_EOL.logo_border_line().logo_blank_line().logo_border_line().logo_blank_line().
+
+            '            .###*                     /(((                                      ' .PHP_EOL.
+            '            .###*                     /(((                                      ' .PHP_EOL.
+            '      ,*/////###*      .*/////*.      ****    ///*.*////,.        .*//////////  ' .PHP_EOL.
+            '   (############*   .#############    /(((    ##############    (#############  ' .PHP_EOL.
+            '  .###(     .###*   (###.     .###(   /(((    ####      *###*   ####      ####  ' .PHP_EOL.
+            '  .###*     .###*   ####       ###(   /(((    ###(      .###*   ####      ####  ' .PHP_EOL.
+            '  .###*     .###*   ####       ###(   /(((    ###(      .###*   ####      ####  ' .PHP_EOL.
+            '   ###*     .###*   ####      .###(   /(((    ###(      .###*   ####      ####  ' .PHP_EOL.
+            '   (############*   ,#############.   /(((    ###(      .###*   (#############  ' .PHP_EOL.
+            '     ,/(((((((((*      /(((((((/      /(((    ((((       (((*     /(((((((####  ' .PHP_EOL.
+            '                                                                   (##########  ' .PHP_EOL.
+            '                                                                   (#########   ' .PHP_EOL.
+            logo_blank_line().logo_border_line().logo_blank_line().logo_border_line().logo_blank_line();
+    }
 }

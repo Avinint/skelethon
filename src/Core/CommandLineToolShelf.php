@@ -32,6 +32,7 @@ class CommandLineToolShelf
 
     public static function msg(string $text, $type = '', $validValues = [], $verboseCondition = true, $important = false)
     {
+        $display = '';
         if ((self::$verbose && $verboseCondition) || empty($type) || $important) {
             if (!empty($validValues)) {
                 $display = $validValues === ['o', 'n'] ? ' ['.static::highlight('O', 'success').'/'.static::highlight('N', 'error').']' : '';

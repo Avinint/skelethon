@@ -4,6 +4,8 @@
 namespace E2D;
 
 
+use Core\FilePath;
+
 trait E2DManyToOneMaker
 {
 
@@ -209,20 +211,20 @@ trait E2DManyToOneMaker
 
     /**
      * @param string $templatePath
-     * @param string $path
+     * @param FilePath $path
      * @param string $select2SearchText
      * @param string $select2EditText
      * @param array $selectAjaxDefinition
      * @return array
      * @throws \Exception
      */
-    public function addSelectAjaxToJavaScript(string $templatePath, string $select2SearchText, string $select2EditText, array $selectAjaxDefinition): array
+    public function addSelectAjaxToJavaScript(FilePath $templatePath, string $select2SearchText, string $select2EditText, array $selectAjaxDefinition): array
     {
         $fields = $this->getFieldsByType('foreignKey', ['recherche', 'edition']);
 
-        $selectAjaxCallSearchTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath, 'RechercheSelectAjaxCall'));
-        $selectAjaxCallEditTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath, 'EditionSelectAjaxCall'));
-        $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath($templatePath, 'SelectAjaxDefinition'));
+        $selectAjaxCallSearchTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath->get('recherche')->add('selectAjaxCall')));
+        $selectAjaxCallEditTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath->get('edition')->add('selectAjaxCall')));
+        $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath($templatePath->add('selectAjaxDefinition')));
 
         foreach ($fields as $field) {
             $foreignClassName = substr($field->getManyToOne()['childTableAlias'], 1);

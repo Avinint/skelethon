@@ -108,9 +108,9 @@ class App
         $this->config = $config;
     }
 
-    public function get($property, $scope)
+    public function get($property, $model = null)
     {
-        return $this->getConfig()->get($property, $scope);
+        return $this->getConfig()->get($property, $model);
     }
 
     public function getTemplate()

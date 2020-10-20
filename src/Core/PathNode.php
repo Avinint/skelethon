@@ -74,12 +74,12 @@ class PathNode extends CommandLineToolShelf
      * @param string $extension
      * @return $this
      */
-    public function addFile(string $fileName, string $extension = '') : PathNode
+    public function addFile(string $fileName, string $extension = '') : FilePath
     {
         $filePath = new FilePath($fileName, $extension);
         $this->children[$filePath->name] = $filePath;
 
-        $filePath->parent = $this;
+        $filePath->setParent($this);
         if (isset($this->templateNode)) {
             $filePath->setTemplateNode($this->templateNode);
         }
@@ -104,15 +104,13 @@ class PathNode extends CommandLineToolShelf
         return $this;
     }
 
-    public function getFile(string $pathname)
+    public function getFile(string $pathname) : FilePath
     {
         if (isset($this->children[$pathname]) && $this->children[$pathname] instanceof FilePath) {
             return $this->children[$pathname];
         } elseif (strpos($pathname, '.')) {
             return $this->addFile($pathname);
         }
-        var_dump($this->getPath());
-        var_dump($pathname);
 
         static::msg('fichier inexistant, utilisation du parent', 'error');
         return $this;
@@ -132,7 +130,7 @@ class PathNode extends CommandLineToolShelf
      * Retrouve le répertoire parent, sauf s'il est répertoire racine du projet
      * @return $this|PathNode|null
      */
-    private function getParent()
+    public function getParent()
     {
         if (!isset($this->parent)) {
             static::msg('Les chemins racines n\'ont pas de chemin alternatif', 'error');

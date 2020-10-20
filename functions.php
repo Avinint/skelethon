@@ -54,3 +54,18 @@ function str_replace_last(string $search, string $replace, string $subject) : st
     }
     return $subject;
 }
+
+function logo_blank_line()
+{
+    return '                                                                                ' .PHP_EOL;
+}
+
+function logo_border_line()
+{
+    return '================================================================================' .PHP_EOL;
+}
+
+function alphanum()
+{
+   return (implode('', array_merge(range('a', 'z'),  range(0, 9), range('A', 'Z'))));
+}

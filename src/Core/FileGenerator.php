@@ -15,8 +15,8 @@ abstract class FileGenerator extends CommandLineToolShelf implements FileGenerat
      * @param string $fileSuffix
      * @return string|string[]
      */
-    public function getTrueTemplatePath(FilePath $templatePath, string $fileSuffix = '')
+    public function getTrueTemplatePath(FilePath $templatePath)
     {
-        return $this->app->getFileManager()->getTrueTemplatePath($templatePath, $fileSuffix);
+        return $this->app->getFileManager()->getTrueTemplatePath($templatePath);
     }
 }

@@ -7,6 +7,7 @@ namespace Core;
 class FilePath extends PathNode
 {
     private $extension;
+    private $baseFile;
 
     public function __construct($fileName, $extension = '')
     {
@@ -18,10 +19,30 @@ class FilePath extends PathNode
         }
     }
 
+    /**
+     *  Ajoute un fichier dont le nom = nom du fichier de courant + un suffixe et le retourne
+     * @param string $suffix
+     * @return PathNode|null
+     */
     public function add(string $suffix)
     {
-        return $this->parent->addFile($this->name.$suffix, $this->extension);
+
+        $file = $this->parent->addFile($this->name.'_'.$suffix, $this->extension);
+        $file->setBaseFile($this);
+        return $file;
     }
+
+    /**
+     * Retourne un fichier dont le nom est dérivé du fichier courant
+     * @param string $suffix
+     * @return FilePath|PathNode|null
+     */
+    public function get(string $suffix)
+    {
+        return $this->parent->getFile($this->name.'_'.$suffix, $this->extension);
+    }
+
+
 
     public function getPath()
     {
@@ -58,5 +79,22 @@ class FilePath extends PathNode
     {
         return $this->extension;
     }
+
+    /**
+     * @return FilePath
+     */
+    public function getBaseFile()
+    {
+        return $this->baseFile;
+    }
+
+    /**
+     * @param FilePath $baseFile
+     */
+    public function setBaseFile(FilePath $baseFile) : void
+    {
+        $this->baseFile = $baseFile;
+    }
+
 
 }

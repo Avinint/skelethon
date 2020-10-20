@@ -15,7 +15,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     private $path;
     private array $data;
     private $currentModel;
-    protected $fileManager;
+    protected FileManager $fileManager;
 
     /**
      * @return mixed
@@ -24,6 +24,16 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     {
         return $this->fileManager;
     }
+
+    /**
+     * @param FileManager $fileManager
+     */
+    public function setFileManager(FileManager $fileManager) : void
+    {
+        $this->fileManager = $fileManager;
+    }
+
+
 
     /**
      * @return mixed

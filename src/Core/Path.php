@@ -10,7 +10,7 @@ class Path extends PathNode
      * Répertoire racine, pas de parent
      * @return $this|PathNode|null
      */
-    private function getParent()
+    public function getParent()
     {
         return null;
     }
