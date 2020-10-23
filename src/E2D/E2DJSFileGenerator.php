@@ -97,19 +97,23 @@ class E2DJSFileGenerator extends FileGenerator
 
         $selectAjaxDefinitionText = '';
         $selectAjaxDefinition = [];
+        $callbackLigneListeText = '';
         $personalizedButtons = '';
         $tinyMCE = '';
         $tinyMCEDef = '';
         if (strpos($templatePath, 'Admin') > 0) {
+
             if ($this->config->get('hasManyToOneRelation')) {
                 [$select2SearchText, $select2EditText, $selectAjaxDefinitionText] = $this->model->addSelectAjaxToJavaScript($templatePath, $select2SearchText, $select2EditText, $selectAjaxDefinition);
             }
 
+            $callbackLigneListeText = $this->app->get('usesCallbackListeLigne') ? file_get_contents($path->add('avecCallbackLigneListe')) : '';
+
+            $callbackLigneListeText = implode(PHP_EOL,  array_merge([$callbackLigneListeText, $selectAjaxDefinitionText]));
             $bHasConsultation = array_contains('consultation', $this->model->getActions()) ;
-//            $personalizedButtonsTemplate = array_contains('consultation', $this->model->getActions()) ? 'ConsultationButton' : 'NoConsultationButtons';
             $personalizedButtons = file_get_contents($this->getTrueTemplatePath($path->add($bHasConsultation ? 'consultationButton' : 'noConsultationButtons')));
 
-            $champs = $this->app->getConfig()->get('champsTinyMCE') ?: [];
+            $champs = $this->app->get('champsTinyMCE') ?: [];
             foreach ($champs as $champ) {
                 $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('appelTinyMCE'))));
             }
@@ -117,10 +121,10 @@ class E2DJSFileGenerator extends FileGenerator
             $tinyMCEDef = $this->app->getConfig()->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('definitionTinyMCE'))) : '';
         }
 
-        $text = str_replace([ '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
-            'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT' , 'TINYMCEDEF', 'TINYMCE', 'SELECT2', 'SELECTAJAX',],
-            [$personalizedButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
-                $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $tinyMCEDef, $tinyMCE, $select2SearchText, $selectAjaxDefinitionText], $text);
+        $text = str_replace([ '/*CALLBACKLIGNELISTE*/', '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
+            'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT' , 'TINYMCEDEF', 'TINYMCE', 'SELECT2'],
+            [$callbackLigneListeText, $personalizedButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
+                $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $tinyMCEDef, $tinyMCE, $select2SearchText], $text);
 
         return $text;
     }

@@ -117,13 +117,18 @@ class E2DControllerFileGenerator extends FileGenerator
                 $exceptionText .= implode(',', $exceptionArr).']';
             }
 
-                $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', '//CHAMPSNOTNULL', '//CHAMPSNULL', 'IDFIELD'],
-                [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsNotNullableText, $fieldsNullableText, $this->model->getIdField()], $methodText);
+            $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', '//CHAMPSNOTNULL', '//CHAMPSNULL', 'IDFIELD'],
+            [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsNotNullableText, $fieldsNullableText, $this->model->getIdField()], $methodText);
 
             $text .= file_get_contents($path);
+            if ($this->app->get('usesPagination') ?? true)  {
+                $paginationText = file_get_contents($path->add('avecPagination'));
+            } else {
+                $paginationText = str_replace('PK', $this->model->getPrimaryKey(),file_get_contents($path->add('sansPagination')));
+            }
             $concurrentText = $this->model->usesMultiCalques ? file_get_contents($this->getTrueTemplatePath($path->add('multi'))): '';
-            $text = str_replace(['MODULE', 'CONTROLLER', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
-                [$this->pascalCaseModuleName, $this->controllerName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
+            $text = str_replace(['//PAGINATION', 'MODULE', 'CONTROLLER', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD'],
+                [$paginationText, $this->pascalCaseModuleName, $this->controllerName, $this->model->getClassName(), $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText], $text);
         }
 
         return $text;

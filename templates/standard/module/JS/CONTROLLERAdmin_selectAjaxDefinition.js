@@ -1,4 +1,3 @@
-
     /**
      * Création de Select2
      * permettant de rechercher via un appel Ajax.

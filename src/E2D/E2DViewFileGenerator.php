@@ -214,7 +214,7 @@ class E2DViewFileGenerator extends FileGenerator
     private function generateListTableTag(FilePath $path)
     {
         $callbackLigne = '';
-        if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY)) {
+        if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY) && ($this->app->get('usesCallbackListeLigne') ?? true)) {
             $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";
         }
 

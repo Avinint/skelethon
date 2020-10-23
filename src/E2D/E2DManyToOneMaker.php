@@ -239,7 +239,7 @@ trait E2DManyToOneMaker
             $this->addSelectAjaxMethodDefinition($field, $selectAjaxDefinitionTemp, $selectAjaxDefinition, $foreignClassName);
         }
 
-        $selectAjaxDefinitionText = PHP_EOL . implode(PHP_EOL, $selectAjaxDefinition) . PHP_EOL;
+        $selectAjaxDefinitionText = PHP_EOL . implode(PHP_EOL.PHP_EOL, $selectAjaxDefinition) . PHP_EOL;
         return array($select2SearchText, $select2EditText, $selectAjaxDefinitionText);
     }
 

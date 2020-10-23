@@ -52,6 +52,8 @@ class E2DModelMaker extends ModelMaker
         $this->usesSelect2                = $this->askSelect2();
         $this->usesSwitches               = $this->askSwitches();
         $this->usesNoCallBackListeElement = $this->askCallbackListe();
+        $this->usesCallbackListeLigne     = $this->askCallbackListeLigne();
+        $this->usesPagination             = $this->askPagination();
         $this->usesSecurity               = $this->config->get('updateSecurity') ?? $this->askGenerateSecurity();
     }
 
@@ -73,6 +75,16 @@ class E2DModelMaker extends ModelMaker
     private function askCallbackListe() : bool
     {
         return $this->askBool('noCallbackListeElenent', 'Voulez-vous un template qui n\'utilise pas le callback liste ? (Utile si vous avez des valeurs de recherche par défaut)');
+    }
+
+    private function askCallbackListeLigne(): bool
+    {
+        return $this->askBool('usesCallbackListeLigne', 'Voulez-vous un template qui utilise un callback pour personnaliser les lignes de liste (callbackListeLigne) ?');
+    }
+
+    private function askPagination() : bool
+    {
+        return $this->askBool('usesPagination', 'Souhaitez vous utiliser la pagination ?');
     }
 
     private function askGenerateSecurity()

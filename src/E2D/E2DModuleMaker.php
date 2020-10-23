@@ -84,7 +84,7 @@ class E2DModuleMaker extends ModuleMaker
      * @param FilePath $path
      * @return string
      */
-    protected function generateFileContent(FilePath $templatePath, string $path) : string
+    protected function generateFileContent(FilePath $templatePath, FilePath $path) : string
     {
         $text = '';
         if (strpos($templatePath, '.yml')) {
