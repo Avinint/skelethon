@@ -1,8 +1,0 @@
-moduleMaker: E2DModuleMaker
-
-updateMenu: true
-
-usesSelect: true
-
-memorizeChoices: true
-

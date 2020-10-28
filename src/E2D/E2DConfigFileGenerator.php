@@ -132,7 +132,7 @@ class E2DConfigFileGenerator extends FileGenerator
      * @param string $action
      * @return string
      */
-    private function getConfigTemplateForAction(string $templatePerActionPath, string $path, string $action): string
+    private function getConfigTemplateForAction(FilePath $templatePerActionPath, FilePath $path, string $action): string
     {
         return file_get_contents($templatePerActionPath) .
             $this->makeMultiModalBlock($path, $action, $templatePerActionPath);
@@ -140,12 +140,12 @@ class E2DConfigFileGenerator extends FileGenerator
 
     /**
      * Ajoute les lignes permettant les calques multiples, dans les blocs
-     * @param string $path
+     * @param PathNode $path
      * @param string $action
-     * @param string $templatePerActionPath
+     * @param PathNode $templatePerActionPath
      * @return false|string
      */
-    private function makeMultiModalBlock(string $path, string $action, string $templatePerActionPath)
+    private function makeMultiModalBlock(FilePath $path, string $action, FilePath $templatePerActionPath)
     {
         return ($this->model->usesMultiCalques && strpos($path, 'blocs') !== false ?
             file_get_contents(str_replace($action, 'multi', $templatePerActionPath)) : '');
@@ -153,10 +153,10 @@ class E2DConfigFileGenerator extends FileGenerator
 
     /**
      * Ajout des Enums dans le fichier conf
-     * @param string $templatePath
+     * @param FilePath $templatePath
      * @return string
      */
-    private function addEnumsToConfig(string $templatePath): string
+    private function addEnumsToConfig(FilePath $templatePath): string
     {
         $enumText = '';
         $fields = $this->model->getFields('', 'enum');

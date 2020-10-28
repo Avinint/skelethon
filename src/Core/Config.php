@@ -33,8 +33,6 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         $this->fileManager = $fileManager;
     }
 
-
-
     /**
      * @return mixed
      */
@@ -42,8 +40,6 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     {
         return $this->module;
     }
-
-
 
     public function __construct($module, $model, ProjectType $type)
     {
@@ -232,7 +228,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
 //            $result = $this->getValueFromModelConfig($field, $model);
 //        }
 
-        return $this->getValueFromModelConfig($field) ?? $this->getValueFromModuleConfig($field) ?? $this->data[$this->type->getName()][$field] ?? $this->data[$field] ?? null;;
+        return $this->getValueFromModelConfig($field) ?? $this->getValueFromModuleConfig($field) ?? $this->data[$this->subDir][$field] ?? $this->data[$field] ?? null;;
     }
 
     /**

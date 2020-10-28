@@ -24,8 +24,6 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
             die();
         }
 
-
-
         [$action, $moduleName, $modelName] = $arguments;
         if (!array_contains($action, ['module', 'modele'])) {
             $this->displayHelpPage();
@@ -53,7 +51,6 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
         $this->initializeFileGenerators($app);
         $this->generate($action, $moduleName, $modelName, $app, $config);
     }
-
 
     private function askName($name = '')
     {

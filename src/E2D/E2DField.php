@@ -96,7 +96,7 @@ class E2DField extends Field
         }
 
         return str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
-            [$this->manyToOne['alias'], $this->manyToOne['label'], $this->manyToOne['childTableAlias'], $this->manyToOne['table'], $this->manyToOne['pk'], $this->alias, $this->getFormattedName()],
+            [$this->manyToOne['alias'], $this->manyToOne['label'], $this->manyToOne['labelAlias'], $this->manyToOne['table'], $this->manyToOne['pk'], $this->alias, $this->getFormattedName()],
             $field);
     }
 

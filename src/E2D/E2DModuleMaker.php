@@ -193,6 +193,8 @@ class E2DModuleMaker extends ModuleMaker
             return $this->creationMode === 'generate' ? lcfirst($this->namespaceName) : lcfirst($this->model->getClassName());
         } elseif ('url_case' === $case) {
             return $this->creationMode === 'generate' ? $this->urlize($this->namespaceName) : $this->urlize($this->model->getClassName());
+        } elseif ('lower_case' === $case) {
+            return $this->creationMode === 'generate' ? strtolower($this->namespaceName) : strtolower($this->model->getClassName());
         } else {
             return $this->creationMode === 'generate' ? $this->name : $this->model->getName();
         }
