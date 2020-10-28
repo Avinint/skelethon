@@ -19,7 +19,6 @@ class E2DViewFileGenerator extends FileGenerator
     public function __construct(App $app)
     {
         $this->app                  = $app;
-        $this->config               = $app->getConfig();
         $this->model                = $app->getModelMaker();
         $this->moduleName           = $app->getModuleMaker()->getName();
         $this->controllerName       = $app->getModuleMaker()->getControllerName();
@@ -202,6 +201,18 @@ class E2DViewFileGenerator extends FileGenerator
         if (array_contains_array(['edition', 'consultation'], $this->model->getActions(), true)) {
             $actionBarTemplatePath = $this->getTrueTemplatePath($path->add('actionbar'));
             $actionBarText = file_get_contents($actionBarTemplatePath);
+
+            $actionBarActionsText = [];
+            if (array_contains('edition', $this->model->getActions())) {
+                $actionBarActionsText[] = file_get_contents($this->getTrueTemplatePath($actionBarTemplatePath ->add('ajout')));
+            }
+
+            if (array_contains('export', $this->model->getActions())) {
+                $actionBarActionsText[] = file_get_contents($this->getTrueTemplatePath($actionBarTemplatePath ->add('export')));
+            }
+
+            $actionBarText = str_replace('//ACTION_BAR_ACTIONS', $actionBarActionsText ?
+                PHP_EOL.implode(PHP_EOL, $actionBarActionsText).PHP_EOL.str_repeat("\x20", 4) : '', $actionBarText);
         }
         return $actionBarText;
     }

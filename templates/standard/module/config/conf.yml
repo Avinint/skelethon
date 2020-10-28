@@ -17,7 +17,7 @@ aVues:
                             lib_externe_dist:
                                 - package-plugins-light/JS/Select2/css/select2.min.css
                         JS:
-                            modules:
+                            modules:EXPORTJS
                                 - mODULE/JS/CONTROLLERAdmin.js
                                 - mODULE/JS/CONTROLLER.js
                             lib_externe_dist:
@@ -38,4 +38,4 @@ aVues:
                                 - mODULE/JS/CONTROLLERAdmin.js
                                 - mODULE/JS/CONTROLLER.js
             specifiques: []
-ENUMS
+ENUMS:EXPORT

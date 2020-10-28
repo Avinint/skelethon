@@ -39,7 +39,7 @@ class E2DModuleMakerFactory extends ModuleMakerFactory
 
     protected function display_logo()
     {
-        return PHP_EOL.logo_border_line().logo_blank_line().logo_border_line().logo_blank_line().
+        return PHP_EOL.logo_blank_line().logo_border_line().logo_blank_line().
 
             '            .###*                     /(((                                      ' .PHP_EOL.
             '            .###*                     /(((                                      ' .PHP_EOL.
@@ -53,6 +53,6 @@ class E2DModuleMakerFactory extends ModuleMakerFactory
             '     ,/(((((((((*      /(((((((/      /(((    ((((       (((*     /(((((((####  ' .PHP_EOL.
             '                                                                   (##########  ' .PHP_EOL.
             '                                                                   (#########   ' .PHP_EOL.
-            logo_blank_line().logo_border_line().logo_blank_line().logo_border_line().logo_blank_line();
+            logo_blank_line().logo_border_line().logo_blank_line();
     }
 }

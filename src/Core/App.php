@@ -14,7 +14,11 @@ class App
     private ModuleMaker $moduleMaker;
     private $modeleMaker;
 
-
+    public function setProjectPath()
+    {
+        $this->projectPath = new Path(getcwd(), 'projectPath');
+        $this->getFileManager()->setProjectPath($this->projectPath);
+    }
 
     /**
      * @return FileManager
@@ -113,8 +117,23 @@ class App
         return $this->getConfig()->get($property, $model);
     }
 
+    public function has($property) : bool
+    {
+        return $this->getConfig()->has($property);
+    }
+
+    public function set($property, $value = null, $model = null, $setForAll = false) : void
+    {
+       $this->getConfig()->set($property, $value, $model, $setForAll);
+    }
+
     public function getTemplate()
     {
         return $this->getFileManager()->getTemplate();
+    }
+
+    public function getProjectPath()
+    {
+        return $this->getFileManager()->getProjectPath();
     }
 }

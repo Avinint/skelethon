@@ -20,7 +20,6 @@ class E2DJSFileGenerator extends FileGenerator
     public function __construct(App $app)
     {
         $this->app                  = $app;
-        $this->config               = $app->getConfig();
         $this->model                = $app->getModelMaker();
         $this->moduleName           = $app->getModuleMaker()->getName();
         $this->controllerName       = $app->getModuleMaker()->getControllerName();
@@ -46,7 +45,7 @@ class E2DJSFileGenerator extends FileGenerator
         }
 
         $noRecherche = true;
-        $usesRechercheNoCallback = $this->app->getConfig()->get('noCallbackListeElenent') ?? true;
+        $usesRechercheNoCallback = $this->app->get('noCallbackListeElenent') ?? true;
         foreach ($this->model->actions as $action) {
             $templatePerActionPath =  $this->getTrueTemplatePath($path->add($this->camelize($action)));
             if (isset($templatePerActionPath)) {
@@ -101,9 +100,10 @@ class E2DJSFileGenerator extends FileGenerator
         $personalizedButtons = '';
         $tinyMCE = '';
         $tinyMCEDef = '';
+
         if (strpos($templatePath, 'Admin') > 0) {
 
-            if ($this->config->get('hasManyToOneRelation')) {
+            if ($this->app->get('hasManyToOneRelation')) {
                 [$select2SearchText, $select2EditText, $selectAjaxDefinitionText] = $this->model->addSelectAjaxToJavaScript($templatePath, $select2SearchText, $select2EditText, $selectAjaxDefinition);
             }
 
@@ -118,7 +118,7 @@ class E2DJSFileGenerator extends FileGenerator
                 $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('appelTinyMCE'))));
             }
 
-            $tinyMCEDef = $this->app->getConfig()->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('definitionTinyMCE'))) : '';
+            $tinyMCEDef = $this->app->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('definitionTinyMCE'))) : '';
         }
 
         $text = str_replace([ '/*CALLBACKLIGNELISTE*/', '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
@@ -132,6 +132,7 @@ class E2DJSFileGenerator extends FileGenerator
     public function modify($templatePath, $filePath)
     {
         $textApplyNewJSClass = str_replace('MODEL', $this->model->getClassName(), file_get_contents($this->getTrueTemplatePath($templatePath->add('multiFichier'))));
+
         $filePath  = str_replace($this->model->getClassName(), $this->pascalCaseModuleName, $filePath);
 
         if (file_exists($filePath)) {

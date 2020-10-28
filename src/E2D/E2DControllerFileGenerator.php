@@ -16,7 +16,6 @@ class E2DControllerFileGenerator extends FileGenerator
     public function __construct(App $app)
     {
         $this->app                  = $app;
-        $this->config               = $app->getConfig();
         $this->model                = $app->getModelMaker();
         $this->moduleName           = $app->getModuleMaker()->getName();
         $this->controllerName       = $app->getModuleMaker()->getControllerName();
@@ -31,13 +30,16 @@ class E2DControllerFileGenerator extends FileGenerator
         $switchCaseList = [file_get_contents($this->getTrueTemplatePath($path->add('switchCase')->add('accueil')))];
 
         foreach ($this->model->actions as $action) {
-            $schemaMethodsPerActionPath = $this->getTrueTemplatePath($path->add($this->camelize($action)));
+            $schemaMethodsPerActionPath = $this->getTrueTemplatePath($path->add($this->camelize($action))) ?? null;
             if (isset($schemaMethodsPerActionPath)) {
                 $methodText .= file_get_contents($schemaMethodsPerActionPath) . PHP_EOL;
             }
 
             if ($action !== 'accueil') {
-                $switchCaseList[] =  file_get_contents($this->getTrueTemplatePath($path->get('switchCase')->add($this->camelize($action))));
+                $actionPath = $this->getTrueTemplatePath($path->get('switchCase')->add($this->camelize($action)));
+                if (isset($actionPath)) {
+                    $switchCaseList[] = file_get_contents($actionPath);
+                }
             }
 
             if ($action === 'recherche') {
@@ -277,7 +279,7 @@ class E2DControllerFileGenerator extends FileGenerator
             $text = file_get_contents($templatePath);
 
             $recherche = array_contains('recherche', $this->model->actions) ? file_get_contents($this->getTrueTemplatePath($path->add('recherche'))) : '';
-            $tinyMCE =  array_contains('edition', $this->model->actions) && $this->app->getConfig()->has('champsTinyMCE') ? file_get_contents($this->getTrueTemplatePath($path->add('tinyMCE'))) : '';
+            $tinyMCE =  array_contains('edition', $this->model->actions) && $this->app->has('champsTinyMCE') ? file_get_contents($this->getTrueTemplatePath($path->add('tinyMCE'))) : '';
 
             $text = str_replace(['//RECHERCHE', '//TINYMCE'], [$recherche, $tinyMCE], $text);
             $text = str_replace(['MODULE', 'CONTROLLER', 'mODULE', 'TABLE'], [$this->pascalCaseModuleName, $this->controllerName, $this->moduleName, $this->model->getName()], $text);

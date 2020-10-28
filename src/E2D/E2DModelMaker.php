@@ -11,10 +11,17 @@ class E2DModelMaker extends ModelMaker
 
     private $modalTitle = [];
 
-    public function __construct($fieldClass, $module, $name, $creationMode = 'generate', $app)
+    public function __construct($fieldClass, string $module, $name, $creationMode = 'generate', $app)
     {
         parent::__construct($fieldClass, $module, $name, $creationMode, $app);
 
+    }
+
+    protected function addSpecificActions()
+    {
+        if ($this->databaseAccess->getSimilarTableList('export') === ['export', 'export_champ']) {
+            $this->actionsDisponibles[] = 'export';
+        }
     }
 
     /**
@@ -48,13 +55,20 @@ class E2DModelMaker extends ModelMaker
      */
     protected function askSpecifics() : void
     {
+        if (array_contains('export', $this->actions)) {
+            if (null === $this->app->getFileManager()->getRessourcePath()->addChild('export')) {
+                throw new \Exception("Ressource manquante: export");
+            }
+        }
+
         $this->usesMultiCalques           = $this->askMulti();
         $this->usesSelect2                = $this->askSelect2();
         $this->usesSwitches               = $this->askSwitches();
         $this->usesNoCallBackListeElement = $this->askCallbackListe();
         $this->usesCallbackListeLigne     = $this->askCallbackListeLigne();
         $this->usesPagination             = $this->askPagination();
-        $this->usesSecurity               = $this->config->get('updateSecurity') ?? $this->askGenerateSecurity();
+        $this->usesSecurity               = $this->app->get('updateSecurity') ?? $this->askGenerateSecurity();
+
     }
 
     private function askMulti() : bool
@@ -105,6 +119,11 @@ class E2DModelMaker extends ModelMaker
     {
         $this->usesTinyMCE = $this->config->get('champsTinyMCE') ?? $this->askChampsTinyMCE();
         $this->askAddManyToOneField();
+
+        if (array_contains('export', $this->getActions()) && !$this->app->get('id_export')) {
+            $this->insertExportData();
+        }
+
         $this->avecChampsParametres = $this->askChampsParametres();
     }
 
@@ -145,6 +164,11 @@ class E2DModelMaker extends ModelMaker
         return $fields;
     }
 
+    public function getFieldsForExport()
+    {
+        return $this->getFields('export');
+    }
+
     /**
      * @param string $alias
      * @return string
@@ -167,6 +191,7 @@ class E2DModelMaker extends ModelMaker
             $lastCharacter = $alias[$position + 1];
             $alias         = strtoupper(substr_replace($alias, '', 2) . $lastCharacter);
         }
+
         return $alias;
     }
 
@@ -233,8 +258,10 @@ class E2DModelMaker extends ModelMaker
             $this->convertirChampsEnParametres();
         }
 
-        $presenceModuleParametre = count(glob(getcwd(). '/modules/parametre')) > 0;
-        $this->addModuleParametreIfMissing($presenceModuleParametre);
+        if ($this->config->has('avecChampsParametres')) {
+            $presenceModuleParametre = count(glob(getcwd() . '/modules/parametre')) > 0;
+            $this->addModuleParametreIfMissing($presenceModuleParametre);
+        }
 
         return $reponse1;
     }
@@ -266,7 +293,7 @@ class E2DModelMaker extends ModelMaker
     protected function convertirChampsEnParametres() : void
     {
         $champsSelectionnes = [];
-        $champs             = $this->getFields('', 'varchar');
+        $champs             = $this->getFieldsByType('varchar');
 
         foreach ($champs as $champ) {
 
@@ -317,6 +344,93 @@ class E2DModelMaker extends ModelMaker
         } else {
             $this->msg("Le module paramètre est présent, pas besoin de le générer", 'important');
         }
+    }
+
+    protected function insertExportData()
+    {
+        $exportIdRes = $this->databaseAccess->query('
+            SELECT MAX(id_export) + 1 id FROM export;
+        ');
+        $exportChampIdRes = $this->databaseAccess->query('
+            SELECT MAX(id_export_champ) id FROM export_champ;
+        ');
+
+        $exportId = array_shift($exportIdRes)->id;
+        $exportChampId = array_shift($exportChampIdRes)->id;
+
+        $champsExport = $this->getFields('export');
+        [$tri1, $tri2, $tri3] = array_keys($champsExport);
+
+        $sInsertQuery = "
+            INSERT INTO `export` (`id_export`, `id_utilisateur`, `libelle`, `contexte`, `partage`, `format`, `libelle_colonne`, `tri_1`, `tri_2`, `tri_3`) VALUES
+            ($exportId, 1, 'Export Excel par défaut', '{$this->tableName}', 1, 'xls', 1, '$tri1', '$tri2', '$tri3');
+            ";
+
+        $sParametresRequete =
+            'libellé : Export Excel par défaut'. PHP_EOL .
+            'format  : xls' . PHP_EOL .
+            'tri 1   : ' . $tri1 . PHP_EOL.
+            'tri 2   : ' . $tri2 . PHP_EOL.
+            'tri 3   : ' . $tri3 . PHP_EOL . PHP_EOL;
+
+
+        if (($this->app->get('exportAskCustom') ?? true) && $this->prompt('Voulez vous insérer l\'export de '.
+                $this->highlight($this->name, 'success').
+                ' avec les paramètres suivants?'.PHP_EOL. $sParametresRequete, ['o', 'n']) === 'n') {
+
+            $sInsertQuery = $this->modifierRequeteExportParDefaut($sInsertQuery, [$tri1, $tri2, $tri3], $champsExport);
+        }
+
+
+        $sInsertQuery2 = "INSERT INTO `export_champ` (`id_export_champ`, `id_export`, `nom_champ`, `ordre`) VALUES". PHP_EOL;
+
+        $queryLines = [];
+        foreach (array_values($champsExport) as $index => $field) {
+            $exportChampId++;
+            $queryLines[]  = "            ('$exportChampId', '$exportId', '{$field->getName()}', '$index')";
+        }
+        $sInsertQuery .= $sInsertQuery2 . implode(','.PHP_EOL, $queryLines).';';
+        if ($this->app->get('printExportQuery') ?? false) {
+            echo PHP_EOL.$sInsertQuery.PHP_EOL.PHP_EOL;
+        } else {
+            if ($this->databaseAccess->query($sInsertQuery, null, 'insert')) {
+                $this->app->set('id_export', $exportId, $this->name);
+            }
+        }
+
+    }
+
+    /**
+     * @param string $sInsertQuery
+     * @param $tris
+     * @param array $champsExport
+     * @return string
+     */
+    protected function modifierRequeteExportParDefaut(string $sInsertQuery, $tris, array $champsExport) : string
+    {
+        if (($this->app->get('exportAskLibelle') ?? true) && $this->prompt('Voulez-vous modifier le libellé ?', ['o', 'n']) === 'o') {
+            $continue = false;
+            do {
+                $libelle = $this->prompt("Veuillez entrer un nouveau libellé");
+                if (empty($libelle)) {
+                    $continue = !($this->prompt('Libellé vide, voulez vous garder le libellé d\'origine ? ', ['o', 'n']) === 'o');
+                } else {
+                    $sInsertQuery = str_replace('Export Excel par défaut', $libelle, $sInsertQuery);
+                }
+            } while ($continue);
+        }
+
+        if (($this->app->get('exportAskChampsTri') ?? true) && $this->prompt('Voulez-vous modifier les champs de tri ?', ['o', 'n']) === 'o') {
+            foreach ($tris as $champTri) {
+                $nouveauChampTri = $this->askMultipleChoices('champ', array_keys($champsExport), '');
+                $sInsertQuery = str_replace_last($champTri, $nouveauChampTri, $sInsertQuery);
+            }
+        }
+
+        if (($this->app->get('exportAskCSV') ?? true) && $this->prompt('Voulez-vous créer un export CSV ? Par défaut, un export XLS sera créé', ['o', 'n']) === 'o') {
+            $sInsertQuery = str_replace_last('xls', 'csv', $sInsertQuery);
+        }
+        return $sInsertQuery;
     }
 
 }

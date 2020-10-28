@@ -79,7 +79,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      * @param string $field
      * @param null $value
      */
-    public function set($field, $value = null, $model = null, $setForAll = false)
+    public function set($field, $value = null, $model = null, $setForAll = false) : void
     {
         if (isset($value)) {
             if ($setForAll) {
@@ -262,9 +262,9 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         return null;
     }
 
-    public function has(string $field, $model = null)
+    public function has(string $field)
     {
-        return $this->get($field, $model) !== null;
+        return $this->get($field) !== null;
     }
 
     /**

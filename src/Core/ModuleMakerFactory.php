@@ -4,7 +4,7 @@ namespace Core;
 
 use E2D\E2DModelMaker;
 
-abstract class ModuleMakerFactory
+abstract class ModuleMakerFactory extends CommandLineToolShelf
 {
     protected $app;
     protected $moduleMaker;
@@ -20,7 +20,7 @@ abstract class ModuleMakerFactory
 //        $this->fieldClass = $type.'Field';
 
         if (!is_dir('modules')) {
-            ModuleMaker::msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
+            $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
             die();
         }
 
@@ -37,13 +37,14 @@ abstract class ModuleMakerFactory
         $config->initialize();
 
         if ($config->get('showLogo')?? false) {
-            echo ModuleMaker::highlight($this->display_logo(), 'white');
+            echo $this->highlight($this->display_logo(), 'white');
         }
 
         $app = new App();
         $app->setConfig($config);
         $app->setFileManager($config->get('template', $modelName) ?? $config->askTemplate(), $this->templateNodeClass);
         $config->setFileManager($app->getFileManager());
+        $app->setProjectPath();
 
         $templatePath = new Path($appDir.'/templates', 'templatePath');
         $app->getFileManager()->setTemplatePath($templatePath);
@@ -58,8 +59,8 @@ abstract class ModuleMakerFactory
     {
         echo PHP_EOL;
         if ($name === '') {
-            $name = readline(ModuleMaker::msg('Veuillez renseigner en '.ModuleMaker::highlight('snake_case').' le nom du modèle'.PHP_EOL.' (' . ModuleMaker::highlight('minuscules') . ' et ' . ModuleMaker::highlight('underscores').')'.
-                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. ModuleMaker::frame($this->module, 'success').'')) ? : $this->module;
+            $name = readline($this->msg('Veuillez renseigner en '.$this->highlight('snake_case').' le nom du modèle'.PHP_EOL.' (' . $this->highlight('minuscules') . ' et ' . $this->highlight('underscores').')'.
+                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').'')) ? : $this->module;
         }
 
         return $name;
@@ -108,7 +109,7 @@ abstract class ModuleMakerFactory
                 break;
 
 //            case 'select:ajax':
-//                $moduleMaker::create($module, $model, 'AddManyToOne');
+//                $$this->create($module, $model, 'AddManyToOne');
 //                break;
         }
     }
@@ -122,10 +123,10 @@ abstract class ModuleMakerFactory
      */
     public function createModel($moduleName, $modelName, $creationMode, App $app)
     {
-        $params = [
-            'app' => $app,
-            'applyChoicesForAllModules' => (!$app->getConfig()->has('memorizeChoices') || $app->getConfig()->get('memorizeChoices')),
-        ];
+//        $params = [
+//            'app' => $app,
+//            'applyChoicesForAllModules' => (!$app->has('memorizeChoices') || $app->get('memorizeChoices')),
+//        ];
 
         if ($app->getConfig()->askLegacy($modelName)) {
             $modelMakerLegacy = $this->modelMaker. 'Legacy';
@@ -142,18 +143,18 @@ abstract class ModuleMakerFactory
      */
     private function displayHelpPage(): void
     {
-        ModuleMaker::msg('
+        $this->msg('
     + + + + AIDE ModuleMaker : + + + +
-    ' . ModuleMaker::Color['Red'] . '
+    ' . static::Color['Red'] . '
     Vous devez passer une action en paramètre:
-    ' . ModuleMaker::Color['Yellow'] . '
-    \'module\' ' . ModuleMaker::Color['White'] . ' pour créer un module avec tous ses composants
+    ' . static::Color['Yellow'] . '
+    \'module\' ' . self::Color['White'] . ' pour créer un module avec tous ses composants
     avec en arguments optionnels le nom du module
-     ' . ModuleMaker::Color['Yellow'] . '
-    \'modele\' ' . ModuleMaker::Color['White'] . ' pour ajouter un modèle.
+     ' . static::Color['Yellow'] . '
+    \'modele\' ' . static::Color['White'] . ' pour ajouter un modèle.
     avec en arguments optionnels le nom et le module auquel le modèle est rattaché
     
-    (' . ModuleMaker::Color['Red'] . 'Attention' . ModuleMaker::Color['White'] . ', pour le modèle, l\'ordre des arguments est important)
+    (' . static::Color['Red'] . 'Attention' . static::Color['White'] . ', pour le modèle, l\'ordre des arguments est important)
     ');
 
         die();

@@ -12,7 +12,7 @@ abstract class ModelMaker extends BaseMaker
      */
     protected $databaseAccess;
     public $actions;
-    protected $module;
+    protected string $module;
     private $table = [];
     private $mappingChamps = [];
     /**
@@ -21,13 +21,13 @@ abstract class ModelMaker extends BaseMaker
     protected $fields;
     protected $primaryKey;
     protected $idField;
-
     protected $alias;
 
     protected $fieldClass;
+    protected $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
 
 
-    public function __construct($fieldClass, $module, $name, $mode, App $app)
+    public function __construct($fieldClass, string $module, $name, $mode, App $app)
     {
         $this->name = $name;
         $this->app = $app;
@@ -129,20 +129,20 @@ abstract class ModelMaker extends BaseMaker
         if ($this->config->has('actions')) {
             return $this->config->get('actions');
         } else {
-            $actionsDisponibles = ['recherche', 'edition', 'suppression', 'consultation'];
             $actions = [];
-            $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? (' . implode(', ', array_map([$this, 'highlight'], $actionsDisponibles, array_fill(0, 4, 'info'))) . ')', ['o', 'n']);
+            $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? (' . implode(', ', array_map([$this, 'highlight'], $this->actionsDisponibles, array_fill(0, 4, 'info'))) . ')', ['o', 'n']);
 
             if ('o' === $reponse1) {
-                $actions = $actionsDisponibles;
+                $actions = $this->actionsDisponibles;
             } else {
-                foreach ($actionsDisponibles as $action) {
+                foreach ($this->actionsDisponibles as $action) {
                     do {
                         $reponse2 = strtoupper(readline($this->msg('Voulez vous sélectionner l\'action "' . $action . '" ? [O/N]')));
                     } while (!in_array($reponse2, ['N', 'O']));
 
                     if ('O' === $reponse2) {
                         $actions[] = $action;
+
                     }
                 }
             }
@@ -305,6 +305,9 @@ abstract class ModelMaker extends BaseMaker
             die();
         }
         $this->table = $table;
+
+        $this->addSpecificActions();
+
     }
 
     public function getTitre() : string
@@ -408,6 +411,7 @@ abstract class ModelMaker extends BaseMaker
     {
         $listeChamps = [];
         $reponseFiltrageChamps = $this->prompt('Voulez vous sélectionner quels champs seront utilisés dans chaque vue ?',  ['o', 'n']) === 'o';
+        $this->msg("Le questionnaire vous permettra également de renseigner quels champs sont liés à une action spéciale");
         if ($reponseFiltrageChamps) {
             foreach ($this->fields as $field) {
                 $views = $field->askViews($this->actions);

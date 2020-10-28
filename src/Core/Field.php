@@ -2,7 +2,7 @@
 
 namespace Core;
 
-abstract class Field
+abstract class Field extends CommandLineToolShelf
 {
     const FIELD_VIEWS = ['recherche', 'liste', 'consultation', 'edition'];
 //    protected static $collection = [];
@@ -198,7 +198,7 @@ abstract class Field
     }
 
     /**
-     * @return mixed
+     * @returnstring
      */
     public function getName()
     {
@@ -206,7 +206,7 @@ abstract class Field
     }
 
     /**
-     * @return mixed
+     * @return string
      */
     public function getColumn()
     {
@@ -282,7 +282,7 @@ abstract class Field
     private function handleQuestionsAboutViews(array $typeVues): array
     {
         $views = [];
-        $answerForAllViews = (int)ModelMaker::prompt('Voulez vous sélectionner \'' . $this->getColumn() . '\' pour toutes les vues, pour certaines vues, ou jamais? ', [1, 2, 3]);
+        $answerForAllViews = (int)$this->prompt('Voulez vous sélectionner \'' . $this->getColumn() . '\' pour toutes les vues, pour certaines vues, ou jamais? ', [1, 2, 3]);
         if ($answerForAllViews === 1) {
             $views = $typeVues;
         } elseif ($answerForAllViews === 2) {
@@ -299,7 +299,7 @@ abstract class Field
     {
         $views = [];
         foreach ($typeVues as $typeVue) {
-            if (ModelMaker::prompt('Voulez vous sélectionner \'' . $this->getColumn() . '\' pour la vue \'' . $typeVue . '\'?', ['o', 'n']) === 'o') {
+            if ($this->prompt('Voulez vous sélectionner \'' . $this->getColumn() . '\' pour la vue \'' . $typeVue . '\'?', ['o', 'n']) === 'o') {
                 $views[] = $typeVue;
             }
         }
@@ -338,7 +338,7 @@ abstract class Field
      * @param $actions
      * @return array|string[]
      */
-    private function getAllowedViewTypes($actions)
+    protected function getAllowedViewTypes($actions)
     {
         if ($this->is('text')) {
             $typeVues = array_intersect(['edition', 'consultation'], ['liste'] + $actions);
@@ -374,4 +374,8 @@ abstract class Field
         return  isset($this->step) ? ' step="'.$this->step.'"' : '';
     }
 
+    public function __toString()
+    {
+        return $this->getColumn();
+    }
 }

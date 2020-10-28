@@ -50,6 +50,17 @@ abstract class DatabaseAccess implements DatabaseAccessInterface
         $data = null;
 
         $req = $this->getPDO()->query($statement);
+
+        if (
+            strpos($statement, 'UPDATE') === 0 ||
+            strpos($statement, 'INSERT') === 0 ||
+            strpos($statement, 'DELETE') === 0
+
+        ) {
+            return $req;
+        }
+
+
         if (is_null($class) && $array === false) {
             $req->setFetchMode(PDO::FETCH_OBJ);
         } elseif($array) {
@@ -62,6 +73,8 @@ abstract class DatabaseAccess implements DatabaseAccessInterface
             $data = $req->fetch();
         } elseif ($one === false){
             $data = $req->fetchAll();
+        } else {
+            $data = true;
         }
 
         return $data;

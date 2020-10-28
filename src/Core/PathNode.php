@@ -100,7 +100,7 @@ class PathNode extends CommandLineToolShelf
             return $this->children[$pathname];
         }
 
-        static::msg($errorMsg ?: 'Répertoire inexistant, utilisation du parent', 'error');
+        $this->msg($errorMsg ?: 'Répertoire inexistant, utilisation du parent', 'error');
         return $this;
     }
 
@@ -112,7 +112,7 @@ class PathNode extends CommandLineToolShelf
             return $this->addFile($pathname);
         }
 
-        static::msg('fichier inexistant, utilisation du parent', 'error');
+        $this->msg('fichier inexistant, utilisation du parent', 'error');
         return $this;
     }
 
@@ -133,7 +133,7 @@ class PathNode extends CommandLineToolShelf
     public function getParent()
     {
         if (!isset($this->parent)) {
-            static::msg('Les chemins racines n\'ont pas de chemin alternatif', 'error');
+            $this->msg('Les chemins racines n\'ont pas de chemin alternatif', 'error');
             return $this;
         }
         return $this->parent;

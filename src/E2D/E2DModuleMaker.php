@@ -19,6 +19,10 @@ class E2DModuleMaker extends ModuleMaker
     protected FileGenerator $jsFileGenerator;
     protected FileGenerator $configFileGenerator;
     protected FileGenerator $viewFileGenerator;
+    /**
+     * @var Path
+     */
+    protected Path $projectPath;
 
 
     /**
@@ -27,7 +31,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function initializeModule(): void
     {
-        $this->applyChoicesForAllModules = $this->config->get('memorizeChoices') ?? $this->askApplyChoiceForAllModules();
+        $this->applyChoicesForAllModules = $this->app->get('memorizeChoices') ?? $this->askApplyChoiceForAllModules();
         $this->initializeFileGenerators();
         $this->initializePaths();
         $this->addMenu();
@@ -131,7 +135,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function addMenu(): void
     {
-        if ($this->config->has('updateMenu') && !$this->config->get('updateMenu')) {
+        if ($this->app->has('updateMenu') && !$this->app->get('updateMenu')) {
             $this->msg('Génération de menu désactivée', 'important');
             return;
         }
@@ -175,8 +179,7 @@ class E2DModuleMaker extends ModuleMaker
     protected function getSubMenu(): array
     {
         $templatePath = $this->getTrueTemplatePath($this->menuPath);
-        $label = isset($this->config['titreMenu']) && !empty($this->config['titreMenu']) ? $this->config['titreMenu'] :
-            $this->model->getTitre();
+        $label = $this->app->has('titreMenu') && $this->app->get('titreMenu') ? : $this->model->getTitre();
 
         return Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
             [$this->name, $this->model->getName(), $label], file_get_contents($templatePath)));
@@ -200,7 +203,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     private function addSecurity()
     {
-        if ($this->config->has('updateSecurity') && !$this->config->get('updateSecurity')) {
+        if ($this->app->has('updateSecurity') && !$this->app->get('updateSecurity')) {
             $this->msg('Génération de fichier ' . $this->highlight('securite.yml', 'neutral') . ' désactivée', 'important');
             return;
         }
@@ -212,13 +215,13 @@ class E2DModuleMaker extends ModuleMaker
         }
 
         $security = new E2DSecurityFileGenerator($this->app);
-        if ($this->config->get('updateSecurity') === 'generate') {
+        if ($this->app->get('updateSecurity') === 'generate') {
             $security->generate($this->securityPath);
-        } elseif ($this->config->get('updateSecurity') === 'print') {
+        } elseif ($this->app->get('updateSecurity') === 'print') {
             $security->print($this->securityPath);
         }
 
-        $this->config->set('updateSecurity', false, $this->model->getName());
+        $this->app->set('updateSecurity', false, $this->model->getName());
     }
 
     protected function initializePaths($otherModuleName = null)
@@ -261,8 +264,14 @@ class E2DModuleMaker extends ModuleMaker
 
     public function setProjectPath()
     {
-        $this->projectPath = new Path(getcwd(), 'projectPath');
-        $this->app->getFileManager()->setProjectPath($this->projectPath);
+        $this->projectPath = $this->app->getProjectPath();
     }
+
+    public function getModulePath() : PathNode
+    {
+        return $this->modulePath;
+    }
+
+
 
 }

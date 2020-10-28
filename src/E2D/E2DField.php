@@ -28,6 +28,22 @@ class E2DField extends Field
         return $this->name;
     }
 
+
+    /**
+     * @param $actions
+     * @return array|string[]
+     */
+    protected function getAllowedViewTypes($actions)
+    {
+        if ($this->is('text')) {
+            $typeVues = array_intersect(['edition', 'consultation', 'export'], $actions);
+        } else {
+            //nset($actions['accueil']);
+            $typeVues = array_values(['liste'] + $actions);
+        }
+        return array_values($typeVues);
+    }
+
     public function getFormattedColumn()
     {
         if ($this->formatted) {

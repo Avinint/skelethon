@@ -19,9 +19,9 @@ abstract class ModuleMaker extends BaseMaker
     {
         $this->app = $app;
         $app->setModuleMaker($this);
-        $this->setConfig($app->getConfig());
+//        $this->setConfig($app->getConfig());
 
-        static::$verbose = $this->config->get('verbose') ?? true;
+        static::$verbose = $this->app->get('verbose') ?? true;
 
         $this->setName($name ?: $this->askName());
 
@@ -275,7 +275,7 @@ abstract class ModuleMaker extends BaseMaker
                 .PHP_EOL.'['.$this->highlight('o', 'success').'/'.$this->highlight('n', 'error').'] ou '.$this->highlight('réponse vide').
                 ' pour choisir au fur et à mesure', ['o', 'n']) === 'o';
 
-        $this->config->set('memorizeChoices',  $reply);
+        $this->app->set('memorizeChoices',  $reply);
 
         return$reply;
     }

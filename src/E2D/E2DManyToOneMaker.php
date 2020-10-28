@@ -4,10 +4,13 @@
 namespace E2D;
 
 
+use Core\Field;
 use Core\FilePath;
 
 trait E2DManyToOneMaker
 {
+
+    protected $aliases = [];
 
     private function askAddManyToOneField()
     {
@@ -36,6 +39,15 @@ trait E2DManyToOneMaker
             }
 
         }
+    }
+
+    /**
+     * Pour éviter d'afficher la liste complète des tables on propose un filtre aux utilisateurs
+     * @return string
+     */
+    private function askFilterForChildTableName($tableName) : string
+    {
+       return readline($this->msg('La table '.$this->highlight($tableName, 'success').' est introuvable. Pour sélectionner une table, taper un mot pour filtrer la liste des tables ou laisser vide pour la liste complète'));
     }
 
     /**
@@ -78,24 +90,16 @@ trait E2DManyToOneMaker
         }
     }
 
-    private function getDataForManyToOneField($field)
+    /**
+     * Récupère les données de ce champ Many2One
+     * @param Field $field
+     * @return array|false
+     */
+    private function getDataForManyToOneField(Field $field)
     {
-        $childTable = str_replace('id_', '', $field->getColumn());
-        $tables = $this->databaseAccess->getSimilarTableList($childTable);
+        $childTable = $this->getChildTable($field);
 
-        if (count($tables) > 1) {
-            $default = $this->config->has('prefix') && array_contains($this->config->get('prefix') . '_' .  $childTable, $tables) ?
-                $this->config->get('prefix') . '_' . $childTable :
-                (array_contains($childTable, $tables) ? $childTable : false);
-            $childTable = $this->askMultipleChoices('table', $tables, $default, $field->getColumn());
-        } elseif (count($tables) === 1) {
-            $childTable = $tables[0];
-        } else {
-            $tables = $this->databaseAccess->getTableList();
-            $childTable = $this->askMultipleChoices('table', array_keys($tables), false, $field->getColumn());
-        }
-
-        $tableExists = count($tables) > 0 && !empty($childTable);
+        $tableExists = !empty($childTable);
         if ($tableExists) {
             $displayFields = [];
             $primaryKeyExists = false;
@@ -116,9 +120,9 @@ trait E2DManyToOneMaker
 
             $concat = count($displayFields) > 1;
 
-            $childTableAlias = $this->createChildTableAlias($childTable);
+            $labelAlias = $this->createLabelAlias(str_replace(['id_', '_id'], '', $field->getColumn()));
             if ($concat) {
-                //$childTableAlias = 's'. implode("" , array_map([$this, 'pascalize'], $displayFields));
+                //$labelAlias = 's'. implode("" , array_map([$this, 'pascalize'], $displayFields));
                 $displayField = $displayFields;
             } else {
                 $displayField = array_shift($displayFields);
@@ -126,16 +130,60 @@ trait E2DManyToOneMaker
 
             $idField = 'n' . $this->pascalize($field->getColumn());
 
+            $this->aliases = array_map(function ($param) {return $param['alias'];}, array_values($this->app->get('manyToOne', $this->name) ?? []));
             $alias = $this->generateAlias($childTable);
 
+            if (array_contains($alias, $this->aliases)) {
+                $newAlias = str_replace('id_', '', $field->getColumn());
+                $alias = $this->generateAlias( $newAlias);
+            }
+            $this->aliases[] = $alias;
+
+
             if ($primaryKeyExists) {
-                return ['table' => $childTable, 'pk' => $primaryKey, 'label' => $displayField, 'alias' => $alias, 'childTableAlias' => $childTableAlias,  'id' => $idField];
+                return ['table' => $childTable, 'pk' => $primaryKey, 'label' => $displayField, 'alias' => $alias, 'labelAlias' => $labelAlias,  'id' => $idField];
             } else {
                 return false;
             }
         }
 
         return false;
+    }
+
+    /**
+     * Réxupère le nom de la table correspond à la clé étrangère
+     * @param $field
+     * @return string
+     */
+    private function getChildTable($field) : string
+    {
+        $childTable = str_replace('id_', '', $field->getColumn());
+        $tables     = $this->databaseAccess->getSimilarTableList($childTable);
+
+        if (count($tables) > 1) {
+            $default    = $this->config->has('prefix') && array_contains($this->config->get('prefix') . '_' . $childTable, $tables) ?
+                $this->config->get('prefix') . '_' . $childTable :
+                (array_contains($childTable, $tables) ? $childTable : false);
+            $childTable = $this->askMultipleChoices('table', $tables, $default, $field->getColumn());
+        } elseif (count($tables) === 1) {
+            $childTable = $tables[0];
+        } else {
+            $filter = $this->askFilterForChildTableName($childTable);
+            if (!empty($filter)) {
+                $tables = $this->databaseAccess->getSimilarTableList($filter);
+            }
+
+            if (empty($tables)) {
+                $tables = array_keys($this->databaseAccess->getTableList());
+            }
+
+            if (count($tables) > 1) {
+                $childTable = $this->askMultipleChoices('table', $tables, false, $field->getColumn());
+            } else {
+                $childTable = $tables[0];
+            }
+        }
+        return $childTable;
     }
 
     /**
@@ -200,7 +248,7 @@ trait E2DManyToOneMaker
         return $displayFields;
     }
 
-    public function createChildTableAlias($tableName)
+    public function createLabelAlias($tableName)
     {
         $prefix = $this->config->get('prefix') ?? '';
         if ($prefix)
@@ -227,7 +275,7 @@ trait E2DManyToOneMaker
         $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath($templatePath->add('selectAjaxDefinition')));
 
         foreach ($fields as $field) {
-            $foreignClassName = substr($field->getManyToOne()['childTableAlias'], 1);
+            $foreignClassName = substr($field->getManyToOne()['labelAlias'], 1);
             if ($field->hasView('recherche')) {
                 $select2SearchText .= $this->addSelectAjaxSearch($field, $selectAjaxCallSearchTextTemp, $foreignClassName);
 

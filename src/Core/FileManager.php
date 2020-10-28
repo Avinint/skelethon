@@ -83,7 +83,7 @@ class FileManager
      */
     public function setTemplate(string $templates)
     {
-        if (!$this->app->getConfig()->has('template'))
+        if (!$this->app->has('template'))
             $this->app->getConfig()->setTemplate($templates);
     }
 
@@ -156,4 +156,12 @@ class FileManager
         return $this->projectPath;
     }
 
+    /**
+     * @return PathNode
+     *
+     */
+    public function getRessourcePath() : PathNode
+    {
+        return $this->projectPath->addChild('ressources');
+    }
 }

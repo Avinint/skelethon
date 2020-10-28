@@ -43,7 +43,7 @@ class E2DDatabaseAccess extends DatabaseAccess
     {
         if (empty($this->tables)) {
 
-            $sRequete = "SHOW tables FROM `$this->dBName`";
+            $sRequete = 'SHOW tables FROM `'.$this->dBName.'`';
 
             $aResultats = $this->query($sRequete);
 
