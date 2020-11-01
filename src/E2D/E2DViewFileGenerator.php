@@ -172,16 +172,16 @@ class E2DViewFileGenerator extends FileGenerator
     private function generateListActionText(FilePath $path): string
     {
         $actionText = [];
-        if (array_contains('consultation', $this->model->getActions())) {
+        if ($this->model->hasAction('consultation')) {
             $consultationTemplatePath = $this->getTrueTemplatePath($path->add('consultation'));
             $actionText[] = file_get_contents($consultationTemplatePath);
         } else {
-            if (array_contains('edition', $this->model->getActions())) {
+            if ($this->model->hasAction('edition')) {
                 $editionTemplatePath = $this->getTrueTemplatePath($path->add('edition'));
                 $actionText[] = file_get_contents($editionTemplatePath);
             }
 
-            if (array_contains('suppression', $this->model->getActions())) {
+            if ($this->model->hasAction('suppression')) {
                 $suppressionTemplatePath = $this->getTrueTemplatePath($path->add('suppression'));
                 $actionText[] = file_get_contents($suppressionTemplatePath);
             }
@@ -198,16 +198,16 @@ class E2DViewFileGenerator extends FileGenerator
     private function generateListActionBarText(FilePath $path)
     {
         $actionBarText = '';
-        if (array_contains_array(['edition', 'consultation'], $this->model->getActions(), true)) {
+        if ($this->model->hasActions(['edition', 'consultation'])) {
             $actionBarTemplatePath = $this->getTrueTemplatePath($path->add('actionbar'));
             $actionBarText = file_get_contents($actionBarTemplatePath);
 
             $actionBarActionsText = [];
-            if (array_contains('edition', $this->model->getActions())) {
+            if ($this->model->hasAction('edition')) {
                 $actionBarActionsText[] = file_get_contents($this->getTrueTemplatePath($actionBarTemplatePath ->add('ajout')));
             }
 
-            if (array_contains('export', $this->model->getActions())) {
+            if ($this->model->hasAction('export')) {
                 $actionBarActionsText[] = file_get_contents($this->getTrueTemplatePath($actionBarTemplatePath ->add('export')));
             }
 
@@ -225,7 +225,7 @@ class E2DViewFileGenerator extends FileGenerator
     private function generateListTableTag(FilePath $path)
     {
         $callbackLigne = '';
-        if (array_contains_array(['consultation', 'edition', 'suppression'], $this->model->getActions(), ARRAY_ANY) && ($this->app->get('usesCallbackListeLigne') ?? true)) {
+        if ($this->model->hasActions(['consultation', 'edition', 'suppression']) && ($this->app->get('usesCallbackListeLigne') ?? true)) {
             $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";
         }
 

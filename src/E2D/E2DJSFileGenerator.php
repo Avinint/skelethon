@@ -35,73 +35,60 @@ class E2DJSFileGenerator extends FileGenerator
         }
 
         $multiText = '';
-        $actionMethodText = '';
-        if (array_contains_array(['edition', 'consultation'], $this->model->actions, ARRAY_ANY)) {
-            if ($this->model->usesMultiCalques) {
-                $multiText = " + '_' + nIdElement";
-            } else {
-                $multiText = '';
-            }
+
+        if ($this->model->usesMultiCalques && $this->model->hasActions(['edition', 'consultation'])) {
+            $multiText = " + '_' + nIdElement";
         }
 
-        $noRecherche = true;
+        $actionMethodText = [];
         $usesRechercheNoCallback = $this->app->get('noCallbackListeElenent') ?? true;
-        foreach ($this->model->actions as $action) {
-            $templatePerActionPath =  $this->getTrueTemplatePath($path->add($this->camelize($action)));
-            if (isset($templatePerActionPath)) {
-                if ($action === 'recherche') {
-                    $noRecherche = false;
-                    if ($usesRechercheNoCallback) {
-                        $templatePerActionPath =  $this->getTrueTemplatePath($templatePerActionPath->add('nocallback'));
-                    }
+        foreach ($this->model->getActions() as $action) {
+            $actionMethodText[] = $action->getJavaScriptMethods($path, $usesRechercheNoCallback);
+        }
+        $actionMethodText = implode('', $actionMethodText);
+
+        if ($path->getName() === 'CONTROLLERAdmin') {
+
+            /* Ajout code fermeture calque */
+            if ($this->model->hasActions(['edition', 'consultation'])) {
+                $closeConsultationModal = PHP_EOL.file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('fermetureCalqueConsultation')));
+            } else {
+                $closeConsultationModal = '';
+            }
+
+            /* Ajout code si pas d'action recherche */
+            if (!$this->model->hasAction('recherche')) {
+                $noRechercheText = $this->model->getActions()['recherche']->getNoRechercheText();
+                $actionMethodText = $noRechercheText.$actionMethodText;
+            }
+
+            $select2SearchText = PHP_EOL;
+            $select2EditText = '';
+
+            /* Ajout code select2 */
+            if ($this->model->usesSelect2) {
+
+                $select2DefautTemplate = file($this->getTrueTemplatePath($path->get('recherche')->add('select2')));
+                $select2RechercheTemplate = array_shift($select2DefautTemplate);
+                $select2EditTemplate = file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('select2')));
+
+                $editionFields = $this->model->getFields('edition', ['enum', 'parametre']);
+                $searchFields = $this->model->getFields('recherche', ['enum', 'parametre']);
+
+                foreach ($editionFields as $field) {
+                    $select2EditText .= str_replace(['NAME'], [$field->getName()], $select2EditTemplate).PHP_EOL;
                 }
 
-                $actionMethodText .= file_get_contents($templatePerActionPath);
-            }
-        }
+                foreach ($searchFields as $field) {
+                    $select2SearchText .= str_replace(['NAME'], [$field->getName()], $select2RechercheTemplate);
+                }
 
-        if (array_contains_array(['edition', 'consultation'], $this->model->actions, ARRAY_ALL) && strpos($path, 'Admin')) {
-            $closeConsultationModal = PHP_EOL.file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('fermetureCalqueConsultation')));
-        } else {
-            $closeConsultationModal = '';
-        }
-
-        if ($noRecherche && $path->getName() === 'CONTROLLERAdmin') {
-            $noRechercheText = file_get_contents($this->getTrueTemplatePath($path->add('noRecherche')));
-            $actionMethodText = $noRechercheText.$actionMethodText;
-        }
-
-        $select2SearchText = PHP_EOL;
-        $select2EditText = '';
-
-        if ($this->model->usesSelect2 && strpos($templatePath, 'Admin') > 0) {
-
-            $select2DefautTemplate = file($this->getTrueTemplatePath($path->get('recherche')->add('select2')));
-            $select2RechercheTemplate = array_shift($select2DefautTemplate);
-            $select2EditTemplate = file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('select2')));
-
-            $editionFields = $this->model->getFields('edition', ['enum', 'parametre']);
-            $searchFields = $this->model->getFields('recherche', ['enum', 'parametre']);
-
-            foreach ($editionFields as $field) {
-                $select2EditText .= str_replace(['NAME'], [$field->getName()], $select2EditTemplate).PHP_EOL;
+                $select2SearchText .= implode('', $select2DefautTemplate).PHP_EOL;
             }
 
-            foreach ($searchFields as $field) {
-                $select2SearchText .= str_replace(['NAME'], [$field->getName()], $select2RechercheTemplate);
-            }
-
-            $select2SearchText .= implode('', $select2DefautTemplate).PHP_EOL;
-        }
-
-        $selectAjaxDefinitionText = '';
-        $selectAjaxDefinition = [];
-        $callbackLigneListeText = '';
-        $personalizedButtons = '';
-        $tinyMCE = '';
-        $tinyMCEDef = '';
-
-        if (strpos($templatePath, 'Admin') > 0) {
+            $selectAjaxDefinitionText = '';
+            $selectAjaxDefinition = [];
+            $tinyMCE = '';
 
             if ($this->app->get('hasManyToOneRelation')) {
                 [$select2SearchText, $select2EditText, $selectAjaxDefinitionText] = $this->model->addSelectAjaxToJavaScript($templatePath, $select2SearchText, $select2EditText, $selectAjaxDefinition);
@@ -110,7 +97,7 @@ class E2DJSFileGenerator extends FileGenerator
             $callbackLigneListeText = $this->app->get('usesCallbackListeLigne') ? file_get_contents($path->add('avecCallbackLigneListe')) : '';
 
             $callbackLigneListeText = implode(PHP_EOL,  array_merge([$callbackLigneListeText, $selectAjaxDefinitionText]));
-            $bHasConsultation = array_contains('consultation', $this->model->getActions()) ;
+            $bHasConsultation = $this->model->hasAction('consultation');
             $personalizedButtons = file_get_contents($this->getTrueTemplatePath($path->add($bHasConsultation ? 'consultationButton' : 'noConsultationButtons')));
 
             $champs = $this->app->get('champsTinyMCE') ?: [];
@@ -119,12 +106,17 @@ class E2DJSFileGenerator extends FileGenerator
             }
 
             $tinyMCEDef = $this->app->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('definitionTinyMCE'))) : '';
-        }
 
-        $text = str_replace([ '/*CALLBACKLIGNELISTE*/', '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
-            'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT' , 'TINYMCEDEF', 'TINYMCE', 'SELECT2'],
-            [$callbackLigneListeText, $personalizedButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
-                $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $tinyMCEDef, $tinyMCE, $select2SearchText], $text);
+
+
+            $text = str_replace([ '/*CALLBACKLIGNELISTE*/', '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
+                'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT' , 'TINYMCEDEF', 'TINYMCE', 'SELECT2'],
+                [$callbackLigneListeText, $personalizedButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
+                    $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $tinyMCEDef, $tinyMCE, $select2SearchText], $text);
+
+        } else {
+            $text = str_replace(['CONTROLLER'],[$this->controllerName], $text);
+        }
 
         return $text;
     }
@@ -149,4 +141,28 @@ class E2DJSFileGenerator extends FileGenerator
 
         return ['Fichier invalide', 'error'];
     }
+
+//    /**
+//     * @param FilePath $path
+//     * @param $action
+//     * @param bool $usesRechercheNoCallback
+//     * @param string $actionMethodText
+//     * @return array
+//     */
+//    private function getJSActionMethodText(FilePath $path, $action, bool $usesRechercheNoCallback) : array
+//    {
+//        $actionMethodText = '';
+//        $templatePerActionPath = $this->getTrueTemplatePath($path->add($this->camelize($action)));
+//        if (isset($templatePerActionPath)) {
+//            if ($action === 'recherche') {
+//                $noRecherche = false;
+//                if ($usesRechercheNoCallback) {
+//                    $templatePerActionPath = $this->getTrueTemplatePath($templatePerActionPath->add('nocallback'));
+//                }
+//            }
+//
+//            $actionMethodText .= file_get_contents($templatePerActionPath);
+//        }
+//        return [$noRecherche, $actionMethodText];
+//    }
 }

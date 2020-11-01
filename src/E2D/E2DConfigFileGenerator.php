@@ -2,7 +2,7 @@
 
 namespace E2D;
 
-use Core\{App, FileGenerator, FilePath, ModuleMaker, PathNode};
+use Core\{Action, App, FileGenerator, FilePath, ModuleMaker, PathNode};
 use \Spyc;
 
 class E2DConfigFileGenerator extends FileGenerator
@@ -44,10 +44,8 @@ class E2DConfigFileGenerator extends FileGenerator
             $templatePath = $this->getTrueTemplatePath($path);
             $text = file_get_contents($templatePath);
             $enumText = $this->addEnumsToConfig($templatePath);
-            if (array_contains('export', $this->model->getActions())) {
+            if ($this->model->hasAction('export')) {
                 $exportText = $this->generateChampsExportForConfig($templatePath);
-            }
-            if (array_contains('export', $this->model->getActions())) {
                 $exportJSText = PHP_EOL.file_get_contents($templatePath->add('exportjs'));
             }
         }
@@ -68,17 +66,16 @@ class E2DConfigFileGenerator extends FileGenerator
     private function generateRoutingConfigFiles(FilePath $path): string
     {
         $texts = [];
-        foreach ($this->model->actions as $action)
+
+        foreach ($this->model->getActions() as $action)
         {
-            if ($action === 'accueil' && strpos($path, 'routing') === false) continue;
-            if (!array_contains($action, ['consultation', 'edition']) && strpos($path, 'blocs')) continue;
-            $templatePerActionPath = $this->getTrueTemplatePath($path->add($action));
-            if (file_exists($templatePerActionPath)) {
-                $texts[] = $this->getConfigTemplateForAction($templatePerActionPath, $path, $action);
-            }
+            /**
+             * @var Action $action
+             */
+            $texts[] = $action->generateRoutingFile($path);
         }
 
-        $text = implode(PHP_EOL, $texts);
+        $text = implode(PHP_EOL, array_filter($texts));
         return $text;
     }
 
@@ -111,11 +108,11 @@ class E2DConfigFileGenerator extends FileGenerator
      */
     private function modifyRoutingConfigFiles(FilePath $templatePath, array $config): array
     {
-        foreach ($this->model->actions as $action) {
+        foreach ($this->model->getActions() as $action => $actionObject) {
 
             $templatePerActionPath = $this->getTrueTemplatePath($templatePath->add($action));
             if (file_exists($templatePerActionPath)) {
-                $template = file_get_contents($templatePerActionPath) . $this->makeMultiModalBlock($templatePath, $action, $templatePerActionPath);
+                $template = file_get_contents($templatePerActionPath) . $actionObject->makeMultiModalBlock($templatePath, $templatePerActionPath);
 
                 $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'cONTROLLER', 'MODEL'],
                     [$this->moduleName, $this->model->getName(), $this->snakize($this->controllerName), ''], $template));
@@ -125,31 +122,20 @@ class E2DConfigFileGenerator extends FileGenerator
         return $config;
     }
 
-    /**
-     * Récupère le template pour générer un fichier action, routing ou bloc par action
-     * @param string $templatePerActionPath
-     * @param string $path
-     * @param string $action
-     * @return string
-     */
-    private function getConfigTemplateForAction(FilePath $templatePerActionPath, FilePath $path, string $action): string
-    {
-        return file_get_contents($templatePerActionPath) .
-            $this->makeMultiModalBlock($path, $action, $templatePerActionPath);
-    }
+//    /**
+//     * Récupère le template pour générer un fichier action, routing ou bloc par action
+//     * @param string $templatePerActionPath
+//     * @param string $path
+//     * @param string $action
+//     * @return string
+//     */
+//    private function getConfigTemplateForAction(FilePath $templatePerActionPath, FilePath $path, string $action): string
+//    {
+//        return file_get_contents($templatePerActionPath) .
+//            $this->makeMultiModalBlock($path, $action, $templatePerActionPath);
+//    }
 
-    /**
-     * Ajoute les lignes permettant les calques multiples, dans les blocs
-     * @param PathNode $path
-     * @param string $action
-     * @param PathNode $templatePerActionPath
-     * @return false|string
-     */
-    private function makeMultiModalBlock(FilePath $path, string $action, FilePath $templatePerActionPath)
-    {
-        return ($this->model->usesMultiCalques && strpos($path, 'blocs') !== false ?
-            file_get_contents(str_replace($action, 'multi', $templatePerActionPath)) : '');
-    }
+
 
     /**
      * Ajout des Enums dans le fichier conf
@@ -213,7 +199,7 @@ class E2DConfigFileGenerator extends FileGenerator
         if (file_exists($templatePath)) {
             $enumText = $this->addEnumsToConfig($templatePath);
             $exportText = $this->generateChampsExportForConfig($templatePath);
-            if (array_contains('export', $this->model->getActions())) {
+            if ($this->model->hasAction('export')) {
                 $exportJSText = PHP_EOL.file_get_contents($templatePath->add('exportjs'));
             }
         }
@@ -241,6 +227,19 @@ class E2DConfigFileGenerator extends FileGenerator
         $baseJSFilePath = $this->moduleName . '/JS/' . $this->pascalCaseModuleName . '.js';
         array_unshift($aVues[$this->model->getName()]['admin']['formulaires']['edition_' . $this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
         array_unshift($aVues[$this->model->getName()]['admin']['simples']['accueil_' . $this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
+    }
+
+    /**
+     * @param FilePath$path
+     * @param array $texts
+     * @return array
+     */
+    private function generateRoutingFile(FilePath $path) : array
+    {
+        $templatePerActionPath = $this->getTrueTemplatePath($path->add($this->name));
+        if (file_exists($templatePerActionPath)) {
+            return $this->getConfigTemplateForAction($templatePerActionPath, $path, $this->name);
+        }
     }
 
 }

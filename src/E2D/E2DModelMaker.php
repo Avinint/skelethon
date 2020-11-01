@@ -55,7 +55,7 @@ class E2DModelMaker extends ModelMaker
      */
     protected function askSpecifics() : void
     {
-        if (array_contains('export', $this->actions)) {
+        if ($this->hasAction('export')) {
             if (null === $this->app->getFileManager()->getRessourcePath()->addChild('export')) {
                 throw new \Exception("Ressource manquante: export");
             }
@@ -120,7 +120,7 @@ class E2DModelMaker extends ModelMaker
         $this->usesTinyMCE = $this->config->get('champsTinyMCE') ?? $this->askChampsTinyMCE();
         $this->askAddManyToOneField();
 
-        if (array_contains('export', $this->getActions()) && !$this->app->get('id_export')) {
+        if ($this->hasAction('export') && !$this->app->get('id_export')) {
             $this->insertExportData();
         }
 
@@ -150,6 +150,18 @@ class E2DModelMaker extends ModelMaker
         }
 
         return $champsSelectionnes;
+    }
+
+    public function initializeActions($actions)
+    {
+        $actionCollection = [];
+
+        foreach ($actions as $action) {
+            $className = 'E2D\\'.ucfirst($action).'Action';
+            $actionCollection[$action] = new $className($this->app);
+        }
+
+        return $actionCollection;
     }
 
     /**

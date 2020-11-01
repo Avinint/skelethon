@@ -151,7 +151,7 @@ abstract class ModuleMaker extends BaseMaker
     {
         $path = $this->getTrueFilePath($path);
 
-       if (!array_contains('consultation', $this->model->getActions()) &&  strpos($templatePath, 'consultation_TABLE') !== false) {
+       if (! $this->model->hasAction('consultation') &&  strpos($templatePath, 'consultation_TABLE') !== false) {
            return ['Pas de vue créé pour la consultation', 'important'];
        }
 

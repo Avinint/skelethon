@@ -11,7 +11,7 @@ abstract class ModelMaker extends BaseMaker
      * @var DatabaseAccess
      */
     protected $databaseAccess;
-    public $actions;
+    private $actions;
     protected string $module;
     private $table = [];
     private $mappingChamps = [];
@@ -127,14 +127,14 @@ abstract class ModelMaker extends BaseMaker
     private function askActions() : array
     {
         if ($this->config->has('actions')) {
-            return $this->config->get('actions');
+            $actions = $this->config->get('actions');
         } else {
-            $actions = [];
             $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? (' . implode(', ', array_map([$this, 'highlight'], $this->actionsDisponibles, array_fill(0, 4, 'info'))) . ')', ['o', 'n']);
 
             if ('o' === $reponse1) {
                 $actions = $this->actionsDisponibles;
             } else {
+                $actions = [];
                 foreach ($this->actionsDisponibles as $action) {
                     do {
                         $reponse2 = strtoupper(readline($this->msg('Voulez vous sélectionner l\'action "' . $action . '" ? [O/N]')));
@@ -142,7 +142,6 @@ abstract class ModelMaker extends BaseMaker
 
                     if ('O' === $reponse2) {
                         $actions[] = $action;
-
                     }
                 }
             }
@@ -153,8 +152,15 @@ abstract class ModelMaker extends BaseMaker
                 $this->config->saveChoice('actions', $actions, $this->name);
             }
 
-            return $actions;
+//            return $actions;
         }
+
+        return $this->initializeActions($actions);
+    }
+
+    protected function initializeActions($actions)
+    {
+        return $actions;
     }
 
     public function getName() : string
@@ -170,6 +176,16 @@ abstract class ModelMaker extends BaseMaker
     public function getActions() : array
     {
         return $this->actions;
+    }
+
+    public function hasAction($action) : bool
+    {
+        return isset($this->actions[$action]);
+    }
+
+    public function hasActions(array $actions) : bool
+    {
+        return array_contains_array($actions, $this->actions,  ARRAY_ANY);
     }
 
     public function getAttributes($template, $view = '') :string
@@ -414,7 +430,7 @@ abstract class ModelMaker extends BaseMaker
         $this->msg("Le questionnaire vous permettra également de renseigner quels champs sont liés à une action spéciale");
         if ($reponseFiltrageChamps) {
             foreach ($this->fields as $field) {
-                $views = $field->askViews($this->actions);
+                $views = $field->askViews(array_keys($this->actions));
                 if (isset($views))
                     $listeChamps[$field->getColumn()] = $views;
             }

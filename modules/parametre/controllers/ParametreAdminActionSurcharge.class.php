@@ -21,7 +21,7 @@ class ParametreAdminActionSurcharge extends ParametreAdminAction
 	/**
 	 * Suppression d'un élément.
 	 * 
-	 * @param integer $nIdElement Id de l'élément.
+	 * @param IntegerType $nIdElement Id de l'élément.
 	 * 
 	 * @return array Retour JSON.
 	 */
@@ -48,7 +48,7 @@ class ParametreAdminActionSurcharge extends ParametreAdminAction
 	/**
 	 * Enregistrement d'un élément.
 	 * 
-	 * @param integer $nIdElement Id de l'élément.
+	 * @param IntegerType $nIdElement Id de l'élément.
 	 * 
 	 * @return array Retour JSON.
 	 */

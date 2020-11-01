@@ -13,7 +13,7 @@ class MODEL extends Bdd
     /**
      *  Constructeur de la classe
      *
-     * @param integer $nIdElement Id de l'élément
+     * @param IntegerType $nIdElement Id de l'élément
      *
      * @return void
      */
@@ -50,13 +50,13 @@ class MODEL extends Bdd
     /**
      * Requête de sélection.
      *
-     * @param array       $aRecherche     Critères de recherche
-     * @param string      $szOrderBy      Tri
-     * @param boolean     $bModeCount     Juste compter.
-     * @param integer     $nStart         Numéro de départ du LIMIT.
-     * @param integer     $nNbElements    Nombre d'éléments à récupérer.
-     * @param string      $sGroupBy       Grouper les éléments par un certains champ.
-     * @param integer     $sContexte      Contexte d'appel de la requête (liste, consultation etc.).
+     * @param array       $aRecherche      Critères de recherche
+     * @param string      $szOrderBy       Tri
+     * @param boolean     $bModeCount      Juste compter.
+     * @param IntegerType     $nStart      Numéro de départ du LIMIT.
+     * @param IntegerType     $nNbElements Nombre d'éléments à récupérer.
+     * @param string      $sGroupBy        Grouper les éléments par un certains champ.
+     * @param IntegerType     $sContexte   Contexte d'appel de la requête (liste, consultation etc.).
      *
      * @return string                    Retourne la requête
      */
