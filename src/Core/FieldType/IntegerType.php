@@ -2,7 +2,9 @@
 
 namespace Core\FieldType;
 
-class IntegerType extends FieldType
+use Core\Field;
+
+class IntegerType extends NumberType
 {
 
 }

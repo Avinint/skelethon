@@ -2,6 +2,8 @@
 
 namespace Core;
 
+use Core\FieldType\FieldType;
+
 abstract class Field extends CommandLineToolShelf
 {
     const FIELD_VIEWS = ['recherche', 'liste', 'consultation', 'edition'];
@@ -9,7 +11,8 @@ abstract class Field extends CommandLineToolShelf
     public static $module;
     public $model;
 
-    protected $type;
+    protected App $app;
+    protected FieldType $type;
     protected $name;
     protected $column;
     protected $alias;
@@ -34,25 +37,26 @@ abstract class Field extends CommandLineToolShelf
      * @param $model
      * @param array $params
      */
-    public function __construct($type, $name, $columnName, $defaultValue, $alias, $model, $params = [])
+    public function __construct($type, $name, $columnName, $defaultValue, $alias, App $app, $params = [])
     {
-        $this->type = $type;
+        //$this->type = $type;
+        $this->type = FieldType::create($type, $app);
+        $this->app = $app;
         $this->name = $name;
         $this->column = $columnName;
         $this->defaultValue = $defaultValue;
         $this->alias = $alias;
         $this->label = $this->labelize($columnName);
-        $this->model = $model;
+        $this->model = $app->getModelMaker();
 
         if ('enum' === $type) {
             $this->enum = $this->parseEnumValues($params['enum']);
         }
 
-        $this->isPrimaryKey = $type === 'primaryKey';
-        $this->isNullable = isset($params['is_nullable']) && ($params['is_nullable']);
-        $this->maxLength = isset($params['maxlength']) ? ($params['maxlength']) : null;
+        $this->isPrimaryKey = $type->getName === 'primaryKey';
+        $this->isNullable   = isset($params['is_nullable']) && ($params['is_nullable']);
+        $this->maxLength    = $params['maxlength'] ?? null;
         //$this->step = isset($params['step']) ? ($params['step']) : null;
-
     }
 
     protected function parseEnumValues($enum)
@@ -159,7 +163,7 @@ abstract class Field extends CommandLineToolShelf
      */
     public function isDateOrEnum()
     {
-        return $this->isDate() || $this->type === 'enum';
+        return $this->isDate() || $this->type->getName === 'enum';
     }
 
     protected function set($field, $value)
@@ -192,9 +196,9 @@ abstract class Field extends CommandLineToolShelf
     public function is($type)
     {
         if (is_array($type))
-            return array_contains($this->type, $type);
+            return array_contains($this->type->getName(), $type);
         else
-            return $this->type ===  $type;
+            return $this->type->getName() ===  $type;
     }
 
     /**

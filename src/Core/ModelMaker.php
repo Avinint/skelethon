@@ -2,6 +2,8 @@
 
 namespace Core;
 
+use Core\FieldType\FieldType;
+
 abstract class ModelMaker extends BaseMaker
 {
     protected $name;
@@ -69,7 +71,6 @@ abstract class ModelMaker extends BaseMaker
         $this->tableName = $tableName;
     }
 
-
     public function generate()
     {
         $this->fields = [];
@@ -110,7 +111,7 @@ abstract class ModelMaker extends BaseMaker
             $data->Field,
             $data->Default,
             $this->alias,
-            $this,
+            $this->app,
             $params
         );
 
@@ -441,6 +442,14 @@ abstract class ModelMaker extends BaseMaker
         }
 
         return $listeChamps;
+    }
+
+    /**
+     * @return string
+     */
+    public function getModule() : string
+    {
+        return $this->module;
     }
 
 

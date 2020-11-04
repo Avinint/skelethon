@@ -51,13 +51,14 @@ class E2DViewFileGenerator extends FileGenerator
      */
     public function generateConsultationView(FilePath $path)
     {
-        $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('field')));
-        $fieldText = [];
-        foreach ($this->model->getFields('consultation') as $field) {
-            $fieldText[] = str_replace(['LABEL', 'FIELD'], [$field->getLabel(), $field->getFormattedName()], $fieldTemplate);
-        }
         $text = file_get_contents($this->getTrueTemplatePath($path));
         $text = $this->addModalTitle($text);
+
+        $fieldText = [];
+        $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('field')));
+        foreach ($this->model->getFields('consultation') as $field) {
+            $fieldText[] = $field->getType()->getConsultationView($field, $fieldTemplate);
+        }
 
         $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->moduleName, implode(PHP_EOL, $fieldText)], $text);
         return $text;
@@ -71,30 +72,31 @@ class E2DViewFileGenerator extends FileGenerator
     {
         $fieldText = [];
         foreach ($this->model->getFields('edition') as $field) {
-
-            if ($field->is(['enum', 'parametre'])) {
-                if ($this->model->usesSelect2) {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum_select2')));
-                } else {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum')));
-                }
-            } elseif ($field->is('bool')) {
-                if ($this->model->usesSwitches) {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_switch')));
-                } else {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_radio')));
-                }
-            } elseif ($field->is('foreignKey')) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum_select_ajax')));
-            } elseif ($field->is(['date', 'datetime'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('date')));
-            } elseif ($field->is(['text', 'mediumtext', 'longtext'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('text')));
-            } elseif ($field->is(['float', 'decimal', 'tinyint', 'int', 'smallint', 'double'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('number')));
-            } else {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('string')));
-            }
+            $fieldTemplate = $field->getType()->getEditionView($path);
+//            if ($field->getType('enum')) {
+//
+//                if ($this->model->usesSelect2) {
+//                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum_select2')));
+//                } else {
+//                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum')));
+//                }
+//            } elseif ($field->is('bool')) {
+//                if ($this->model->usesSwitches) {
+//                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_switch')));
+//                } else {
+//                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_radio')));
+//                }
+//            } elseif ($field->is('foreignKey')) {
+//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum_select_ajax')));
+//            } elseif ($field->is(['date', 'datetime'])) {
+//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('date')));
+//            } elseif ($field->is(['text', 'mediumtext', 'longtext'])) {
+//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('text')));
+//            } elseif ($field->is(['float', 'decimal', 'tinyint', 'int', 'smallint', 'double'])) {
+//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('number')));
+//            } else {
+//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('string')));
+//            }
 
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME', 'COLUMN', 'STEP'],
                 [$field->getLabel(), $field->getFormattedName(), $field->getType(), $field->getName(), $field->getColumn(),

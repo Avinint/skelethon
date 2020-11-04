@@ -136,4 +136,21 @@ class App
     {
         return $this->getFileManager()->getProjectPath();
     }
+
+    public function getTrueTemplatePath(FilePath $path)
+    {
+        return $this->getFileManager()->getTrueTemplatePath($path);
+    }
+
+    public function getModuleName()
+    {
+        return $this->getModelMaker()->getModule();
+    }
+
+    public function getModelName()
+    {
+        return $this->getModelMaker()->getName();
+    }
+
+
 }

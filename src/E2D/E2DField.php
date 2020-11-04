@@ -3,6 +3,8 @@
 namespace E2D;
 
 use Core\Field;
+use Core\FieldType\DateTimeType;
+use Core\FieldType\FieldType;
 
 class E2DField extends Field
 {
@@ -19,7 +21,7 @@ class E2DField extends Field
     public function getFormattedName()
     {
         if ($this->formatted) {
-            if ($this->type === 'foreignKey') {
+            if ($this->type->getName() === 'foreignKey') {
                 return str_replace('nId', '', 's'.$this->name);
             }
             return $this->name.'Formate';
@@ -47,7 +49,7 @@ class E2DField extends Field
     public function getFormattedColumn()
     {
         if ($this->formatted) {
-            if ($this->type === 'foreignKey') {
+            if ($this->type->getName() === 'foreignKey') {
                 return str_replace('id_', '', $this->name);
             }
             return $this->column.'_formate';
@@ -68,54 +70,37 @@ class E2DField extends Field
             return '';
         }
         $lines[] = $indent.str_replace(['ALIAS', 'COLUMN'], [$this->alias, $this->column], $template[0]);
+        $lines[] =  $this->type->addSelectFieldFormattedLines($indent, $this, $template);
+//        if ($this->isPrimaryKey) {
+//            $lines[] =  $this->type->getSelectFieldFormatted($indent, $this, $template);
+//        } elseif ('foreignKey' === $this->type->getName()) {
+//            $lines[] = $this->type->getSelectFieldFormatted($indent, $this, $template);
+//        } else {
+//            $lines[] = $this->type->getSelectFieldFormatted($indent, $this, $template);
+//        }
 
-        if ($this->isPrimaryKey) {
-            $lines[] = $indent. str_replace(['ALIAS', 'COLUMN'], [$this->alias, $this->column], $template[1]);
-        } elseif ('foreignKey' === $this->type) {
-            $lines[] = $this->getSelectFieldForeignKey($template, $indent);
-        } else {
-            $lines = $this->getSelectFieldFormatted($indent, $template, $lines);
-        }
-
-        return implode(','.PHP_EOL, $lines);
+        return implode(','.PHP_EOL, array_filter($lines));
     }
 
-    /**
-     * @param array $template
-     * @param string $indent
-     * @param array $lines
-     * @return string
-     */
-    private function getSelectFieldForeignKey(array $template, string $indent): string
-    {
-        $strategy = $this->manyToOne['strategy'] ?? 'joins';
-        if ($strategy === 'nested') {
-            $field = implode($indent, array_slice($template, 9));
-        } else {
-            $field = $indent . $template[8];
-        }
-
-        return str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
-            [$this->manyToOne['alias'], $this->manyToOne['label'], $this->manyToOne['labelAlias'], $this->manyToOne['table'], $this->manyToOne['pk'], $this->alias, $this->getFormattedName()],
-            $field);
-    }
-
-    /**
-     * @param string $indent
-     * @param array $template
-     * @param array $lines
-     * @return array
-     */
-    private function getSelectFieldFormatted(string $indent, array $template, array $lines): array
-    {
-        $type = array_contains($this->type, ['double', 'decimal']) ? 'float' : $this->type;
-        $correspondances = ['', 'primayKey', 'date', 'datetime', 'time', 'float', 'bool', 'enum'];
-        $index = array_contains($type, $correspondances) ? array_search($type, $correspondances) : 0;
-        if ($index) {
-            $lines[] = $indent . str_replace(['ALIAS', 'COLUMN', 'mODULE', 'MODEL', 'NAME'], [$this->alias, $this->column, self::$module, $this->model->getName(), $this->getFormattedName()], $template[$index]);
-        }
-        return $lines;
-    }
+//    /**
+//     * @param array $template
+//     * @param string $indent
+//     * @param array $lines
+//     * @return string
+//     */
+//    private function getSelectFieldForeignKey(array $template, Field $this, string $indent): string
+//    {
+//        $strategy = $this->manyToOne['strategy'] ?? 'joins';
+//        if ($strategy === 'nested') {
+//            $field = implode($indent, array_slice($template, 9));
+//        } else {
+//            $field = $indent . $template[8];
+//        }
+//
+//        return str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
+//            [$this->manyToOne['alias'], $this->manyToOne['label'], $this->manyToOne['labelAlias'], $this->manyToOne['table'], $this->manyToOne['pk'], $this->alias, $this->getFormattedName()],
+//            $field);
+//    }
 
     public function getSearchCriterion($path)
     {
@@ -123,49 +108,90 @@ class E2DField extends Field
 
         $aCritereRecherche = [];
         $indent = str_repeat("\x20", 8);
+        $aCritereRecherche = $this->type->getSearchCriterion($indent, $this, $template, $aCritereRecherche);
+//        if ($this->isNumber()) {
+//
+//            if (!$this->is('primaryKey', 'foreignKey')) {
+//                $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
+//                    [$template[7], $template[0], ($this->isInteger() ? $template[11] : $template[12]), $template[1], $template[2]]));
+//                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+//                    [$this->alias, $this->column, '>=', $this->name . 'Min'], $texteCritere);
+//                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+//                    [$this->alias, $this->column, '<=', $this->name . 'Max'], $texteCritere);
+//                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+//                    [$this->alias, $this->column, '=', $this->name . ''], $texteCritere);
+//            } else {
+//                $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
+//                    [$template[7], $template[0], $template[11], $template[1], $template[2]]));
+//                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+//                    [$this->alias, $this->column, '=', $this->name . ''], $texteCritere);
+//            }
+//        } elseif ('bool' === $this->type) {
 
-        if ($this->isNumber()) {
-
-            if (!$this->is('primaryKey', 'foreignKey')) {
-                $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
-                    [$template[7], $template[0], ($this->isInteger() ? $template[11] : $template[12]), $template[1], $template[2]]));
-                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
-                    [$this->alias, $this->column, '>=', $this->name . 'Min'], $texteCritere);
-                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
-                    [$this->alias, $this->column, '<=', $this->name . 'Max'], $texteCritere);
-                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
-                    [$this->alias, $this->column, '=', $this->name . ''], $texteCritere);
-            } else {
-                $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
-                    [$template[7], $template[0], $template[11], $template[1], $template[2]]));
-                $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
-                    [$this->alias, $this->column, '=', $this->name . ''], $texteCritere);
-            }
-        } elseif ('bool' === $this->type) {
-
-            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
-                [$this->alias, $this->column, '=', $this->name . ''],
-                $indent . implode('', array_map(function($line) use ($indent) {return $line.$indent;},
-                    [$template[7].$template[0].$template[11].$template[1].$template[2]])));
+//            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
+//                [$this->alias, $this->column, '=', $this->name . ''],
+//                $indent . implode('', array_map(function($line) use ($indent) {return $line.$indent;},
+//                    [$template[7].$template[0].$template[11].$template[1].$template[2]])));
 
 
-        } elseif (array_contains($this->type, array('date', 'datetime', 'time')) === true) {
-
-            $aCritereRecherche = $this->getSearchCriterionDate($indent, $template, $aCritereRecherche);
-
-        } else {
-            $texteCritere = $indent . implode('',array_map(function($line) use ($indent) {return $line.$indent;},
-                [$template[6], $template[0], $template[9], $template[1], $template[2]]));
-            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'FIELD'],
-                [$this->alias, $this->column, $this->name], $texteCritere);
-            $texteCritere = $indent . implode('',array_map(function($line) use ($indent) {return $line.$indent;},
-                [$template[6], $template[0], $template[10], $template[1], $template[2]]));
-            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'FIELD'],
-                [$this->alias, $this->column, $this->name.'Partiel'], $texteCritere);
-        }
+//        } elseif ($this->isDate()) {
+//
+//
+//
+//        } else {
+//            $texteCritere = $indent . implode('',array_map(function($line) use ($indent) {return $line.$indent;},
+//                [$template[6], $template[0], $template[9], $template[1], $template[2]]));
+//            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'FIELD'],
+//                [$this->alias, $this->column, $this->name], $texteCritere);
+//            $texteCritere = $indent . implode('',array_map(function($line) use ($indent) {return $line.$indent;},
+//                [$template[6], $template[0], $template[10], $template[1], $template[2]]));
+//            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'FIELD'],
+//                [$this->alias, $this->column, $this->name.'Partiel'], $texteCritere);
+//        }
 
         return implode(PHP_EOL, $aCritereRecherche);
     }
+
+//    /**
+//     * @param string $indent
+//     * @param array $template
+//     * @param array $aCritereRecherche
+//     * @return array
+//     */
+//    private function getSearchCriterionDate(string $indent, array $template, array $aCritereRecherche): array
+//    {
+//        if ($this->type === 'date') {
+//            $sSuffixeDebut = '';
+//            $sSuffixeFin = '';
+//            $sFormat = 'Y-m-d';
+//        } elseif ($this->type === 'datetime') {
+//            $sSuffixeDebut = ' 00:00:00';
+//            $sSuffixeFin = ' 23:59:59';
+//            $sFormat = 'Y-m-d H:i:s';
+//        } else {
+//            $sSuffixeDebut = '';
+//            $sSuffixeFin = '';
+//            $sFormat = 'H:i:s';
+//        }
+
+//        if ($this->type->getName === 'datetime') {
+//            $texteCritere = $indent . implode('', array_map(function ($line) use ($indent) {
+//                    return $line . $indent;
+//                },
+//                    [$template[6], ...array_slice($template, 3, 3), $template[0], $template[13], $template[1], $template[2]]));
+//        } else {
+//            $texteCritere = $indent . implode('', array_map(function ($line) use ($indent) {
+//                    return $line . $indent;
+//                },
+//                    [$template[6], $template[0], $template[13], $template[1], $template[2]]));
+//        }
+//
+//        $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
+//            [$this->alias, $this->column, '>=', $this->name . 'Debut', $this->type::SUFFIXE_DEBUT, $this->type::FORMAT], $texteCritere);
+//        $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
+//            [$this->alias, $this->column, '<=', $this->name . 'Fin', $this->type::SUFFIXE_DEBUT, $this->type::FORMAT], $texteCritere);
+//        return $aCritereRecherche;
+//    }
 
     public function getValidationCriterion($path)
     {
@@ -217,7 +243,8 @@ class E2DField extends Field
 
     public function changeToManyToOneField($manyToOneParams)
     {
-        $this->type = 'foreignKey';
+        $this->type = FieldType::create('foreignKey', $this->app);
+
         if(is_array($manyToOneParams['label'])) {
             $manyToOneParams['label'] = $this->model->generateConcatenatedColumn(
                 $manyToOneParams['label'],
@@ -245,50 +272,11 @@ class E2DField extends Field
         return "CONCAT_WS(\' \', " . implode(", ",  $column) . ')';
     }
 
-    /**
-     * @param string $indent
-     * @param array $template
-     * @param array $aCritereRecherche
-     * @return array
-     */
-    private function getSearchCriterionDate(string $indent, array $template, array $aCritereRecherche): array
-    {
-        if ($this->type === 'date') {
-            $sSuffixeDebut = '';
-            $sSuffixeFin = '';
-            $sFormat = 'Y-m-d';
-        } elseif ($this->type === 'datetime') {
-            $sSuffixeDebut = ' 00:00:00';
-            $sSuffixeFin = ' 23:59:59';
-            $sFormat = 'Y-m-d H:i:s';
-        } else {
-            $sSuffixeDebut = '';
-            $sSuffixeFin = '';
-            $sFormat = 'H:i:s';
-        }
 
-        if ($this->type === 'datetime') {
-            $texteCritere = $indent . implode('', array_map(function ($line) use ($indent) {
-                    return $line . $indent;
-                },
-                    [$template[6], ...array_slice($template, 3, 3), $template[0], $template[13], $template[1], $template[2]]));
-        } else {
-            $texteCritere = $indent . implode('', array_map(function ($line) use ($indent) {
-                    return $line . $indent;
-                },
-                    [$template[6], $template[0], $template[13], $template[1], $template[2]]));
-        }
-
-        $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
-            [$this->alias, $this->column, '>=', $this->name . 'Debut', $sSuffixeDebut, $sFormat], $texteCritere);
-        $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
-            [$this->alias, $this->column, '<=', $this->name . 'Fin', $sSuffixeFin, $sFormat], $texteCritere);
-        return $aCritereRecherche;
-    }
 
     public function changerEnChampParametre($type, $lignes = [])
     {
-        $this->type = 'parametre';
+        $this->type = FieldType::create('parametre', $this->app);
         $this->parametre = new \stdClass();
         $this->parametre->type = $type;
         $this->parametre->lignes = [];

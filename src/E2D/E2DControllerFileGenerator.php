@@ -2,7 +2,7 @@
 
 namespace E2D;
 
-use Core\{App, FileGenerator, FilePath};
+use Core\{App, FileGenerator, FilePath, PathNode};
 
 class E2DControllerFileGenerator extends FileGenerator
 {
@@ -51,17 +51,7 @@ class E2DControllerFileGenerator extends FileGenerator
         $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath($path->add($rechercheActionInitPathHandle)));
 
         if (file_exists($path = $this->getTrueTemplatePath($path))) {
-            if ($this->model->usesSelect2) {
-                $enumPath = $this->getTrueTemplatePath($path->add('enum_select2'));
-                $parametrePath = $this->getTrueTemplatePath($enumPath->add('parametre_select2'));
-            } else {
-                $enumPath = $this->getTrueTemplatePath($path->add('enum_selectMenu'));
-                $parametrePath = $this->getTrueTemplatePath($enumPath->add('parametre_selectMenu'));
-            }
 
-            $fieldTemplatePath = $this->getTrueTemplatePath($path->get('edition')->add('champs'));
-
-            $paths = [$enumPath, $parametrePath, $fieldTemplatePath];
             $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
 
             $exceptions = [];
@@ -77,11 +67,21 @@ class E2DControllerFileGenerator extends FileGenerator
             $fieldsNullableText = '';
             $fieldsNullable = [];
 
+            if ($this->model->usesSelect2) {
+                $this->enumPath = $this->getTrueTemplatePath($path->add('enum_select2'));
+                $this->parametrePath = $this->getTrueTemplatePath($path->add('parametre_select2'));
+            } else {
+                $this->enumPath = $this->getTrueTemplatePath($path->add('enum_selectMenu'));
+                $this->parametrePath = $this->getTrueTemplatePath($path->add('parametre_selectMenu'));
+            }
+
             /**
              * @var E2DField $field
              */
             foreach ($fields as $field) {
-                $fieldText = $this->handleControllerField($field, $exceptions, $defaults, $paths, $allEnumEditLines, $allEnumSearchLines);
+                $field->getType()->getDefaultValueForControllerField($field, $defaults, $path->get('edition')->add('champs'));
+
+                $fieldText = $this->handleControllerField($field, $exceptions, $defaults, $path, $allEnumEditLines, $allEnumSearchLines);
                 if ($field->isNullable() === true) {
                     $fieldsNullable[] = $fieldText.PHP_EOL;
                 } else {
@@ -109,14 +109,14 @@ class E2DControllerFileGenerator extends FileGenerator
             $enumEditText = implode(PHP_EOL, $allEnumEditLines);
             $enumSearchText = implode(PHP_EOL, $allEnumSearchLines);
 
-            if ($exceptions) {
-                $exceptionText = ', [';
-                $exceptionArr = [];
-                foreach ($exceptions as $key => $list) {
-                    $exceptionArr[] = "'$key' => ['".implode('\', \'', $list).'\']';
-                }
-                $exceptionText .= implode(',', $exceptionArr).']';
-            }
+//            if ($exceptions) {
+//                $exceptionText = ', [';
+//                $exceptionArr = [];
+//                foreach ($exceptions as $key => $list) {
+//                    $exceptionArr[] = "'$key' => ['".implode('\', \'', $list).'\']';
+//                }
+//                $exceptionText .= implode(',', $exceptionArr).']';
+//            }
 
             $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', '//CHAMPSNOTNULL', '//CHAMPSNULL', 'IDFIELD'],
             [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsNotNullableText, $fieldsNullableText, $this->model->getIdField()], $methodText);
@@ -150,70 +150,71 @@ class E2DControllerFileGenerator extends FileGenerator
     }
 
     /**
-     * @param $field
+     * @param E2DField $field
      * @param array $exceptions
      * @param array $defaults
-     * @param $fieldTemplatePath
-     * @param string $fieldsNotNullableText
-     * @param $enumPath
+     * @param PathNode $path
      * @param array $allEnumEditLines
      * @param array $allEnumSearchLines
-     */
-    private function handleControllerField(E2DField $field, array &$exceptions, array &$defaults, array $paths, array &$allEnumEditLines, array &$allEnumSearchLines): string
-    {
-        [$enumPath, $parametrePath, $fieldTemplatePath] = $paths;
-        $templateFields = file($fieldTemplatePath, FILE_IGNORE_NEW_LINES);
-
-        $nullableFieldTemplatePath = $this->getTrueTemplatePath($fieldTemplatePath->add('nullable'));
-        $templateNullableFields = file_get_contents($nullableFieldTemplatePath);
-
-        if ($field->is('bool')) {
-            $this->handleControllerBooleanField($field, $exceptions, $defaults, $fieldTemplatePath);
-            $template = [$templateFields[0], $templateFields[1]];
-            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-        } elseif ($field->is('date')) {
-            $template = [$templateFields[0], $templateFields[2].$templateFields[3]];
-            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-            $exceptions['aDates'][] = $field->getName();
-        }  elseif ($field->is('datetime')) {
-            $template = [$templateFields[0], $templateFields[2].$templateFields[4]];
-            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-            $exceptions['aDateTimes'][] = $field->getName();
-        } elseif ($field->is('time')) {
-            $template = [$templateFields[0], $templateFields[2].$templateFields[5]];
-            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-            $exceptions['aTimes'][] = $field->getName();
-        }
-
-        elseif ($field->is('enum') || $field->is('parametre')) {
-            $template = [$templateFields[0], $templateFields[1]];
-            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-            $path = $field->is('enum') ? $enumPath : $parametrePath;
-            $this->handleControllerEnumField($path, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
-        } elseif ($field->isInteger()) {
-            $template = [$templateFields[0], $templateFields[1]];
-            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-        } elseif ($field->isFloat()) {
-            $template = [$templateFields[0], $templateFields[6]];
-            $exceptions['aFloats'][] = $field->getName();
-            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-        } else {
-            $template = [$templateFields[0], $templateFields[1]];
-            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-        }
-
-        return $fieldsText;
-    }
-
-    /**
-     * @param $field
-     * @param $fieldTemplatePath
-     * @param string $fieldsNotNullableText
      * @return string
      */
-    protected function generateControllerIntegerField(E2DField $field, $fieldTemplatePath): string
+    private function handleControllerField(E2DField $field, array &$exceptions, array &$defaults, PathNode $path, array &$allEnumEditLines, array &$allEnumSearchLines): string
     {
-        return str_replace(['COLUMN', 'NAME'], [$field->getColumn(), $field->getName()], file($fieldTemplatePath)[0]);
+        $fieldTemplatePath = $path->get('edition')->get('champs');
+//        $templateFields = file($this->fieldTemplatePath, FILE_IGNORE_NEW_LINES);
+//        $nullableFieldTemplatePath = $this->getTrueTemplatePath($this->fieldTemplatePath->add('nullable'));
+//        $templateNullableFields = file_get_contents($nullableFieldTemplatePath);
+
+        $templateRequiredFields = $field->getType()->getRequiredFieldTemplate($fieldTemplatePath );
+        $templateNullableFields = $field->getType()->getNullableFieldTemplate($fieldTemplatePath );
+//        $defaults[] = $field->getType()->getDefaultValueForControllerField($field, $defaults, $path);
+        $fieldsText = $this->buildControllerField($field, $templateRequiredFields, $templateNullableFields);
+
+//        if ($field->is('bool')) {
+//            $this->handleControllerBooleanField($field, $exceptions, $defaults, $this->fieldTemplatePath);
+//
+//            $template = [$templateFields[0], $templateFields[1]];
+//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+//        } elseif
+
+//        if ($field->is('date')) {
+//            $template = [$templateFields[0], $templateFields[2].$templateFields[3]];
+//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+//            $exceptions['aDates'][] = $field->getName();
+//        }  else
+//        if ($field->is('datetime')) {
+//            $template = [$templateFields[0], $templateFields[2].$templateFields[4]];
+//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+//            $exceptions['aDateTimes'][] = $field->getName();
+//        } elseif ($field->is('time')) {
+//            $template = [$templateFields[0], $templateFields[2].$templateFields[5]];
+//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+//            $exceptions['aTimes'][] = $field->getName();
+//        }
+
+//        else
+        if ($field->is('enum') || $field->is('parametre')) {
+
+
+//            $template = [$templateFields[0], $templateFields[1]];
+//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+            $path = $field->is('enum') ? $this->enumPath : $this->parametrePath;
+            $this->handleControllerEnumField($path, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
+//        } elseif ($field->isInteger()) {
+//            $template = [$templateFields[0], $templateFields[1]];
+//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+
+//        } elseif ($field->isFloat()) {
+            //$template = [$templateFields[0], $templateFields[6]];
+//            $exceptions['aFloats'][] = $field->getName();
+//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+        }
+//        else {
+//            $template = [$templateFields[0], $templateFields[1]];
+//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
+//        }
+
+        return $fieldsText;
     }
 
     /**
@@ -265,6 +266,16 @@ class E2DControllerFileGenerator extends FileGenerator
 
     }
 
+    /**
+     * @param $field
+     * @param $fieldTemplatePath
+     * @param string $fieldsNotNullableText
+     * @return string
+     */
+    protected function generateControllerIntegerField(E2DField $field, $fieldTemplatePath): string
+    {
+        return str_replace(['COLUMN', 'NAME'], [$field->getColumn(), $field->getName()], file($fieldTemplatePath)[0]);
+    }
 
     /**
      * @param $path

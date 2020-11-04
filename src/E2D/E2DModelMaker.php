@@ -34,7 +34,7 @@ class E2DModelMaker extends ModelMaker
 
     public function getTableHeaders($templatePath)
     {
-        $actionHeader = empty($this->actions) ? '' : file_get_contents(str_replace('.', '_actionheader.', $templatePath)) . PHP_EOL;
+        $actionHeader = empty($this->getActions()) ? '' : file_get_contents(str_replace('.', '_actionheader.', $templatePath)) . PHP_EOL;
         return $actionHeader . implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {
                 return $field->getTableHeader($templatePath);
             }, $this->getFields('liste')));
