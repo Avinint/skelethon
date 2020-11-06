@@ -23,13 +23,13 @@ class DateTimeType extends DateType
                 [$field->getAlias(), $field->getColumn(), $this->module, $this->model ,$field->getFormattedName()], $template[3]);
     }
 
-    protected function getSearchCriterionDateTemplate(string $indent, array $template)
+    protected function getCritereDeRechercheDateTemplate(string $indent, array $template)
     {
         return  $indent . implode('', array_map(function ($line) use ($indent) {  return $line . $indent;},
                 [$template[6], ...array_slice($template, 3, 3), $template[0], $template[13], $template[1], $template[2]]));
     }
 
-    public function getRequiredFieldTemplate($templatePath)
+    public function getTemplateChampObligatoire($templatePath)
     {
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return [$template[0], $template[2].$template[4]];

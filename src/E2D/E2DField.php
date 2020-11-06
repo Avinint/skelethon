@@ -102,13 +102,13 @@ class E2DField extends Field
 //            $field);
 //    }
 
-    public function getSearchCriterion($path)
+    public function getCritereDeRecherche($path)
     {
         $template = file($path);
 
         $aCritereRecherche = [];
         $indent = str_repeat("\x20", 8);
-        $aCritereRecherche = $this->type->getSearchCriterion($indent, $this, $template, $aCritereRecherche);
+        $aCritereRecherche = $this->type->getCritereDeRecherche($indent, $this, $template, $aCritereRecherche);
 //        if ($this->isNumber()) {
 //
 //            if (!$this->is('primaryKey', 'foreignKey')) {
@@ -158,7 +158,7 @@ class E2DField extends Field
 //     * @param array $aCritereRecherche
 //     * @return array
 //     */
-//    private function getSearchCriterionDate(string $indent, array $template, array $aCritereRecherche): array
+//    private function getCritereDeRechercheDate(string $indent, array $template, array $aCritereRecherche): array
 //    {
 //        if ($this->type === 'date') {
 //            $sSuffixeDebut = '';

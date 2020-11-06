@@ -100,7 +100,7 @@ abstract class Field extends CommandLineToolShelf
 
     public static function getSearchCriteria()
     {
-        return array_map(function($field) {return $field->getSearchCriterion();}, self::$collection);
+        return array_map(function($field) {return $field->getCritereDeRecherche();}, self::$collection);
     }
 
     public static function getValidationCriteria()

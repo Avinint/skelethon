@@ -26,7 +26,7 @@ class TimeType extends DateType
 //        $exceptions['aTimes'][] = $field->getName();
 //    }
 
-    public function getRequiredFieldTemplate($templatePath)
+    public function getTemplateChampObligatoire($templatePath)
     {
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return [$template[0], $template[2].$template[5]];

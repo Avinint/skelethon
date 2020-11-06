@@ -28,7 +28,7 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
         if (!array_contains($action, ['module', 'modele'])) {
             $this->displayHelpPage();
         }
-        $modelName = $action === 'module' ? $moduleName: $this->askName($modelName);
+        $modelName = $action === 'module' ? $moduleName: $this->askName($modelName, $moduleName);
 
         $config = new Config($moduleName, $modelName, $type);
         $config->setCurrentModel($modelName);
@@ -52,12 +52,12 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
         $this->generate($action, $moduleName, $modelName, $app, $config);
     }
 
-    private function askName($name = '')
+    private function askName($name = '', $moduleName)
     {
         echo PHP_EOL;
         if ($name === '') {
             $name = readline($this->msg('Veuillez renseigner en '.$this->highlight('snake_case').' le nom du modèle'.PHP_EOL.' (' . $this->highlight('minuscules') . ' et ' . $this->highlight('underscores').')'.
-                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($this->module, 'success').'')) ? : $this->module;
+                PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module : '. $this->frame($moduleName, 'success').'')) ? : $moduleName;
         }
 
         return $name;

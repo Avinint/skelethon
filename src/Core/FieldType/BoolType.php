@@ -35,7 +35,7 @@ class BoolType extends FieldType
      * @param array $criteresRecherche
      * @return array
      */
-    public function getSearchCriterion(string $indent, Field $field,  array $template, array $criteresRecherche) : array
+    public function getCritereDeRecherche(string $indent, Field $field,  array $template, array $criteresRecherche) : array
     {
         $criteresRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
             [$field->getAlias(), $field->getColumn(), '=', $field->getName() . ''],
@@ -45,19 +45,19 @@ class BoolType extends FieldType
         return $criteresRecherche;
     }
 
-    public function getDefaultValueForControllerField(Field $field, array &$defaults, FilePath $fieldTemplatePath) : void
+    public function getValeurParDefautPourChampController(Field $field, array &$defaults, FilePath $fieldTemplatePath) : void
     {
         $defaultValue = $field->getDefaultValue() ?? 'nc';
         $defaultLines = file($this->app->getTrueTemplatePath($fieldTemplatePath->add('defaut')));
         $defaults[] = str_replace(['FIELD', 'VALUE'], [$field->getName(), $defaultValue], $defaultLines[0]);
     }
 
-    public function getRequiredFieldTemplate($templatePath)
+    public function getTemplateChampObligatoire($templatePath)
     {
 //        $this->addToExceptions($field, $exceptions);
-//        $defaults[] = $this->getDefaultValueForControllerField($field, $defaults, $fieldTemplatePath);
+//        $defaults[] = $this->getValeurParDefautPourChampController($field, $defaults, $fieldTemplatePath);
 
-        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        $template = file($templatePath->get('champs'), FILE_IGNORE_NEW_LINES);
         return [$template[0], $template[1]];
 
        // $fieldsText = $field->buildFieldForController($field, $template, $this->templateNullableFields);

@@ -67,25 +67,33 @@ class E2DControllerFileGenerator extends FileGenerator
             $fieldsNullableText = '';
             $fieldsNullable = [];
 
-            if ($this->model->usesSelect2) {
-                $this->enumPath = $this->getTrueTemplatePath($path->add('enum_select2'));
-                $this->parametrePath = $this->getTrueTemplatePath($path->add('parametre_select2'));
-            } else {
-                $this->enumPath = $this->getTrueTemplatePath($path->add('enum_selectMenu'));
-                $this->parametrePath = $this->getTrueTemplatePath($path->add('parametre_selectMenu'));
-            }
+//            if ($this->model->usesSelect2) {
+//                $this->enumPath = $this->getTrueTemplatePath($path->add('enum_select2'));
+//                $this->parametrePath = $this->getTrueTemplatePath($path->add('parametre_select2'));
+//            } else {
+//                $this->enumPath = $this->getTrueTemplatePath($path->add('enum_selectMenu'));
+//                $this->parametrePath = $this->getTrueTemplatePath($path->add('parametre_selectMenu'));
+//            }
 
             /**
              * @var E2DField $field
              */
             foreach ($fields as $field) {
-                $field->getType()->getDefaultValueForControllerField($field, $defaults, $path->get('edition')->add('champs'));
+                $fieldTemplatePath = $this->getTrueTemplatePath($path->get('edition')->add('champs'));
+                $field->getType()->getValeurParDefautPourChampController($field, $defaults, $fieldTemplatePath);
 
-                $fieldText = $this->handleControllerField($field, $exceptions, $defaults, $path, $allEnumEditLines, $allEnumSearchLines);
+                $fieldText = $this->getChampsPourEnregistrement($field, $exceptions, $defaults, $fieldTemplatePath, $allEnumEditLines, $allEnumSearchLines);
                 if ($field->isNullable() === true) {
                     $fieldsNullable[] = $fieldText.PHP_EOL;
                 } else {
                     $fieldsNotNullable[] = $fieldText;
+                }
+
+                if ($field->is('enum') /*|| $field->is('parametre')*/) {
+                    $allEnumEditLine[] = $field->getType()->getChampsPourDynamisationEdition($field, $fieldTemplatePath);
+                    $field->getType()->getChampsPourDynamisationRecherche($field, $fieldTemplatePath, $allEnumSearchLines, $defaults);
+//                    $path = $field->is('enum') ? $this->enumPath : $this->parametrePath;
+//                    $this->handleControllerEnumField($path, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
                 }
             }
 
@@ -153,20 +161,21 @@ class E2DControllerFileGenerator extends FileGenerator
      * @param E2DField $field
      * @param array $exceptions
      * @param array $defaults
-     * @param PathNode $path
+     * @param FilePath $path
      * @param array $allEnumEditLines
      * @param array $allEnumSearchLines
      * @return string
      */
-    private function handleControllerField(E2DField $field, array &$exceptions, array &$defaults, PathNode $path, array &$allEnumEditLines, array &$allEnumSearchLines): string
+    private function getChampsPourEnregistrement(E2DField $field, array &$exceptions, array &$defaults, FilePath $fieldTemplatePath, array &$allEnumEditLines, array &$allEnumSearchLines): string
     {
-        $fieldTemplatePath = $path->get('edition')->get('champs');
 //        $templateFields = file($this->fieldTemplatePath, FILE_IGNORE_NEW_LINES);
 //        $nullableFieldTemplatePath = $this->getTrueTemplatePath($this->fieldTemplatePath->add('nullable'));
 //        $templateNullableFields = file_get_contents($nullableFieldTemplatePath);
 
-        $templateRequiredFields = $field->getType()->getRequiredFieldTemplate($fieldTemplatePath );
-        $templateNullableFields = $field->getType()->getNullableFieldTemplate($fieldTemplatePath );
+        $templateRequiredFields = $field->getType()->getTemplateChampObligatoire($fieldTemplatePath);
+        $templateNullableFields = $field->getType()->getTemplateChampNullable($fieldTemplatePath);
+
+
 //        $defaults[] = $field->getType()->getDefaultValueForControllerField($field, $defaults, $path);
         $fieldsText = $this->buildControllerField($field, $templateRequiredFields, $templateNullableFields);
 
@@ -193,14 +202,8 @@ class E2DControllerFileGenerator extends FileGenerator
 //        }
 
 //        else
-        if ($field->is('enum') || $field->is('parametre')) {
 
-
-//            $template = [$templateFields[0], $templateFields[1]];
-//            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-            $path = $field->is('enum') ? $this->enumPath : $this->parametrePath;
-            $this->handleControllerEnumField($path, $field, $allEnumEditLines, $allEnumSearchLines, $defaults);
-//        } elseif ($field->isInteger()) {
+// elseif ($field->isInteger()) {
 //            $template = [$templateFields[0], $templateFields[1]];
 //            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
 
@@ -208,7 +211,7 @@ class E2DControllerFileGenerator extends FileGenerator
             //$template = [$templateFields[0], $templateFields[6]];
 //            $exceptions['aFloats'][] = $field->getName();
 //            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
-        }
+//        }
 //        else {
 //            $template = [$templateFields[0], $templateFields[1]];
 //            $fieldsText = $this->buildControllerField($field, $template, $templateNullableFields);
@@ -216,6 +219,7 @@ class E2DControllerFileGenerator extends FileGenerator
 
         return $fieldsText;
     }
+
 
     /**
      * @param $enumPath
@@ -248,13 +252,14 @@ class E2DControllerFileGenerator extends FileGenerator
             }
         }
 
-        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT'];
-        $replacements = [$field->getName(), $this->moduleName, $this->model->getName(), $field->getColumn(), $default];
+        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT', 'TYPE'];
+        $parametre = $field->is('parametre') ? $field->getParametre('type') : '';
+        $replacements = [$field->getName(), $this->moduleName, $this->model->getName(), $field->getColumn(), $default, $parametre];
 
-        if ($field->is('parametre')) {
-            $searches[] = 'TYPE';
-            $replacements[] = $field->getParametre('type');
-        }
+//        if ($field->is('parametre')) {
+//            $searches[] = 'TYPE';
+//            $replacements[] = $field->getParametre('type');
+//        }
 
         $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLines);
         $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));

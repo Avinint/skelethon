@@ -133,7 +133,7 @@ abstract class FieldType
      * @param array $criteresRecherche
      * @return array
      */
-    public function getSearchCriterion(string $indent, Field $field,  array $template, array $criteresRecherche) : array
+    public function getCritereDeRecherche(string $indent, Field $field,  array $template, array $criteresRecherche) : array
     {
         foreach ([['=', 9, ''], ['LIKE', 10, 'Partiel']] as [$operator, $templateIndex, $suffix]) {
             $texteCritere = $indent . implode('',array_map(function($line) use ($indent) {return $line.$indent;},
@@ -146,20 +146,20 @@ abstract class FieldType
         return $criteresRecherche;
     }
 
-    public function getRequiredFieldTemplate($templatePath)
+    public function getTemplateChampObligatoire(FilePath $templatePath)
     {
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return [$template[0], $template[1]];
     }
 
-    public function getNullableFieldTemplate(FilePath $fieldTemplatePath)
+    public function getTemplateChampNullable(FilePath $fieldTemplatePath)
     {
         $nullableFieldTemplatePath = $this->app->getTrueTemplatePath($fieldTemplatePath->add('nullable'));
 
         return file_get_contents($nullableFieldTemplatePath);
     }
 
-    public function getDefaultValueForControllerField(Field $field, array &$defaults, FilePath $fieldTemplatePath) : void
+    public function getValeurParDefautPourChampController(Field $field, array &$defaults, FilePath $fieldTemplatePath) : void
     {
     }
 }

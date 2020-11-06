@@ -28,7 +28,7 @@ class PrimaryKeyType extends IntegerType
      * @param array $criteresRecherche
      * @return array
      */
-    public function getSearchCriterion(string $indent, Field $field,  array $template, array $criteresRecherche) : array
+    public function getCritereDeRecherche(string $indent, Field $field,  array $template, array $criteresRecherche) : array
     {
         $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
                 [$template[7], $template[0], $template[11], $template[1], $template[2]]));

@@ -40,7 +40,7 @@ class DateType extends FieldType
      * @param array $criteresRecherche
      * @return array
      */
-    private function getSearchCriterionDate(string $indent, Field $field, array $template, array $criteresRecherche): array
+    private function getCritereDeRechercheDate(string $indent, Field $field, array $template, array $criteresRecherche): array
     {
 //        if ($this->type === 'date') {
 //            $sSuffixeDebut = '';
@@ -82,9 +82,9 @@ class DateType extends FieldType
      * @param array $criteresRecherche
      * @return array
      */
-    public function getSearchCriterion(string $indent, Field $field, array $template, array $criteresRecherche): array
+    public function getCritereDeRecherche(string $indent, Field $field, array $template, array $criteresRecherche): array
     {
-        $texteCritere = $this->getSearchCriterionDateTemplate($indent, $template);
+        $texteCritere = $this->getCritereDeRechercheDateTemplate($indent, $template);
 
         foreach ([['>=', 'Debut', self::SUFFIXE_DEBUT], ['<=', 'Fin', self::SUFFIXE_FIN]] as [$operator, $suffixeChamp, $suffixeValeur]) {
             $criteresRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
@@ -94,13 +94,13 @@ class DateType extends FieldType
         return $criteresRecherche;
     }
 
-    protected function getSearchCriterionDateTemplate(string $indent, array $template)
+    protected function getCritereDeRechercheDateTemplate(string $indent, array $template)
     {
         return $indent . implode('', array_map(function ($line) use ($indent) { return $line . $indent;},
                 [$template[6], $template[0], $template[13], $template[1], $template[2]]));
     }
 
-    public function getRequiredFieldTemplate($templatePath)
+    public function getTemplateChampObligatoire($templatePath)
     {
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return [$template[0], $template[2].$template[3]];

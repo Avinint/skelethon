@@ -28,7 +28,7 @@ class ForeignKeyType extends PrimaryKeyType
         }
 
         return str_replace(['FKALIAS', 'LABEL', 'CONCATALIAS', 'FKTABLE', 'PK', 'ALIAS', 'FIELD'],
-            [$field->getManyToOne()['alias'], $field->getManyToOne()['label'], $field->getManyToOne()['labelAlias'], $field->getManyToOne()['table'], $field->getManyToOne()['pk'], $field->getAlias(), $this->getFormattedName()],
+            [$field->getManyToOne()['alias'], $field->getManyToOne()['label'], $field->getManyToOne()['labelAlias'], $field->getManyToOne()['table'], $field->getManyToOne()['pk'], $field->getAlias(), $field->getFormattedName()],
             $fieldText);
     }
 

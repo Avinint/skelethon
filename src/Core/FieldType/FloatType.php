@@ -20,7 +20,7 @@ class FloatType extends NumberType
                 [$field->getAlias(), $field->getColumn(), $this->module, $this->model ,$field->getFormattedName()], $template[5]);
     }
 
-    public function getRequiredFieldTemplate($templatePath)
+    public function getTemplateChampObligatoire($templatePath)
     {
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return [$template[0], $template[6]];
