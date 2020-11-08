@@ -15,12 +15,21 @@ class FileManager
      * FileManager constructor.
      * @param $templates
      */
-    public function __construct($app, $templates, $templateNodeClass = '')
+    public function __construct($app, $templateNodeClass = null)
     {
         $this->app = $app;
+        $this->templateNodeClass = $templateNodeClass ??  TemplateNode::class;
+    }
+
+    /**
+     * Transmet les templates à la configuration et crée un path pour chaque template
+     * @param string $templates
+     */
+    public function setTemplate(string $templates)
+    {
         $this->templates = explode("_", trim($templates.'_standard', "_"));
-        $this->templateNodeClass = $templateNodeClass ?:  TemplateNode::class;
-        $this->setTemplate($templates);
+        if (!$this->app->has('template'))
+            $this->app->getConfig()->setTemplate($templates);
     }
 
     public function createFile($path, $text = '', $write = false)
@@ -75,16 +84,6 @@ class FileManager
         }
 
         return $templatePath;
-    }
-
-    /**
-     * Transmet les templates à la configuration et crée un path pour chaque template
-     * @param string $templates
-     */
-    public function setTemplate(string $templates)
-    {
-        if (!$this->app->has('template'))
-            $this->app->getConfig()->setTemplate($templates);
     }
 
     /**

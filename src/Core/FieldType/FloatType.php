@@ -26,8 +26,4 @@ class FloatType extends NumberType
         return [$template[0], $template[6]];
     }
 
-//    public function addToExceptions($field, &$exceptions)
-//    {
-//        $exceptions['aFloats'][] = $field->getName();
-//    }
 }

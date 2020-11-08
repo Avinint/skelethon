@@ -27,13 +27,14 @@ abstract class FieldType
      */
     public static function create(string $name, App $app) : FieldType
     {
-        if (array_contains($name, self::$registeredTypes)) {
+        if (array_contains($name, array_keys(self::$registeredTypes))) {
             return self::$registeredTypes[$name];
         }
 
         $key = self::getTypeKeyFromName($name);
 
         $match = [
+            'primaryKey' => PrimaryKeyType::class,
             'bool'       => BoolType::class,
             'datetime'   => DateTimeType::class,
             'date'       => DateType::class,
@@ -63,7 +64,7 @@ abstract class FieldType
 
     private static function getTypeKeyFromName(string $name)
     {
-        if (array_contains($name, ['bool', 'foreignKey', 'date', 'datetime', 'time'])) {
+        if (array_contains($name, ['bool', 'primaryKey', 'foreignKey', 'date', 'datetime', 'time'])) {
             $key = $name;
         } elseif (array_contains($name, self::ENUM)) {
             $key = 'enum';
@@ -130,20 +131,20 @@ abstract class FieldType
      * @param string $indent
      * @param Field $field
      * @param array $template
-     * @param array $criteresRecherche
-     * @return array
+     * @return string
      */
-    public function getCritereDeRecherche(string $indent, Field $field,  array $template, array $criteresRecherche) : array
+    public function getCritereDeRecherche(string $indent, Field $field,  array $template) : string
     {
+        $criteresRecherche = [];
         foreach ([['=', 9, ''], ['LIKE', 10, 'Partiel']] as [$operator, $templateIndex, $suffix]) {
             $texteCritere = $indent . implode('',array_map(function($line) use ($indent) {return $line.$indent;},
                     [$template[6], $template[0], $template[$templateIndex], $template[1], $template[2]]));
 
-            $aCritereRecherche[] = str_replace(['ALIAS', 'COLUMN', 'FIELD'],
-                [$this->alias, $this->column, $this->name . $suffix], $texteCritere);
+            $criteresRecherche[] = str_replace(['ALIAS', 'COLUMN', 'FIELD'],
+                [$field->getAlias(), $field->getColumn(), $field->getName() . $suffix], $texteCritere);
         }
 
-        return $criteresRecherche;
+        return implode(PHP_EOL, $criteresRecherche);
     }
 
     public function getTemplateChampObligatoire(FilePath $templatePath)
@@ -159,7 +160,7 @@ abstract class FieldType
         return file_get_contents($nullableFieldTemplatePath);
     }
 
-    public function getValeurParDefautPourChampController(Field $field, array &$defaults, FilePath $fieldTemplatePath) : void
+    public function getValeurParDefautChampPourDynamisationEditionController(Field $field,  FilePath $fieldTemplatePath) : string
     {
     }
 }

@@ -241,7 +241,7 @@ abstract class ModelMaker extends BaseMaker
      */
     public function getSearchCriteria($path): string
     {
-        return implode(PHP_EOL, array_filter(array_map(function (Field $field) use($path) {return $field->getCritereDeRecherche($path);}, $this->getFields('recherche'))));
+        return implode(PHP_EOL, array_filter(array_map(function (Field $field) use($path) {return $field->getCritereDeRecherche($path);}, $this->getFields('recherche', '', true))));
     }
 
     /**

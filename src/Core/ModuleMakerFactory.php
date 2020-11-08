@@ -15,10 +15,6 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
 
     public function __construct(ProjectType $type, $arguments, $appDir)
     {
-//        $this->modelMaker = $type.'ModelMaker';
-//        $moduleMaker = $type.'ModuleMaker';
-//        $this->fieldClass = $type.'Field';
-
         if (!is_dir('modules')) {
             $this->msg('Répertoire \'modules\' inexistant, veuillez vérifier que vous travaillez dans le répertoire racine de votre projet', 'error', false, true, true);
             die();
@@ -28,7 +24,7 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
         if (!array_contains($action, ['module', 'modele'])) {
             $this->displayHelpPage();
         }
-        $modelName = $action === 'module' ? $moduleName: $this->askName($modelName, $moduleName);
+        $modelName = $this->askName($modelName, $moduleName);
 
         $config = new Config($moduleName, $modelName, $type);
         $config->setCurrentModel($modelName);
@@ -40,7 +36,10 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
 
         $app = new App();
         $app->setConfig($config);
-        $app->setFileManager($config->get('template', $modelName) ?? $config->askTemplate(), $this->templateNodeClass);
+        $app->setFileManager($this->templateNodeClass);
+        $app->getFileManager()->setTemplate($config->get('template', $modelName) ?? $config->askTemplate(), $this->templateNodeClass);
+
+
         $config->setFileManager($app->getFileManager());
         $app->setProjectPath();
 
@@ -119,11 +118,7 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
      * @return mixed
      */
     public function createModel($moduleName, $modelName, $creationMode, App $app)
-    {
-//        $params = [
-//            'app' => $app,
-//            'applyChoicesForAllModules' => (!$app->has('memorizeChoices') || $app->get('memorizeChoices')),
-//        ];
+    {;
 
         if ($app->getConfig()->askLegacy($modelName)) {
             $modelMakerLegacy = $this->modelMaker. 'Legacy';

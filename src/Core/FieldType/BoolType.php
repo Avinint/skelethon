@@ -32,17 +32,17 @@ class BoolType extends FieldType
      * @param string $indent
      * @param Field $field
      * @param array $template
-     * @param array $criteresRecherche
-     * @return array
+     * @return string
      */
-    public function getCritereDeRecherche(string $indent, Field $field,  array $template, array $criteresRecherche) : array
+    public function getCritereDeRecherche(string $indent, Field $field,  array $template) : string
     {
+        $criteresRecherche = [];
         $criteresRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD'],
             [$field->getAlias(), $field->getColumn(), '=', $field->getName() . ''],
             $indent . implode('', array_map(function($line) use ($indent) {return $line.$indent;},
                 [$template[7].$template[0].$template[11].$template[1].$template[2]])));
 
-        return $criteresRecherche;
+        return implode(PHP_EOL, $criteresRecherche);
     }
 
     public function getValeurParDefautPourChampController(Field $field, array &$defaults, FilePath $fieldTemplatePath) : void
@@ -54,20 +54,9 @@ class BoolType extends FieldType
 
     public function getTemplateChampObligatoire($templatePath)
     {
-//        $this->addToExceptions($field, $exceptions);
-//        $defaults[] = $this->getValeurParDefautPourChampController($field, $defaults, $fieldTemplatePath);
-
         $template = file($templatePath->get('champs'), FILE_IGNORE_NEW_LINES);
+
         return [$template[0], $template[1]];
-
-       // $fieldsText = $field->buildFieldForController($field, $template, $this->templateNullableFields);
     }
-
-
-//    public function addToExceptions($field, &$exceptions)
-//    {
-//        $exceptions['aBooleens'][] = $field->getFormattedName();
-//    }
-
 
 }

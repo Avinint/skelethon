@@ -42,6 +42,7 @@ class E2DConfigFileGenerator extends FileGenerator
         } else {
             $modelName = $this->model->getClassName();
             $templatePath = $this->getTrueTemplatePath($path);
+
             $text = file_get_contents($templatePath);
             $enumText = $this->addEnumsToConfig($templatePath);
             if ($this->model->hasAction('export')) {
@@ -122,21 +123,6 @@ class E2DConfigFileGenerator extends FileGenerator
         return $config;
     }
 
-//    /**
-//     * Récupère le template pour générer un fichier action, routing ou bloc par action
-//     * @param string $templatePerActionPath
-//     * @param string $path
-//     * @param string $action
-//     * @return string
-//     */
-//    private function getConfigTemplateForAction(FilePath $templatePerActionPath, FilePath $path, string $action): string
-//    {
-//        return file_get_contents($templatePerActionPath) .
-//            $this->makeMultiModalBlock($path, $action, $templatePerActionPath);
-//    }
-
-
-
     /**
      * Ajout des Enums dans le fichier conf
      * @param FilePath $templatePath
@@ -208,7 +194,6 @@ class E2DConfigFileGenerator extends FileGenerator
         $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS:', 'EXPORTJS', 'EXPORT'],
             [$this->moduleName, $this->model->getName(), $this->model->getClassName(), $this->pascalCaseModuleName, $this->controllerName, $this->snakize($this->controllerName), $enumText, $exportJSText, $exportText], $template));
 
-        //var_dump($newConfig['aVues']);
         $this->addMainModuleJSFileLinkToConfig($newConfig['aVues'], $exportJSText );
 
         $config = array_replace_recursive($config, $newConfig);

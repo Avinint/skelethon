@@ -124,29 +124,6 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         throw new InvalidArgumentException("Le parametre de configuration selectionné doit être un tableau");
     }
 
-
-//    public function setForModel($model, $field = '', $value = null)
-//    {
-//        if (isset($value)) {
-//            if (!isset($this->data['models'][$model])) {
-//                $this->data['models'][$model] = [];
-//            }
-//
-//            $this->data['models'][$model][$field] = $value;
-//        }
-//
-//        $this->write();
-//    }
-
-//    public static function create($module = 'main')
-//    {
-//        if (!isset(static::$configs[$module])) {
-//            static::$configs[$module] = new static($module);
-//        }
-//
-//        return static::$configs[$module];
-//    }
-
     public function write($module = '')
     {
         if (is_null($this->fileManager)) {
@@ -283,7 +260,12 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         }
     }
 
-
+    public function askTemplate()
+    {
+        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
+        $res = $this->askConfig('template', $templates, 'askMultipleChoices', $this->type->getTemplate(), true);
+        return $res;
+    }
 
     /**
      * L'application donne des choix aux utilisateurs, les réponses sont stockées en config,
@@ -344,22 +326,6 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             return $this->get('legacy');
         }
     }
-
-    public function askTemplate()
-    {
-        $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
-        $res = $this->askConfig('template', $templates, 'askMultipleChoices', $this->type->getTemplate(), true);
-        return $res;
-    }
-
-//    public function initializeData()
-//    {
-//        $this->getData();
-//
-//
-//    }
-//
-//
 
     public function initialize(): void
     {

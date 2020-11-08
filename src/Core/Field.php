@@ -53,7 +53,7 @@ abstract class Field extends CommandLineToolShelf
             $this->enum = $this->parseEnumValues($params['enum']);
         }
 
-        $this->isPrimaryKey = $type->getName === 'primaryKey';
+        $this->isPrimaryKey = $type === 'primaryKey';
         $this->isNullable   = isset($params['is_nullable']) && ($params['is_nullable']);
         $this->maxLength    = $params['maxlength'] ?? null;
         //$this->step = isset($params['step']) ? ($params['step']) : null;

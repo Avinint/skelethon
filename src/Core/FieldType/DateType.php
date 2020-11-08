@@ -42,20 +42,6 @@ class DateType extends FieldType
      */
     private function getCritereDeRechercheDate(string $indent, Field $field, array $template, array $criteresRecherche): array
     {
-//        if ($this->type === 'date') {
-//            $sSuffixeDebut = '';
-//            $sSuffixeFin = '';
-//            $sFormat = 'Y-m-d';
-//        } elseif ($this->type === 'datetime') {
-//            $sSuffixeDebut = ' 00:00:00';
-//            $sSuffixeFin = ' 23:59:59';
-//            $sFormat = 'Y-m-d H:i:s';
-//        } else {
-//            $sSuffixeDebut = '';
-//            $sSuffixeFin = '';
-//            $sFormat = 'H:i:s';
-//        }
-
         if ($this->type->getName === 'datetime') {
             $texteCritere = $indent . implode('', array_map(function ($line) use ($indent) {
                     return $line . $indent;
@@ -79,10 +65,9 @@ class DateType extends FieldType
      * @param string $indent
      * @param Field $field
      * @param array $template
-     * @param array $criteresRecherche
-     * @return array
+     * @return string
      */
-    public function getCritereDeRecherche(string $indent, Field $field, array $template, array $criteresRecherche): array
+    public function getCritereDeRecherche(string $indent, Field $field, array $template): string
     {
         $texteCritere = $this->getCritereDeRechercheDateTemplate($indent, $template);
 
@@ -91,7 +76,7 @@ class DateType extends FieldType
                 [$field->getAlias(), $field->getColumn(), $operator, $field->getName() . $suffixeChamp, $suffixeValeur, self::FORMAT], $texteCritere);
         }
 
-        return $criteresRecherche;
+        return implode(PHP_EOL, $criteresRecherche);
     }
 
     protected function getCritereDeRechercheDateTemplate(string $indent, array $template)
@@ -106,9 +91,4 @@ class DateType extends FieldType
         return [$template[0], $template[2].$template[3]];
     }
 
-
-//    public function addToExceptions($field, &$exceptions)
-//    {
-//        $exceptions['aDates'][] = $field->getName();
-//    }
 }

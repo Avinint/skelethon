@@ -35,8 +35,4 @@ class DateTimeType extends DateType
         return [$template[0], $template[2].$template[4]];
     }
 
-    //    public function addToExceptions($field, &$exceptions)
-    //    {
-    //        $exceptions['aDateTimes'][] = $field->getName();
-    //    }
 }

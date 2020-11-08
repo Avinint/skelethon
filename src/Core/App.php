@@ -31,20 +31,25 @@ class App
     /**
      * @param FileManager|null $fileManager
      */
-    public function setFileManager( ?string $template = null, string $templateNodeClass = '', ?FileManager $fileManager = null): void
+    public function setFileManager(?string $templateNodeClass =  null, ?FileManager $fileManager = null): void
     {
         if ($fileManager === null) {
-            $this->templates ??= $template;
-            $this->fileManager = new FileManager($this, $this->templates, $templateNodeClass);
+            $this->fileManager = new FileManager($this, $templateNodeClass);
         } else {
             $this->fileManager = $fileManager;
         }
 
-//        if (!empty($this->data)) {
-//            $this->write($this->module);
-//        }
+        //        if (!empty($this->data)) {
+        //            $this->write($this->module);
+        //        }
 
         $this->getFileManager()->ensureConfigFileExists();
+        $this->config->setFileManager($this->getFileManager());
+    }
+
+    public function setTemplates(?string $template = null)
+    {
+        $this->templates ??= $template;
     }
 
 
@@ -81,9 +86,9 @@ class App
     }
 
     /**
-     * @return object
+     * @return ModelMaker
      */
-    public function getModelMaker()
+    public function getModelMaker() : ModelMaker
     {
         return $this->modeleMaker;
     }
@@ -91,7 +96,7 @@ class App
     /**
      * @param $modeleMaker
      */
-    public function setModeleMaker($modeleMaker) : void
+    public function setModeleMaker(ModelMaker   $modeleMaker) : void
     {
         $this->modeleMaker = $modeleMaker;
     }

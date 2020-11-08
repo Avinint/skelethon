@@ -21,11 +21,6 @@ class TimeType extends DateType
                 [$field->getAlias(), $field->getColumn(), $this->module, $this->model, $field->getFormattedName()], $template[4]);
     }
 
-//    public function addToExceptions($field, &$exceptions)
-//    {
-//        $exceptions['aTimes'][] = $field->getName();
-//    }
-
     public function getTemplateChampObligatoire($templatePath)
     {
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);

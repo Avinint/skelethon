@@ -50,10 +50,9 @@ class E2DJSFileGenerator extends FileGenerator
         if ($path->getName() === 'CONTROLLERAdmin') {
 
             /* Ajout code fermeture calque */
-            if ($this->model->hasActions(['edition', 'consultation'])) {
+            $closeConsultationModal = '';
+            if ($this->model->hasActions(['consultation'])) {
                 $closeConsultationModal = PHP_EOL.file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('fermetureCalqueConsultation')));
-            } else {
-                $closeConsultationModal = '';
             }
 
             /* Ajout code si pas d'action recherche */
@@ -142,27 +141,4 @@ class E2DJSFileGenerator extends FileGenerator
         return ['Fichier invalide', 'error'];
     }
 
-//    /**
-//     * @param FilePath $path
-//     * @param $action
-//     * @param bool $usesRechercheNoCallback
-//     * @param string $actionMethodText
-//     * @return array
-//     */
-//    private function getJSActionMethodText(FilePath $path, $action, bool $usesRechercheNoCallback) : array
-//    {
-//        $actionMethodText = '';
-//        $templatePerActionPath = $this->getTrueTemplatePath($path->add($this->camelize($action)));
-//        if (isset($templatePerActionPath)) {
-//            if ($action === 'recherche') {
-//                $noRecherche = false;
-//                if ($usesRechercheNoCallback) {
-//                    $templatePerActionPath = $this->getTrueTemplatePath($templatePerActionPath->add('nocallback'));
-//                }
-//            }
-//
-//            $actionMethodText .= file_get_contents($templatePerActionPath);
-//        }
-//        return [$noRecherche, $actionMethodText];
-//    }
 }

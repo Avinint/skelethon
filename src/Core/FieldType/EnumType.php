@@ -34,28 +34,37 @@ class EnumType extends FieldType
     public function addSelectFieldFormattedLines(string $indent, Field $field, array $template) : string
     {
         return $indent . str_replace(['ALIAS', 'COLUMN', 'mODULE', 'MODEL', 'NAME'],
-                [$field->getAlias(), $field->getColumn(), $this->module, $this->model ,$field->getFormattedName()], $template[7]);
+                [$field->getAlias(), $field->getColumn(), $this->module, $this->app->getModelMaker()->getClassName() ,$field->getFormattedName()], $template[7]);
     }
-
 
     /**
      * Génère les lignes des controllers générer les selects
      * en peupLant
      * @param $field
      * @param $templatePath
-     * @return mixed|string|string[]
+     * @return string
      */
-    public function getChampsPourDynamisationEdition($field, $templatePath)
+    public function getChampsPourDynamisationEdition($field, $templatePath) : string
     {
+        $template = $this->getControllerTemplateChamp($templatePath);
 
-        $template = $this->getControllerEditionTemplate( $templatePath->add('enum'));
+        return str_replace(['NAME', 'mODULE', 'MODEL', 'COLUMN'],
+            [$field->getName(), $this->app->getModuleName(), $this->app->getModelMaker()->getClassName(), $field->getColumn()], $template[0]);
+
+    }
 
 
-        return str_replace(['NAME', 'mODULE', 'TABLE', 'COLUMN'],
-            [$field->getName(), $this->app->getModuleName(), $this->app->getModelName(), $field->getColumn()], $template);
-       // $template = $this->enumType === 'select2' ?   :
+    public function getValeurParDefautChampPourDynamisationEditionController(Field $field, $templatePath) : string
+    {
+        $template = $this->getControllerTemplateChamp($templatePath);
+        if ($this->enumType === 'select2') {
+            $enumDefault = $template[3];
+        } else {
+            $enumDefault = $template[1]. PHP_EOL. $template[2];
+        }
 
-        $default = $field->getDefaultValue() ?? '';
+        return str_replace(['NAME', 'mODULE', 'MODEL', 'COLUMN', 'DEFAULT'],
+                [$field->getName(), $this->app->getModuleName(), $this->app->getModelMaker()->getClassName(), $field->getColumn(), $field->getDefaultValue()],$enumDefault);
     }
 
     /**
@@ -63,57 +72,26 @@ class EnumType extends FieldType
      * @param $templatePath
      * @return mixed
      */
-    public function getControllerEditionTemplate($templatePath)
+    public function getControllerTemplateChamp($templatePath)
     {
-//        $this->addToExceptions($field, $exceptions);
-//        $defaults[] = $this->getValeurParDefautPourChampController($field, $defaults, $fieldTemplatePath);
-
-        $template = file($this->app->getTrueTemplatePath($templatePath->add($this->enumType)), FILE_IGNORE_NEW_LINES);
-        return $template[0];
-
-        // $fieldsText = $field->buildFieldForController($field, $template, $this->templateNullableFields);
+        return file($this->app->getTrueTemplatePath($templatePath->add('enum')->add($this->enumType)), FILE_IGNORE_NEW_LINES);
     }
 
 
-    public function  getChampsPourDynamisationRecherche(Field $field, $templatePath, array &$enums, array &$defaults)
+    public function  getChampsPourDynamisationRecherche(Field $field, $templatePath)
     {
-        //$this->enumType = $this->app->get('usesSelect2') ? 'select2' : 'selectMenu';
-        [$enumTemplate, $defaultTemplate] = $this->getControllerSearchTemplate($field, $templatePath->add('enum'));
-
-        var_dump($enumTemplate);
-        //return $templates;
-       $template =  array_map(function($line) use ($field) {return str_replace(['NAME', 'mODULE', 'TABLE', 'COLUMN'], [$field->getName(), $this->app->getModuleName(), $this->app->getModelName()],$line);}, $enumTemplate);
-       var_dump($template); die();
-    }
-
-    /**
-     *  Récupère le template pour générer le champ en mode dynamisation recherche
-     * @param $field
-     * @param $templatePath
-     */
-    protected function getControllerSearchTemplate($field, $templatePath)
-    {
-        $template = file($this->app->getTrueTemplatePath($templatePath->add($this->enumType)), FILE_IGNORE_NEW_LINES);
-
-        $default = $field->getDefaultValue() ?? '';
+        $template = $this->getControllerTemplateChamp($templatePath);
 
         if ($this->enumType === 'select2') {
-            if ($default) {
-                $enumSearchLines = array_slice($template, 0, 3);
-                $enumDefault     = $template[3];
-            } else {
-                $enumSearchLines = [$template[0]];
-            }
+            $enumTemplate = $field->getDefaultValue() ? array_slice($template, 0, 3) : [$template[0]];
         } else {
-            if ($default) {
-                $enumSearchLines = $template;
-                $enumDefault     = $enumSearchLines[2];
-            } else {
-                $enumSearchLines = [$template[0]];
-            }
+            $enumTemplate = $field->getDefaultValue() ? array_slice($template, 0, 3) : [$template[0]];
         }
 
-        return [$enumSearchLines, $enumDefault];
+
+       return implode(PHP_EOL,  array_map(function($line) use ($field) {
+           return str_replace(['NAME', 'mODULE', 'MODEL', 'COLUMN', 'DEFAULT'],
+               [$field->getName(), $this->app->getModuleName(), $this->app->getModelMaker()->getClassName(), $field->getColumn(), $field->getDefaultValue()],$line);}, $enumTemplate));
     }
 
 

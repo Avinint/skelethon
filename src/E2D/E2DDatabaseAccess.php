@@ -77,6 +77,7 @@ class E2DDatabaseAccess extends DatabaseAccess
                             }
                             break;
                         case 'int':
+                        case 'timestamp':
                         case 'smallint':
                             $oChamp->sChamp = 'n'.$sNom;
                             if ($sMaxLength != '') {

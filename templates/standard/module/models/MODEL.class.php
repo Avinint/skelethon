@@ -25,6 +25,7 @@ class MODEL extends Bdd
         $this->sNomCle = 'PK';
 
         $this->aMappingChamps = array(
+            $this->sNomCle => $this->sGetNomChampId(),
 //MAPPINGCHAMPS
         );
 //TITRELIBELLE

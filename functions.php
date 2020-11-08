@@ -22,6 +22,7 @@ function getArguments($arguments): array
 
 function array_contains($needle, array $haystack, bool $any = false, $has_nested_arrays = false): bool
 {
+
     if (is_array($needle)) {
         return array_contains_array($needle, $haystack, $any, $has_nested_arrays);
     }
@@ -31,7 +32,7 @@ function array_contains($needle, array $haystack, bool $any = false, $has_nested
 
 function array_contains_array(array $needle, array $haystack, bool $any = false, bool $has_nested_arrays = false): bool
 {
-    if ($has_nested_arrays) {;
+    if ($has_nested_arrays) {
         return strpos(serialize($haystack), serialize($needle)) !== false;
     } elseif ($any) {
         return !empty(array_intersect($needle, $haystack));

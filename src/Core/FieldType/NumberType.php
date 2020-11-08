@@ -19,10 +19,9 @@ class NumberType extends FieldType
      * @param string $indent
      * @param Field $field
      * @param array $template
-     * @param array $criteresRecherche
-     * @return array
+     * @return string
      */
-    public function getCritereDeRecherche(string $indent, Field $field,  array $template, array $criteresRecherche) : array
+    public function getCritereDeRecherche(string $indent, Field $field,  array $template) : string
     {
         $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
                 [$template[7], $template[0], $template[$this->templateIndex], $template[1], $template[2]]));
@@ -32,6 +31,6 @@ class NumberType extends FieldType
                 [$field->getAlias(), $field->getColumn(), $operator, $field->getName().$suffix], $texteCritere);
         }
 
-        return $criteresRecherche;
+        return implode(PHP_EOL, $criteresRecherche);
     }
 }
