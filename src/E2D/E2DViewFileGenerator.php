@@ -73,31 +73,6 @@ class E2DViewFileGenerator extends FileGenerator
         $fieldText = [];
         foreach ($this->model->getFields('edition') as $field) {
             $fieldTemplate = $field->getType()->getEditionView($path);
-//            if ($field->getType('enum')) {
-//
-//                if ($this->model->usesSelect2) {
-//                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum_select2')));
-//                } else {
-//                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum')));
-//                }
-//            } elseif ($field->is('bool')) {
-//                if ($this->model->usesSwitches) {
-//                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_switch')));
-//                } else {
-//                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_radio')));
-//                }
-//            } elseif ($field->is('foreignKey')) {
-//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum_select_ajax')));
-//            } elseif ($field->is(['date', 'datetime'])) {
-//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('date')));
-//            } elseif ($field->is(['text', 'mediumtext', 'longtext'])) {
-//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('text')));
-//            } elseif ($field->is(['float', 'decimal', 'tinyint', 'int', 'smallint', 'double'])) {
-//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('number')));
-//            } else {
-//                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('string')));
-//            }
-
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME', 'COLUMN', 'STEP'],
                 [$field->getLabel(), $field->getFormattedName(), $field->getType(), $field->getName(), $field->getColumn(),
                     $field->getStep()], $fieldTemplate);
@@ -118,11 +93,11 @@ class E2DViewFileGenerator extends FileGenerator
         $fieldText = [];
         foreach ($this->model->getFields('recherche') as $field) {
             if ($field->is(['enum', 'parametre'])) {
+                $fieldTemplatePath = $this->getTrueTemplatePath($path->add('enum'));
                 if ($this->model->usesSelect2) {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum_select2')));
-                } else {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum')));
+                    $fieldTemplatePath = $this->getTrueTemplatePath($path->get('enum')->add('select2'));
                 }
+                $fieldTemplate = file_get_contents($fieldTemplatePath);
             } elseif ($field->is('bool')) {
                 if ($this->model->usesSwitches) {
                     $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_switch')));

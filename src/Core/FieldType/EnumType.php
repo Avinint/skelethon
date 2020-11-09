@@ -60,7 +60,8 @@ class EnumType extends FieldType
         if ($this->enumType === 'select2') {
             $enumDefault = $template[3];
         } else {
-            $enumDefault = $template[1]. PHP_EOL. $template[2];
+
+            $enumDefault = $template[2];
         }
 
         return str_replace(['NAME', 'mODULE', 'MODEL', 'COLUMN', 'DEFAULT'],
@@ -77,7 +78,11 @@ class EnumType extends FieldType
         return file($this->app->getTrueTemplatePath($templatePath->add('enum')->add($this->enumType)), FILE_IGNORE_NEW_LINES);
     }
 
-
+    /**
+     * @param Field $field
+     * @param $templatePath
+     * @return string
+     */
     public function  getChampsPourDynamisationRecherche(Field $field, $templatePath)
     {
         $template = $this->getControllerTemplateChamp($templatePath);

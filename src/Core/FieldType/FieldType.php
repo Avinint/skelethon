@@ -40,6 +40,7 @@ abstract class FieldType
             'date'       => DateType::class,
             'enum'       => EnumType::class,
             'float'      => FloatType::class,
+            'parametre'  => ParametreType::class,
             'foreignKey' => ForeignKeyType::class,
             'int'        => IntegerType::class,
             'string'     => StringType::class,
@@ -64,11 +65,9 @@ abstract class FieldType
 
     private static function getTypeKeyFromName(string $name)
     {
-        if (array_contains($name, ['bool', 'primaryKey', 'foreignKey', 'date', 'datetime', 'time'])) {
+        if (array_contains($name, ['bool', 'primaryKey', 'foreignKey', 'date', 'datetime', 'time', 'parametre', 'enum'])) {
             $key = $name;
-        } elseif (array_contains($name, self::ENUM)) {
-            $key = 'enum';
-        } elseif (array_contains($name, self::FLOAT)) {
+        }elseif (array_contains($name, self::FLOAT)) {
             $key = 'float';
         } elseif (array_contains($name, self::INTEGER)) {
             $key = 'int';

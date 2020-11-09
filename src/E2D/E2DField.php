@@ -69,6 +69,7 @@ class E2DField extends Field
         if (!$template) {
             return '';
         }
+
         $lines[] = $indent.str_replace(['ALIAS', 'COLUMN'], [$this->alias, $this->column], $template[0]);
         $lines[] =  $this->type->addSelectFieldFormattedLines($indent, $this, $template);
 
@@ -172,16 +173,20 @@ class E2DField extends Field
         $this->parametre->type = $type;
         $this->parametre->lignes = [];
         foreach ($lignes as $ligne) {
-            $this->parametre->lignes[] = [$ligne['code'], $ligne['valeur']];
+            $this->parametre->lignes[$ligne['code']] =  $ligne['valeur'];
         }
     }
 
-    public function getParametre($property = '')
+    public function getParametre($propriete = '')
     {
-        if ($property)
-            return $this->parametre->$property;
+        if ($propriete) {
+            if ($propriete === 'type') {
+                return $this->parametre->type;
+            }
+            return $this->parametre->lignes[$propriete];
+        }
         else
-            return $this->parametre;
+            return $this->parametre->lignes;
     }
 
 }

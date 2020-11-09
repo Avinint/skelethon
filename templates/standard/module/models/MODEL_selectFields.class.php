@@ -6,6 +6,7 @@ IF(ALIAS.COLUMN, TIME_FORMAT(ALIAS.COLUMN, \'%H\h%i\'), \'\') AS NAME
 REPLACE(ALIAS.COLUMN, \'.\', \',\') AS NAME
 (CASE WHEN ALIAS.COLUMN = 1 THEN \'oui\' ELSE \'non\' END) AS NAME
 IF(ALIAS.COLUMN,' . $this->sGetClauseCase('ALIAS.COLUMN', $this->szGetParametreModule('mODULE', 'aListe-MODEL-COLUMN')) . ', \'\') NAME
+IFNULL(ALIAS.valeur, \'\') FIELD
 FKALIAS.LABEL CONCATALIAS
 (
     SELECT LABEL

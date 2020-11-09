@@ -207,17 +207,33 @@ class E2DModelMaker extends ModelMaker
         return $alias;
     }
 
-    public function getJoins(string $template)
+    public function getJoins(array $template)
     {
         $joinText = '';
-        $joinList = $this->config->get('manyToOne');
+        $joins = [];
+        $paramJoins = [];
+        $joinList = $this->config->get('manyToOne') ?? false;
+        $joinParametreList = $this->config->get('champsParametres') ?? false;
 
         if (!empty($joinList)) {
-            $joins = array_map(function ($join) use ($template) {
+            $joinTemplate = $template[0]. $template[1];
+            $joins = array_map(function ($join) use ($joinTemplate) {
                 return str_replace(['FKTABLE', 'FKALIAS', 'ALIAS', 'FK'],
-                    [$join['table'], $join['alias'], $this->getAlias(), $join['pk']], $template);
+                    [$join['table'], $join['alias'], $this->getAlias(), $join['pk']], $joinTemplate);
             }, $joinList);
+        }
+        if ($joinParametreList) {
+            $joinTemplate = $template[0]. $template[2];
 
+            $paramJoins = array_map(function ($join, $key) use ($joinTemplate) {
+                return str_replace(['FKTABLE', 'FKALIAS', 'ALIAS', 'COLUMN', 'TYPE'],
+                    ['parametre', strtoupper(substr($key, 0, 3)), $this->getAlias(), $key, key($join)], $joinTemplate);
+            }, $joinParametreList, array_keys($joinParametreList));
+
+        }
+
+        $joins = array_merge($joins, $paramJoins);
+        if ($joins) {
             $joinText = PHP_EOL . implode(PHP_EOL, $joins);
         }
 

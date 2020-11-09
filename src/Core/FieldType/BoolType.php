@@ -54,7 +54,7 @@ class BoolType extends FieldType
 
     public function getTemplateChampObligatoire($templatePath)
     {
-        $template = file($templatePath->get('champs'), FILE_IGNORE_NEW_LINES);
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
 
         return [$template[0], $template[1]];
     }

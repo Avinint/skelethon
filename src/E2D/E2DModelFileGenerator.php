@@ -26,7 +26,7 @@ class E2DModelFileGenerator extends FileGenerator
             $text = file_get_contents($templatePath);
         }
 
-        $joinTemplate = file_get_contents($this->getTrueTemplatePath($templatePath->add('joins')));
+        $joinTemplate = file($this->getTrueTemplatePath($templatePath->add('joins')));
         $text = str_replace([
             '//METHODS', 'MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', 'LEFTJOINS', '//RECHERCHE', '//VALIDATION'
         ],[
