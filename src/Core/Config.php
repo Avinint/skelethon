@@ -88,6 +88,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
                 if (isset($model)) {
                     $this->data[$this->subDir]['modules'][$this->module]['models'][$model][$field] = $value;
                 } else {
+
                     $this->data[$this->subDir]['modules'][$this->module][$field] = $value;
                 }
 
@@ -122,6 +123,16 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             }
         }
         throw new InvalidArgumentException("Le parametre de configuration selectionné doit être un tableau");
+    }
+
+    public function remove(&$field, $key, $model = null) : void
+    {
+        $field = &$this->data[$this->subDir]['modules'][$this->module][$field];
+        if (is_array($field) && isset($field[$key])) {
+            unset($field[$key]);
+            $this->write($this->module);
+            return;
+        }
     }
 
     public function write($module = '')
@@ -201,9 +212,9 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
      */
     public function get(string $field, string $model = null)
     {
-//        if (isset($model)) {
-//            $result = $this->getValueFromModelConfig($field, $model);
-//        }
+        if (isset($model)) {
+            return $this->getValueFromModelConfig($field, $model) ?? null;
+        }
 
         return $this->getValueFromModelConfig($field) ?? $this->getValueFromModuleConfig($field) ?? $this->data[$this->subDir][$field] ?? $this->data[$field] ?? null;;
     }

@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 use Core\Field;
 use Core\FilePath;
@@ -32,5 +32,15 @@ class NumberType extends FieldType
         }
 
         return implode(PHP_EOL, $criteresRecherche);
+    }
+
+    /**
+     * Permet le récupérer le chemin du template du champ pour la vue recherche
+     * @param $path
+     * @return mixed
+     */
+    protected function getCheminTemplateVueRecherche($path)
+    {
+        return $this->app->getTrueTemplatePath($path->add('number'));
     }
 }

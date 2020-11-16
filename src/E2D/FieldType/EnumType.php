@@ -1,6 +1,6 @@
 <?php
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 use Core\App;
 use Core\Field;
@@ -18,8 +18,7 @@ class EnumType extends FieldType
 
     public function getEditionView(FilePath $path)
     {
-        $suffix = $this->app->get('usesSelect2') ? 'enum_select2' : 'enum';
-        $templatePath = $this->app->getTrueTemplatePath($path->add($suffix));
+        $templatePath = $this->app->getTrueTemplatePath($path->add('enum')->add($this->enumType));
 
         return file_get_contents($templatePath);
     }
@@ -53,14 +52,12 @@ class EnumType extends FieldType
 
     }
 
-
-    public function getValeurParDefautChampPourDynamisationEditionController(Field $field, $templatePath) : string
+    public function getValeurParDefautChampPourDynamisationEditionController(Field $field, FilePath $templatePath) : string
     {
         $template = $this->getControllerTemplateChamp($templatePath);
         if ($this->enumType === 'select2') {
             $enumDefault = $template[3];
         } else {
-
             $enumDefault = $template[2];
         }
 
@@ -75,7 +72,7 @@ class EnumType extends FieldType
      */
     public function getControllerTemplateChamp($templatePath)
     {
-        return file($this->app->getTrueTemplatePath($templatePath->add('enum')->add($this->enumType)), FILE_IGNORE_NEW_LINES);
+        return file($this->app->getTrueTemplatePath($templatePath->add('enum')->add('select')), FILE_IGNORE_NEW_LINES);
     }
 
     /**
@@ -87,17 +84,21 @@ class EnumType extends FieldType
     {
         $template = $this->getControllerTemplateChamp($templatePath);
 
-        if ($this->enumType === 'select2') {
-            $enumTemplate = $field->getDefaultValue() ? array_slice($template, 0, 3) : [$template[0]];
-        } else {
-            $enumTemplate = $field->getDefaultValue() ? array_slice($template, 0, 3) : [$template[0]];
-        }
+        $enumTemplate = $field->getDefaultValue() ? array_slice($template, 0, 3) : [$template[0]];
 
-
-       return implode(PHP_EOL,  array_map(function($line) use ($field) {
-           return str_replace(['NAME', 'mODULE', 'MODEL', 'COLUMN', 'DEFAULT'],
-               [$field->getName(), $this->app->getModuleName(), $this->app->getModelMaker()->getClassName(), $field->getColumn(), $field->getDefaultValue()],$line);}, $enumTemplate));
+        return implode(PHP_EOL,  array_map(function($line) use ($field) {
+            return str_replace(['NAME', 'mODULE', 'MODEL', 'COLUMN', 'DEFAULT'],
+                [$field->getName(), $this->app->getModuleName(), $this->app->getModelMaker()->getClassName(), $field->getColumn(), $field->getDefaultValue()],$line);}, $enumTemplate));
     }
 
+    /**
+     * Permet le récupérer le chemin du template du champ pour la vue recherche
+     * @param $path
+     * @return mixed
+     */
+    protected function getCheminTemplateVueRecherche($path)
+    {
+        return $this->app->getTrueTemplatePath($path->add('enum')->add($this->enumType));
+    }
 
 }

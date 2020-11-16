@@ -1,15 +1,14 @@
 <?php
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 use Core\Field;
 
-class TimeType extends DateType
+class FloatType extends NumberType
 {
-    public const FORMAT = 'H:i:s';
+    protected $templateIndex = 12;
 
     /**
-     * Ajoute les lignes d champs formatés dans les selects pour récupérer des entités
      * @param string $indent
      * @param Field $field
      * @param array $template
@@ -18,12 +17,13 @@ class TimeType extends DateType
     public function addSelectFieldFormattedLines(string $indent, Field $field, array $template) : string
     {
         return $indent . str_replace(['ALIAS', 'COLUMN', 'mODULE', 'MODEL', 'NAME'],
-                [$field->getAlias(), $field->getColumn(), $this->module, $this->model, $field->getFormattedName()], $template[4]);
+                [$field->getAlias(), $field->getColumn(), $this->module, $this->model ,$field->getFormattedName()], $template[5]);
     }
 
     public function getTemplateChampObligatoire($templatePath)
     {
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
-        return [$template[0], $template[2].$template[5]];
+        return [$template[0], $template[6]];
     }
+
 }

@@ -1,19 +1,19 @@
-btn_ouverture_edition_TABLE:
+btn_ouverture_edition_mODEL:
     action:
         module: mODULE
-        route: json_dynamisation_edition_TABLE
+        route: json_dynamisation_edition_mODEL
         type: load_data
     callback:
         module: cONTROLLER
         fonction: vDynamisationEditionMODELJSON
         alerte: non
 
-btn_enregistre_edition_TABLE:
+btn_enregistre_edition_mODEL:
     action:
         module: mODULE
-        route: json_enregistre_edition_TABLE
+        route: json_enregistre_edition_mODEL
         type: save_data
-        save_formulaire: formulaire_edition_TABLE
+        save_formulaire: formulaire_edition_mODEL
     callback:
         module: cONTROLLER
         fonction: vFermeEditionEtRefreshListe

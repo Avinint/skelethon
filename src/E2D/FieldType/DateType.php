@@ -1,6 +1,6 @@
 <?php
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 use Core\Field;
 use Core\FilePath;
@@ -71,9 +71,9 @@ class DateType extends FieldType
     {
         $texteCritere = $this->getCritereDeRechercheDateTemplate($indent, $template);
 
-        foreach ([['>=', 'Debut', self::SUFFIXE_DEBUT], ['<=', 'Fin', self::SUFFIXE_FIN]] as [$operator, $suffixeChamp, $suffixeValeur]) {
+        foreach ([['>=', 'Debut', static::SUFFIXE_DEBUT], ['<=', 'Fin', static::SUFFIXE_FIN]] as [$operator, $suffixeChamp, $suffixeValeur]) {
             $criteresRecherche[] = str_replace(['ALIAS', 'COLUMN', 'OPERATOR', 'FIELD', 'SUFFIXE', 'FORMAT'],
-                [$field->getAlias(), $field->getColumn(), $operator, $field->getName() . $suffixeChamp, $suffixeValeur, self::FORMAT], $texteCritere);
+                [$field->getAlias(), $field->getColumn(), $operator, $field->getName() . $suffixeChamp, $suffixeValeur, static::FORMAT], $texteCritere);
         }
 
         return implode(PHP_EOL, $criteresRecherche);
@@ -91,4 +91,13 @@ class DateType extends FieldType
         return [$template[0], $template[2].$template[3]];
     }
 
+    /**
+     * Permet le récupérer le chemin du template du champ pour la vue recherche
+     * @param $path
+     * @return mixed
+     */
+    protected function getCheminTemplateVueRecherche($path)
+    {
+        return $this->app->getTrueTemplatePath($path->add('date'));
+    }
 }

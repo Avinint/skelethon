@@ -1,7 +1,7 @@
 <?php
 
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 
 use Core\App;
@@ -13,4 +13,5 @@ class TextType extends FieldType
     {
         return file_get_contents($this->app->getTrueTemplatePath($path->add('text')));
     }
+
 }

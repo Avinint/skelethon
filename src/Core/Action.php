@@ -8,6 +8,7 @@ abstract class Action extends BaseMaker
 {
     protected string $name;
     protected App $app;
+    protected ModelMaker $model;
 
     public function __toString()
     {
@@ -17,6 +18,7 @@ abstract class Action extends BaseMaker
     public function __construct(App $app)
     {
         $this->app = $app;
+        $this->model = $app->getModelMaker();
     }
 
     /**
@@ -29,8 +31,10 @@ abstract class Action extends BaseMaker
             return '';
         }
 
+
+
         $templatePerActionPath = $this->getTrueTemplatePath($path->add($this->name));
-        if (file_exists($templatePerActionPath)) {
+        if (isset($templatePerActionPath)) {
             return $this->getConfigTemplateForAction($templatePerActionPath, $path, $this->name);
         }
 
@@ -72,12 +76,12 @@ abstract class Action extends BaseMaker
      * @param string $actionMethodText
      * @return string
      */
-    public function getJavaScriptMethods(FilePath $path, bool $usesRechercheNoCallback) : string
+    public function getJavaScriptMethods(FilePath $path, bool $usesCallbackListeElement) : string
     {
         $templatePerActionPath = $this->getTrueTemplatePath($path->add($this->camelize($this->name)));
 
         if (isset($templatePerActionPath)) {
-            $templatePerActionPath = $this->getJavaScriptMethodPerActionHook($usesRechercheNoCallback, $templatePerActionPath);
+            $templatePerActionPath = $this->getJavaScriptMethodPerActionHook($usesCallbackListeElement, $templatePerActionPath);
 
             return file_get_contents($templatePerActionPath);
         }

@@ -16,6 +16,7 @@ class ESMModuleMaker extends E2DModuleMaker
     {
         $menu = Spyc::YAMLLoad($this->menuPath);
         $subMenu = $this->getSubMenu();
+
         if (!empty($menu)) {
             if (isset($menu[$this->name]['html_accueil_'.$this->model->getName()]) &&
                 !array_contains_array($menu[$this->name]['html_accueil_'.$this->model->getName()], $subMenu[$this->name]['html_accueil_'.$this->model->getName()], ARRAY_ALL, true)) {
@@ -24,22 +25,12 @@ class ESMModuleMaker extends E2DModuleMaker
 
             if (!isset($menu[$this->name]['html_accueil_'.$this->model->getName()])) {
                 $menu = Spyc::YAMLDump(array_merge_recursive($menu, $subMenu), false, 0, true);
-                $this->app->getFileManager()->createFile($this->menuPath, $menu, true);
+                $this->app->getFileManager()->createFile($this->menuPath, trim($menu, PHP_EOL), true);
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
-            $this->app->getFileManager()->createFile($this->menuPath, $menu, true);
+            $this->app->getFileManager()->createFile($this->menuPath, trim($menu, PHP_EOL), true);
         }
     }
-
-//    /**
-//     * @param mixed $fileManager
-//     */
-//    public function setFileManager(?FileManager $fileManager): void
-//    {
-//        $this->fileManager = $fileManager ?? $this->app->getFileManager($this->template);
-//
-//    }
-
 
 }

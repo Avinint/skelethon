@@ -47,11 +47,13 @@ class E2DConfigFileGenerator extends FileGenerator
             $enumText = $this->addEnumsToConfig($templatePath);
             if ($this->model->hasAction('export')) {
                 $exportText = $this->generateChampsExportForConfig($templatePath);
-                $exportJSText = PHP_EOL.file_get_contents($templatePath->add('exportjs'));
+                if ($this->app->get('avecRessourceExport')) {
+                    $exportJSText = PHP_EOL . file_get_contents($templatePath->add('exportjs'));
+                }
             }
         }
 
-        $text = str_replace(['mODULE', 'mODEL', 'TABLE', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS:', 'EXPORTJS', 'EXPORT'],
+        $text = str_replace(['mODULE', 'mURL', 'mODEL', 'MODEL', 'MODULE', 'CONTROLLER', 'cONTROLLER', 'ENUMS:', 'EXPORTJS', 'EXPORT'],
             [$this->moduleName, $this->urlize($this->model->getName()), $this->model->getName(), $modelName, $this->pascalCaseModuleName,
                 $this->controllerName, $this->snakize($this->controllerName) , $enumText, $exportJSText, $exportText], $text);
 
@@ -137,7 +139,7 @@ class E2DConfigFileGenerator extends FileGenerator
             foreach ($fields as $field) {
                 $enumLines = file($templatePath->add('enum'));
                 $enumHandle = str_replace(['MODEL', 'COLUMN'], [$this->model->getClassName(), $field->getColumn()], $enumLines[0]);
-                $enumText .= $enumHandle . PHP_EOL;
+                $enumText .=  PHP_EOL . $enumHandle;
                 foreach ($field->getEnum() as $value) {
                     $enumKeyValuePair = str_replace(['VALEUR', 'LIBELLE'], [$value, $this->labelize($value)], $enumLines[1]);
                     $enumText .= $enumKeyValuePair . PHP_EOL;
@@ -156,13 +158,18 @@ class E2DConfigFileGenerator extends FileGenerator
     {
         $champsTexte = '';
         $fields = $this->model->getFieldsForExport();
-
+        $exportFieldLines = file($templatePath->add('export'));
         if (!empty($fields)) {
-            $exportFieldLines = file($templatePath->add('export'));
-            $champsTexte .= PHP_EOL.str_replace('cONTROLLER', $this->module->getControllerName('snake'), $exportFieldLines [0]);
-            $champsTexte .= str_replace('MODEL', $this->model->getClassName(), $exportFieldLines [1]);
+            if ($this->app->get('avecRessourceExport')) {
+                $champsTexte .= PHP_EOL . str_replace('cONTROLLER', $this->module->getControllerName('snake'), $exportFieldLines [0]);
+                $champsTexte .= str_replace('MODEL', $this->model->getClassName(), $exportFieldLines [1]);
+
+            } else {
+                $champsTexte .= PHP_EOL . str_replace('cONTROLLER', $this->model->getClassName(), $exportFieldLines [0]);
+            }
+
             foreach ($fields as $field) {
-                $champsTexte .= str_replace(['VALEUR', 'LIBELLE'], [$field->getColumn(), $this->labelize($field)], $exportFieldLines[2]).PHP_EOL;
+                $champsTexte .= str_replace(['VALEUR', 'LIBELLE'], [$field->getFormattedName(), $this->labelize($field)], $exportFieldLines[2]).PHP_EOL;
             }
         }
 

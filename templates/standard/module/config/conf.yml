@@ -9,11 +9,11 @@ aVues:
     cONTROLLER:
         admin:
             simples:
-                accueil_TABLE:
+                accueil_mODEL:
                     ressources:
                         CSS:
                             modules:
-                                - mODULE/templates/defaut/themes/defaut/css/TABLE.css
+                                - mODULE/templates/defaut/themes/defaut/css/mURL.css
                             lib_externe_dist:
                                 - package-plugins-light/JS/Select2/css/select2.min.css
                         JS:
@@ -23,13 +23,13 @@ aVues:
                             lib_externe_dist:
                                 - package-plugins-light/JS/jQuery-Mask/jquery.mask.js
                                 - package-plugins-light/JS/Select2/select2.min.js
-                consultation_TABLE:
+                consultation_mODEL:
                     ressources:
                         CSS: []
                         JS: []
 
             formulaires:
-                edition_TABLE:
+                edition_mODEL:
                     classe: MODEL
                     ressources:
                         CSS: []

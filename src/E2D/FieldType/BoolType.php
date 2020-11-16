@@ -1,6 +1,6 @@
 <?php
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 use Core\Field;
 use Core\FilePath;
@@ -9,8 +9,8 @@ class BoolType extends FieldType
 {
     public function getEditionView(FilePath $path)
     {
-        $suffix = $this->app->usesSwitches ? 'bool_switch' : 'bool_radio';
-        $templatePath = $this->app->getTrueTemplatePath($path->add($suffix));
+        $suffixe = $this->app->usesSwitches ? 'bool_switch' : 'bool_radio';
+        $templatePath = $this->app->getTrueTemplatePath($path->add($suffixe));
 
         return file_get_contents($templatePath);
     }
@@ -57,6 +57,18 @@ class BoolType extends FieldType
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
 
         return [$template[0], $template[1]];
+    }
+
+    /**
+     * Permet le récupérer le chemin du template du champ pour la vue recherche
+     * @param $path
+     * @return mixed
+     */
+    protected function getCheminTemplateVueRecherche($path)
+    {
+        $suffixe = $this->app->usesSwitches ? 'bool_switch' : 'bool_radio';
+
+        return $this->app->getTrueTemplatePath($path->add($suffixe));
     }
 
 }

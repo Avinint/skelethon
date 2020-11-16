@@ -1,7 +1,7 @@
-btn_dynamisation_recherche_TABLE:
+btn_dynamisation_recherche_mODEL:
     action:
         module: mODULE
-        route: json_dynamisation_recherche_TABLE
+        route: json_dynamisation_recherche_mODEL
         type: load_data
     callback:
         module: cONTROLLER

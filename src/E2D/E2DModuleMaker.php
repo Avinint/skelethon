@@ -91,39 +91,45 @@ class E2DModuleMaker extends ModuleMaker
     protected function generateFileContent(FilePath $templatePath, FilePath $path) : string
     {
         $text = '';
-        if (strpos($templatePath, '.yml')) {
+        if ($templatePath->getType() === 'yml') {
             if ($this->creationMode === 'addModel' && file_exists($path)) {
                 $text = $this->configFileGenerator->modify($templatePath, $path);
             } else {
                 $text = $this->configFileGenerator->generate($templatePath);
             }
-        } elseif (strpos($templatePath, 'Action.class.php')) {
-            $text = $this->controllerFileGenerator->generate($templatePath);
-        } elseif (strpos($templatePath, 'HTML.class.php')) {
-            $text = $this->controllerFileGenerator->generateHTMLController($templatePath);
-        } elseif (strpos($templatePath, 'MODEL.class')) {
-            $text = $this->modelFileGenerator->generate($templatePath);
-        } elseif (strpos($templatePath, '.js')) {
-            if ($this->creationMode === 'addModel' && strpos($templatePath, 'CONTROLLER.js')) {
-               [$filePath, $text] = $this->jsFileGenerator->modify($templatePath, $path);
-                if (array_contains($text, ['error', 'warning'])) {
-                    [$message, $type] = [$filePath, $text];
-               } else {
-                   [$message, $type] = $this->saveFile($filePath, $text);
-               }
-               $this->msg($message, $type);
+        } elseif ($templatePath->getType() === 'php') {
+            if (strpos($templatePath, 'Action.class.php')) {
+                $text = $this->controllerFileGenerator->generate($templatePath);
+            } elseif (strpos($templatePath, 'HTML.class.php')) {
+                $text = $this->controllerFileGenerator->generateHTMLController($templatePath);
+            } elseif (strpos($templatePath, 'MODEL.class')) {
+                $text = $this->modelFileGenerator->generate($templatePath);
+            }
+        } elseif ($templatePath->getType() === 'js') {
+                if ($this->creationMode === 'addModel' && strpos($templatePath, 'CONTROLLER.js')) {
+                    [$filePath, $text] = $this->jsFileGenerator->modify($templatePath, $path);
+                    if (array_contains($text, ['error', 'warning'])) {
+                        [$message, $type] = [$filePath, $text];
+                    } else {
+                    [$message, $type] = $this->saveFile($filePath, $text);
+                }
+                $this->msg($message, $type);
             }
             $text = $this->jsFileGenerator->generate($templatePath);
-        } elseif (strpos($templatePath, 'accueil_mODEL.html')) {
-            $text = file_get_contents($this->getTrueTemplatePath($templatePath));
-        } elseif (strpos($templatePath, 'liste_mODEL.html')) {
-            $text = $this->viewFileGenerator->generate($templatePath);
-        } elseif (strpos($templatePath, 'consultation_mODEL.html')) {
-            $text = $this->viewFileGenerator->generateConsultationView($templatePath);
-        } elseif (strpos($templatePath, 'edition_mODEL.html')) {
-            $text = $this->viewFileGenerator->generateEditionView($templatePath);
-        } elseif (strpos($templatePath, 'recherche_mODEL.html')) {
-            $text = $this->viewFileGenerator->generateSearchView($templatePath);
+        } elseif ($templatePath->getType() === 'html') {
+
+            $templatePath = $this->getTrueTemplatePath($templatePath);
+            if (strpos($templatePath, 'accueil_mODEL.html')) {
+                $text = file_get_contents($this->getTrueTemplatePath($templatePath));
+            } elseif (strpos($templatePath, 'liste_mODEL.html')) {
+                $text = $this->viewFileGenerator->generate($templatePath);
+            } elseif (strpos($templatePath, 'consultation_mODEL.html')) {
+                $text = $this->viewFileGenerator->generateConsultationView($templatePath);
+            } elseif (strpos($templatePath, 'edition_mODEL.html')) {
+                $text = $this->viewFileGenerator->generateEditionView($templatePath);
+            } elseif (strpos($templatePath, 'recherche_mODEL.html')) {
+                $text = $this->viewFileGenerator->generateSearchView($templatePath);
+            }
         }
 
         return $text;
@@ -178,7 +184,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     protected function getSubMenu(): array
     {
-        $templatePath = $this->getTrueTemplatePath($this->menuPath);
+        $templatePath = $this->getTrueTemplatePath($this->subMenuPath);
         $label = $this->app->has('titreMenu') && $this->app->get('titreMenu') ? : $this->model->getTitre();
 
         return Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'LABEL'],
@@ -235,6 +241,7 @@ class E2DModuleMaker extends ModuleMaker
         $fileManager = $this->app->getFileManager();
 
         $this->templatePath = $fileManager->getTemplatePath();
+        $this->subMenuPath = $this->templatePath->getChild($this->app->getFileManager()->getTemplate())->addFile('menu.yml');
     }
 
     /**
@@ -242,8 +249,7 @@ class E2DModuleMaker extends ModuleMaker
      */
     public function setMenuPath(): void
     {
-        $this->projectPath->addChild('config')->addFile('menu', 'yml');
-        $this->menuPath = $this->projectPath->getChild('config')->getFile('menu');
+        $this->menuPath = $this->projectPath->addChild('config')->addFile('menu', 'yml');
     }
 
     /**

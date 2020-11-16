@@ -1,11 +1,18 @@
 <?php
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 use Core\App;
 use Core\Field;
 use Core\FilePath;
+use Core\PathNode;
 
+/**
+ * Les classes "type de champ" permettent de personnaliser la génération des champs
+ * en fonction des types
+ * Class FieldType
+ * @package E2D\FieldType
+ */
 abstract class FieldType
 {
     private static $registeredTypes = [];
@@ -13,7 +20,7 @@ abstract class FieldType
     protected App $app;
 
     const BOOL = ['bool'];
-    const DATE = ['date', 'datetime', 'time'];
+    const DATE = ['date', 'datetime', 'time', 'timestamp'];
     const ENUM = ['enum', 'parametre'];
     const FLOAT = ['float', 'decimal', 'double'];
     const INTEGER = ['int', 'smallint', 'tinyint', 'bigint', 'primaryKey'];
@@ -37,6 +44,7 @@ abstract class FieldType
             'primaryKey' => PrimaryKeyType::class,
             'bool'       => BoolType::class,
             'datetime'   => DateTimeType::class,
+            'timestamp'  => TimestampType::class,
             'date'       => DateType::class,
             'enum'       => EnumType::class,
             'float'      => FloatType::class,
@@ -65,7 +73,7 @@ abstract class FieldType
 
     private static function getTypeKeyFromName(string $name)
     {
-        if (array_contains($name, ['bool', 'primaryKey', 'foreignKey', 'date', 'datetime', 'time', 'parametre', 'enum'])) {
+        if (array_contains($name, ['bool', 'primaryKey', 'foreignKey', 'date', 'datetime', 'time', 'timestamp', 'parametre', 'enum'])) {
             $key = $name;
         }elseif (array_contains($name, self::FLOAT)) {
             $key = 'float';
@@ -87,7 +95,7 @@ abstract class FieldType
     public function is($type)
     {
         if (is_array($type))
-            return array_contains($this->type-name, $type);
+            return array_contains($this->type->name, $type);
         else
             return $this->name === $type;
     }
@@ -161,5 +169,25 @@ abstract class FieldType
 
     public function getValeurParDefautChampPourDynamisationEditionController(Field $field,  FilePath $fieldTemplatePath) : string
     {
+    }
+
+    /**
+     * Permet de récupérer le template du champ pour la vue recherche
+     * @param PathNode $path
+     * @return false|string
+     */
+    public function getVueRecherche(PathNode $path)
+    {
+        return file_get_contents($this->getCheminTemplateVueRecherche($path));
+    }
+
+    /**
+     * Permet le récupérer le chemin du template du champ pour la vue recherche
+     * @param $path
+     * @return mixed
+     */
+    protected function getCheminTemplateVueRecherche($path)
+    {
+        return $this->app->getTrueTemplatePath($path->add('string'));
     }
 }

@@ -1,10 +1,11 @@
 <?php
 
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 
 use Core\Field;
+use Core\FilePath;
 
 class ParametreType extends EnumType
 {
@@ -64,5 +65,20 @@ class ParametreType extends EnumType
         return implode(PHP_EOL,  array_map(function($line) use ($field) {
             return str_replace(['NAME', 'TYPE', 'DEFAULT'],
                 [$field->getName(), $field->getParametre('type'), $field->getDefaultValue()],$line);}, $enumTemplate));
+    }
+
+    public function getValeurParDefautChampPourDynamisationEditionController(Field $field, FilePath $templatePath) : string
+    {
+        $template = $this->getControllerTemplateChamp($templatePath);
+        $enumDefault = $template[3];
+//        if ($this->enumType === 'select2') {
+//
+//        } else {
+//
+//            $enumDefault = $template[2];
+//        }
+
+        return str_replace(['NAME', 'mODULE', 'MODEL', 'COLUMN', 'DEFAULT'],
+            [$field->getName(), $this->app->getModuleName(), $this->app->getModelMaker()->getClassName(), $field->getColumn(), $field->getDefaultValue()],$enumDefault);
     }
 }

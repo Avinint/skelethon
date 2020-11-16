@@ -1,12 +1,12 @@
 <?php
 
 
-namespace Core\FieldType;
+namespace E2D\FieldType;
 
 
 use Core\Field;
 
-class PrimaryKeyType extends IntegerType
+class PrimaryKeyType extends EnumType
 {
     /**
      * Ajoute les lignes d champs formatés dans les selects pour récupérer des entités
@@ -30,7 +30,6 @@ class PrimaryKeyType extends IntegerType
      */
     public function getCritereDeRecherche(string $indent, Field $field,  array $template) : string
     {
-
         $texteCritere = $indent.implode('', array_map(function($line) use ($indent) {return $line.$indent;},
                 [$template[7], $template[0], $template[11], $template[1], $template[2]]));
 

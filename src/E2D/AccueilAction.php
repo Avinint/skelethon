@@ -17,7 +17,7 @@ class AccueilAction extends Action
      */
     public function generateRoutingFile(FilePath $path) : string
     {
-        if (strpos($path, 'routing') === false) {
+        if ($path->getName() ===  'routing_accueil') {
             return '';
         }
 

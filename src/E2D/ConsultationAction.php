@@ -17,9 +17,6 @@ class ConsultationAction extends Action
      */
     public function generateRoutingFile(FilePath $path) : string
     {
-        if (strpos($path, 'blocs')) {
-            return '';
-        }
 
         return parent::generateRoutingFile($path);
     }

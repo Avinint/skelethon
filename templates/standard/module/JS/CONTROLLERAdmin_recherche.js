@@ -15,27 +15,7 @@
     }
 
     /**
-     * Callback exécutée à la suite de la dynamisation de la liste.
-     *
-     * @param object oReponseJSON   Infos JSON récupérées lors de l'appel Ajax.
-     * @param object oParams        Paramètres passés avant l'appel Ajax.
-     *
-     * @return void
-     */
-    this.vCallbackListeElement = function(oReponseJSON, oParams)
-    {
-        oParams.bSansVidage = true;
-        var oInfos = {
-            aSelects: oReponseJSON.aSelects,
-            oSelectDefauts: oReponseJSON.oSelectDefauts
-        };
-
-        var oCallback = this.oGetFonctionCallback(this, this.vDynamisationFormulaireRecherche, oParams);
-        this.vChargeFormulaireData(oInfos, oParams, oCallback);
-    };
-
-    /**
-     *Callback exécutée à la suite de la dynamisation du formulaire de recherche.
+     * Callback exécutée à la suite de la dynamisation du formulaire de recherche.
      *
      *@param object oReponseJSON   Infos JSON récupérées lors de l'appel Ajax.
      *@param object oParams        Paramètres passés avant l'appel Ajax.
@@ -45,7 +25,13 @@
     this.vDynamisationFormulaireRecherche = function(oReponseJSON, oParams)
     {
         oParams.szModuleChargeListe = 'TABLE';
-        var     eFormulaire = $('#zone_navigation_2').find('form');
-SELECT2
+        var eFormulaire = $('#zone_navigation_2').find('form');
+
+        this.vChargeFormulaireData(oReponseJSON, oParams, function () {
+            oThis.vChargeListe('', $('.liste_TABLE'));
+        });
+
         this.vChargeEvenementsChampsRecherche('TABLE', oParams);
+
+        SELECT2
     }

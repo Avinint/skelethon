@@ -41,21 +41,21 @@ class E2DJSFileGenerator extends FileGenerator
         }
 
         $actionMethodText = [];
-        $usesRechercheNoCallback = $this->app->get('noCallbackListeElenent') ?? true;
+        $usesCallbackListeElement = $this->app->get('avecCallbackListeElenent') ?? true;
         foreach ($this->model->getActions() as $action) {
-            $actionMethodText[] = $action->getJavaScriptMethods($path, $usesRechercheNoCallback);
+            $actionMethodText[] = $action->getJavaScriptMethods($path, $usesCallbackListeElement);
         }
         $actionMethodText = implode('', $actionMethodText);
 
         if ($path->getName() === 'CONTROLLERAdmin') {
 
-            /* Ajout code fermeture calque */
+            /* Gén code fermeture calque */
             $closeConsultationModal = '';
             if ($this->model->hasActions(['consultation'])) {
-                $closeConsultationModal = PHP_EOL.file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('fermetureCalqueConsultation')));
+                $closeConsultationModal = PHP_EOL.file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('fermetureCalqueConsultation')));
             }
 
-            /* Ajout code si pas d'action recherche */
+            /* Gén code si pas d'action recherche */
             if (!$this->model->hasAction('recherche')) {
                 $noRechercheText = $this->model->getActions()['recherche']->getNoRechercheText();
                 $actionMethodText = $noRechercheText.$actionMethodText;

@@ -1,5 +1,5 @@
-calque_edition_TABLE:
-    route: html_edition_TABLE
+calque_edition_mODEL:
+    route: html_edition_mODEL
     priorite: 1
     ordre: 1
     callback: ''

@@ -1,7 +1,7 @@
-btn_suppression_TABLE:
+btn_suppression_mODEL:
     action:
         module: mODULE
-        route: json_suppression_TABLE
+        route: json_suppression_mODEL
         type: save_data
     callback:
         module: cONTROLLER

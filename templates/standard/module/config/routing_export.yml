@@ -1,0 +1,7 @@
+xlsx_export_mODEL:
+    reecriture: admin/mODULE/mURL/export.xlsx
+    route:
+        zone: admin
+        module: mODULE
+        controller: cONTROLLER
+        action: export

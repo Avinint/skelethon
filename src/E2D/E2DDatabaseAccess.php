@@ -77,7 +77,6 @@ class E2DDatabaseAccess extends DatabaseAccess
                             }
                             break;
                         case 'int':
-                        case 'timestamp':
                         case 'smallint':
                             $oChamp->sChamp = 'n'.$sNom;
                             if ($sMaxLength != '') {
@@ -98,7 +97,10 @@ class E2DDatabaseAccess extends DatabaseAccess
                         case 'enum':
                             $oChamp->sChamp = 's'.$sNom;
                             break;
-
+                        case 'timestamp':
+                            $oChamp->Default = '';
+                            $oChamp->sChamp = 'dt'.$sNom;
+                            break;
                         case 'datetime':
                             $oChamp->sChamp = 'dt'.$sNom;
                             break;

@@ -3,8 +3,8 @@
 namespace E2D;
 
 use Core\Field;
-use Core\FieldType\DateTimeType;
-use Core\FieldType\FieldType;
+use E2D\FieldType\DateTimeType;
+use E2D\FieldType\FieldType;
 
 class E2DField extends Field
 {
@@ -15,7 +15,7 @@ class E2DField extends Field
     {
         parent::__construct($type, $name, $columnName, $defaultValue, $alias, $model, $params);
 
-        $this->formatted = $this->is(['float', 'decimal', 'date', 'datetime', 'time', 'double', 'bool', 'enum', 'foreignKey']);
+        $this->formatted = $this->is(['float', 'decimal', 'date', 'datetime', 'time', 'double', 'bool', 'enum', 'foreignKey', 'parametre']);
     }
 
     public function getFormattedName()
@@ -169,6 +169,7 @@ class E2DField extends Field
     public function changerEnChampParametre($type, $lignes = [])
     {
         $this->type = FieldType::create('parametre', $this->app);
+        $this->formatted = true;
         $this->parametre = new \stdClass();
         $this->parametre->type = $type;
         $this->parametre->lignes = [];

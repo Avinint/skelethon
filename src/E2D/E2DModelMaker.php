@@ -3,6 +3,7 @@
 namespace E2D;
 
 use Core\Field;
+use Core\FilePath;
 use Core\ModelMaker;
 
 class E2DModelMaker extends ModelMaker
@@ -19,9 +20,7 @@ class E2DModelMaker extends ModelMaker
 
     protected function addSpecificActions()
     {
-        if ($this->databaseAccess->getSimilarTableList('export') === ['export', 'export_champ']) {
-            $this->actionsDisponibles[] = 'export';
-        }
+
     }
 
     /**
@@ -34,7 +33,7 @@ class E2DModelMaker extends ModelMaker
 
     public function getTableHeaders($templatePath)
     {
-        $actionHeader = empty($this->getActions()) ? '' : file_get_contents(str_replace('.', '_actionheader.', $templatePath)) . PHP_EOL;
+        $actionHeader = empty($this->getActions()) ? '' : file_get_contents($this->getTrueTemplatePath($templatePath->add('actionheader'))) . PHP_EOL;
         return $actionHeader . implode(PHP_EOL, array_map(function (Field $field) use ($templatePath) {
                 return $field->getTableHeader($templatePath);
             }, $this->getFields('liste')));
@@ -50,16 +49,49 @@ class E2DModelMaker extends ModelMaker
         }, $this->getFields('liste')));
     }
 
+    public function getActionsDisponibles()
+    {
+        if (!array_contains('export', $this->actionsDisponibles)) {
+            $this->actionsDisponibles[] = 'export';
+        }
+
+//        if (!array_contains('export', $this->actionsDisponibles)) {
+//            if ($this->hasAction('export') && !$this->app->has('avecRessourceExport') ) {
+//                $this->askAvecRessourceExport();
+//            }
+//
+//            if ($this->ressourceExportInstallee() && $this->tablesExportCreees()) {
+//                $this->actionsDisponibles[] = 'export';
+//            } else {
+//                $this->msg('fonctionnalité export indisponible : table et/ou ressource export manquante(s)', 'important');
+//            }
+//        }
+
+        return $this->actionsDisponibles;
+    }
+
+    public function tablesExportCreees() : bool
+    {
+        return array_contains_array(['export', 'export_champ'], $this->databaseAccess->getSimilarTableList('export'), ARRAY_ALL) || $this->askCreateTableExport();
+    }
+
+    public function ressourceExportInstallee() : bool
+    {
+        return $this->app->getFileManager()->getRessourcePath('export')->exists() || $this->askInstallRessourceExport();
+    }
+
     /**
      * Questions sur details spécifiques au type de projet généré nécessaire à la génération, posées dans le constructeur.
      */
     protected function askSpecifics() : void
     {
-        if ($this->hasAction('export')) {
-            if (null === $this->app->getFileManager()->getRessourcePath()->addChild('export')) {
-                throw new \Exception("Ressource manquante: export");
-            }
-        }
+//        if ($this->hasAction('export')) {
+//
+//            if (!is_dir($this->app->getFileManager()->getRessourcePath('export'))) {
+//               $this->msg("Ressource manquante: export", 'error');
+//               $this->removeAction('export');
+//            }
+//        }
 
         $this->usesMultiCalques           = $this->askMulti();
         $this->usesSelect2                = $this->askSelect2();
@@ -88,7 +120,7 @@ class E2DModelMaker extends ModelMaker
 
     private function askCallbackListe() : bool
     {
-        return $this->askBool('noCallbackListeElenent', 'Voulez-vous un template qui n\'utilise pas le callback liste ? (Utile si vous avez des valeurs de recherche par défaut)');
+        return $this->askBool('avecCallbackListeElenent', 'Voulez-vous un template qui utilise callbackListeElement)');
     }
 
     private function askCallbackListeLigne(): bool
@@ -99,6 +131,38 @@ class E2DModelMaker extends ModelMaker
     private function askPagination() : bool
     {
         return $this->askBool('usesPagination', 'Souhaitez vous utiliser la pagination ?');
+    }
+
+    private function askInstallRessourceExport()
+    {
+        $installExportRessource = $this->prompt('Souhaitez vous installer la ressource Export?', ['o', 'n']) === 'o';
+        if ($installExportRessource) {
+            $command = 'git submodule add -b release-0.1 --force git@bitbucket.org:doingfr/export.git ressources/export';
+            $execOutput = [];
+            $res = 0;
+
+            exec($command, $execOutput, $res);
+            $this->msg($res ? 'erreur git' :  'succès git', 'info');
+            return !$res;
+        }
+
+        return false;
+    }
+
+    private function askCreateTableExport()
+    {
+        $createExportTable =  $this->prompt('Souhaitez vous créer une table Export?', ['o', 'n']) === 'o';
+        if ($createExportTable) {
+
+            $requetePath = $this->app->getFileManager()->getRessourcePath('export')->addChild('installation')->addFile('installation.sql');
+            if ($requetePath->exists()) {
+                $requete = file_get_contents($requetePath);
+                $this->databaseAccess->query($requete);
+            } else {
+                $this->msg('Il faut installer la ressource Export avant de lancer la création de la table', 'error');
+            }
+
+        }
     }
 
     private function askGenerateSecurity()
@@ -120,8 +184,14 @@ class E2DModelMaker extends ModelMaker
         $this->usesTinyMCE = $this->config->get('champsTinyMCE') ?? $this->askChampsTinyMCE();
         $this->askAddManyToOneField();
 
-        if ($this->hasAction('export') && !$this->app->get('id_export')) {
-            $this->insertExportData();
+        if ($this->hasAction('export') && !$this->app->has('avecRessourceExport') ) {
+            $this->askAvecRessourceExport();
+        }
+
+        if ($this->app->get('avecRessourceExport')) {
+            if (!$this->app->get('id_export') || $this->app->get('afficher_requete_export') === 'toujours') {
+                $this->insertExportData();
+            }
         }
 
         $this->avecChampsParametres = $this->askChampsParametres();
@@ -380,18 +450,19 @@ class E2DModelMaker extends ModelMaker
             SELECT MAX(id_export) + 1 id FROM export;
         ');
         $exportChampIdRes = $this->databaseAccess->query('
-            SELECT MAX(id_export_champ) id FROM export_champ;
+            SELECT MAX(id_export_champ) + 1  id FROM export_champ;
         ');
 
-        $exportId = array_shift($exportIdRes)->id;
-        $exportChampId = array_shift($exportChampIdRes)->id;
+        $exportId = array_shift($exportIdRes)->id ?? 1;
 
-        $champsExport = $this->getFields('export');
-        [$tri1, $tri2, $tri3] = array_keys($champsExport);
+        $exportChampId = array_shift($exportChampIdRes)->id ?? 1;
+        $champsExport = array_map(function($field) {return $field->getFormattedName();}, $this->getFields('export'));
+
+        [$tri1, $tri2, $tri3] = array_values($champsExport);
 
         $sInsertQuery = "
             INSERT INTO `export` (`id_export`, `id_utilisateur`, `libelle`, `contexte`, `partage`, `format`, `libelle_colonne`, `tri_1`, `tri_2`, `tri_3`) VALUES
-            ($exportId, 1, 'Export Excel par défaut', '{$this->tableName}', 1, 'xls', 1, '$tri1', '$tri2', '$tri3');
+            ($exportId, 1, 'Export Excel par défaut', '{$this->module}', 1, 'xls', 1, '$tri1', '$tri2', '$tri3');
             ";
 
         $sParametresRequete =
@@ -414,15 +485,17 @@ class E2DModelMaker extends ModelMaker
 
         $queryLines = [];
         foreach (array_values($champsExport) as $index => $field) {
+
+            $queryLines[]  = "            ('$exportChampId', '$exportId', '$field', '$index')";
             $exportChampId++;
-            $queryLines[]  = "            ('$exportChampId', '$exportId', '{$field->getName()}', '$index')";
         }
         $sInsertQuery .= $sInsertQuery2 . implode(','.PHP_EOL, $queryLines).';';
-        if ($this->app->get('printExportQuery') ?? false) {
+        if ($this->app->get('afficher_requete_export') ?? false) {
             echo PHP_EOL.$sInsertQuery.PHP_EOL.PHP_EOL;
+            $this->app->set('id_export', (int)$exportId, $this->name);
         } else {
             if ($this->databaseAccess->query($sInsertQuery, null, 'insert')) {
-                $this->app->set('id_export', $exportId, $this->name);
+                $this->app->set('id_export', (int)$exportId, $this->name);
             }
         }
 
@@ -458,7 +531,13 @@ class E2DModelMaker extends ModelMaker
         if (($this->app->get('exportAskCSV') ?? true) && $this->prompt('Voulez-vous créer un export CSV ? Par défaut, un export XLS sera créé', ['o', 'n']) === 'o') {
             $sInsertQuery = str_replace_last('xls', 'csv', $sInsertQuery);
         }
+
         return $sInsertQuery;
+    }
+
+    public function askAvecRessourceExport()
+    {
+        return $this->askBool('avecRessourceExport', 'Voulez-vous utiliser la ressource export? (permet à l\'utilisateur de personnaliser les exports dans l\'application)');
     }
 
 }

@@ -141,7 +141,7 @@ class PathNode extends CommandLineToolShelf
 
     public function exists()
     {
-        return is_dir($this->getPath());
+        return is_dir($this->getFullPath());
     }
 
     public function getFullPath()
@@ -190,7 +190,7 @@ class PathNode extends CommandLineToolShelf
     public function addChildTemplateNode(TemplateNode $templateNode)
     {
         if (is_null($this->templateNode) && empty($this->children)) {
-            $this->children[ $templateNode->name] =  $templateNode;
+            $this->children[$templateNode->name] =  $templateNode;
             $templateNode->parent = $this;
 
             return $templateNode;

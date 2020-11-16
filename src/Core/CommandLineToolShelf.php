@@ -50,7 +50,7 @@ abstract class CommandLineToolShelf
                 }
             }
 
-            echo ($type? $this->frame(strtoupper($type), $type).' ' : '')  . $text . $display  . ($colon && empty($validValues) ? '' : ' :').PHP_EOL;
+            echo ($type? $this->frame(strtoupper($type), $type).' ' : '')  . $text . $display  . ($colon && empty($validValues) ? ' :' : '').PHP_EOL;
         }
 
         return !empty($type);
@@ -100,9 +100,9 @@ abstract class CommandLineToolShelf
      * @param $msg
      * @param array $validValues
      * @param false $keepCase
-     * @return false|string
+     * @return string
      */
-    public function prompt($msg, $validValues = [], $keepCase = false)
+    public function prompt($msg, $validValues = [], $defaultValue = '', $keepCase = false) : string
     {
         echo PHP_EOL;
         $result = '';
@@ -113,8 +113,12 @@ abstract class CommandLineToolShelf
         } else {
             $result = false;
             while (!array_contains($result, $validValues)) {
-                $tempResult = readline($this->msg($msg, '',  $validValues));
-                $result = $keepCase ? $result : strtolower($tempResult);
+                if (!empty($defaultValue) && empty($result)) {
+                    $result =  $defaultValue;
+                } else {
+                    $tempResult = readline($this->msg($msg, '',  $validValues));
+                    $result = $keepCase ? $result : strtolower($tempResult);
+                }
             }
         }
 
@@ -138,7 +142,8 @@ abstract class CommandLineToolShelf
         $texteReference  = empty($reference) ? '' : ' ('.$reference.') ';
         $allowedValues = $freeChoice ? [] : array_merge($choices, ['']);
 
-        $selection = $this->prompt('Choisir un/e ' . $key . ' dans la liste suivante'. $texteReference.' :' . PHP_EOL . $this->displayList($choices, 'info') . $msgDefault, $allowedValues);
+        $promptMessage = 'Choisir un/e ' . $key . ' dans la liste suivante'. $texteReference.' :' . PHP_EOL . $this->displayList($choices, 'info') . $msgDefault;
+        $selection = $this->prompt($promptMessage, $allowedValues, $defaultValue);
         if ($defaultValue !== false && $selection === '') {
             $selection = $defaultValue;
         }

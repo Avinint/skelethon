@@ -1,13 +1,13 @@
-html_edition_TABLE:
-    reecriture: admin/mODULE/mODEL/edition.html
+html_edition_mODEL:
+    reecriture: admin/mODULE/mURL/edition.html
     route:
         zone: admin
         module: mODULE
         controller: cONTROLLER
-        mode: edition_TABLE
+        mode: edition_mODEL
 
-json_dynamisation_edition_TABLE:
-    reecriture: admin/mODULE/mODEL/(\d+)/edition.json
+json_dynamisation_edition_mODEL:
+    reecriture: admin/mODULE/mURL/(\d+)/edition.json
     route:
         zone: admin
         module: mODULE
@@ -16,8 +16,8 @@ json_dynamisation_edition_TABLE:
         variables:
             - nIdElement
 
-json_enregistre_edition_TABLE:
-    reecriture: admin/mODULE/mODEL/(\d+)/enregistre-edition.json
+json_enregistre_edition_mODEL:
+    reecriture: admin/mODULE/mURL/(\d+)/enregistre-edition.json
     route:
         zone: admin
         module: mODULE

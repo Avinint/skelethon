@@ -28,6 +28,7 @@ class FileManager
     public function setTemplate(string $templates)
     {
         $this->templates = explode("_", trim($templates.'_standard', "_"));
+
         if (!$this->app->has('template'))
             $this->app->getConfig()->setTemplate($templates);
     }
@@ -56,9 +57,10 @@ class FileManager
      */
     public function getTrueTemplatePath(FilePath $templatePath)
     {
+        $templatePath->setFallbackTemplate(reset($this->templates));
+
         $templatePath = $this->findRightTemplatePath($templatePath);
 
-        reset($this->templates);
 
         return $templatePath;
     }
@@ -73,13 +75,11 @@ class FileManager
     function findRightTemplatePath(FilePath $templatePath) : ?FilePath
     {
         if (!file_exists($templatePath)) {
-
             $nextTemplate = next($this->templates);
             if ($nextTemplate === false) {
                 return null;
             }
             $templatePath->setFallbackTemplate($nextTemplate);
-
             return $this->findRightTemplatePath($templatePath);
         }
 
@@ -91,8 +91,7 @@ class FileManager
      */
     public function getTemplate(): string
     {
-
-        return $this->templates[0];
+        return reset($this->templates);
     }
 
     public function getTemplates(): array
@@ -159,8 +158,12 @@ class FileManager
      * @return PathNode
      *
      */
-    public function getRessourcePath() : PathNode
+    public function getRessourcePath($ressourceDir = '') : PathNode
     {
-        return $this->projectPath->addChild('ressources');
+        if ($ressourceDir) {
+            return $this->projectPath->addChild('ressources')->addChild($ressourceDir);
+        } else {
+            return $this->projectPath->addChild('ressources');
+        }
     }
 }

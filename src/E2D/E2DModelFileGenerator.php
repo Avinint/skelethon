@@ -16,6 +16,7 @@ class E2DModelFileGenerator extends FileGenerator
     {
         $this->app= $app;
         $this->model = $app->getModelMaker();
+        $this->modulePascalCaseName = $app->getModuleMaker()->getNamespaceName();
         $this->moduleName = $app->getModuleMaker()->getName();
     }
 
@@ -31,7 +32,7 @@ class E2DModelFileGenerator extends FileGenerator
             '//METHODS', 'MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', 'LEFTJOINS', '//RECHERCHE', '//VALIDATION'
         ],[
             $this->getMethods($templatePath),
-            $this->moduleName,
+            $this->modulePascalCaseName,
             $this->model->getClassName(),
             $this->model->getTableName(),
             $this->model->getAlias(),
@@ -47,10 +48,15 @@ class E2DModelFileGenerator extends FileGenerator
 
     public function getMethods($path)
     {
+        $methodText = [];
         if ($this->app->get('displayModelSqlMethods') ?? false) {
-            return file_get_contents($this->getTrueTemplatePath($path->add('methods')));
+            $methodText[] = file_get_contents($this->getTrueTemplatePath($path->add('methods')));
         }
 
-        return '';
+        if ($this->model->hasAction('export') && !$this->app->get('avecRessourceExport'))
+            $methodText[] = str_replace(['mODULE', 'MODEL'], [$this->moduleName, $this->model->getClassName()],
+                file_get_contents($this->getTrueTemplatePath($path->add('export'))));
+
+        return empty($methodText) ? '' : PHP_EOL.implode(PHP_EOL, $methodText);
     }
 }

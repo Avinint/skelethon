@@ -29,7 +29,7 @@ class E2DViewFileGenerator extends FileGenerator
         $actionBarText = $this->generateListActionBarText($path);
         $paginationText = '';
         if ($this->app->get('usesPagination') ?? true) {
-            $paginationText = file_get_contents($path->add('pagination'));
+            $paginationText = file_get_contents($this->getTrueTemplatePath($path->add('pagination')));
         }
 
         $actionText = $this->generateListActionText($path);
@@ -39,7 +39,7 @@ class E2DViewFileGenerator extends FileGenerator
         $templatePath = $this->getTrueTemplatePath($path);
 
         $text = file_get_contents($templatePath);
-        $text = str_replace(['TABLETAG','ACTION_BAR', 'cONTROLLER', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'TABLE', 'NUMCOL', 'PAGINATION'],
+        $text = str_replace(['TABLETAG','ACTION_BAR', 'cONTROLLER', 'MODEL', 'HEADERS', 'ACTION', 'COLUMNS', 'mODULE', 'mODEL', 'NUMCOL', 'PAGINATION'],
             [$tabletagText, $actionBarText, $this->camelize($this->controllerName), $this->model->getClassname(), $this->model->getTableHeaders($templatePath),
                 $actionText, $this->model->getTableColumns( $templatePath), $this->moduleName, $this->model->GetName(), $this->model->getColumnNumber(), $paginationText], $text);
         return $text;
@@ -92,32 +92,10 @@ class E2DViewFileGenerator extends FileGenerator
     {
         $fieldText = [];
         foreach ($this->model->getFields('recherche') as $field) {
-            if ($field->is(['enum', 'parametre'])) {
-                $fieldTemplatePath = $this->getTrueTemplatePath($path->add('enum'));
-                if ($this->model->usesSelect2) {
-                    $fieldTemplatePath = $this->getTrueTemplatePath($path->get('enum')->add('select2'));
-                }
-                $fieldTemplate = file_get_contents($fieldTemplatePath);
-            } elseif ($field->is('bool')) {
-                if ($this->model->usesSwitches) {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_switch')));
-                } else {
-                    $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('bool_radio')));
-                }
-            } elseif ($field->is('foreignKey')) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('enum_select2')));
-            } elseif ($field->is(['date', 'datetime'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('date')));
-            } elseif ($field->is(['text', 'mediumtext', 'longtext'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('string')));
-            } elseif ($field->is(['float', 'decimal', 'int', 'smallint', 'tinyint', 'double'])) {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('number')));
-            } else {
-                $fieldTemplate = file_get_contents($this->getTrueTemplatePath($path->add('string')));
-            }
-
+            $fieldTemplate = $field->getType()->getVueRecherche($path);
             $defautOui = $field->getDefaultValue() === '1' ? ' checked' : '';
             $defautNon = $field->getDefaultValue() === '0' ? ' checked' : '';
+
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'DEFAULT', 'NAME', 'COLUMN', 'STEP', 'DEFAUT_OUI', 'DEFAUT_NON'],
                 [$field->getLabel(), $field->getFormattedName(), $field->getType(), $field->getDefaultValue(), $field->getName(), $field->getColumn(),
                     $field->getStep(), $defautOui, $defautNon], $fieldTemplate);
@@ -180,7 +158,7 @@ class E2DViewFileGenerator extends FileGenerator
             $actionBarText = file_get_contents($actionBarTemplatePath);
 
             $actionBarActionsText = [];
-            if ($this->model->hasAction('edition')) {
+            if ($this->model->hasAction('edition') || true) {
                 $actionBarActionsText[] = file_get_contents($this->getTrueTemplatePath($actionBarTemplatePath ->add('ajout')));
             }
 
@@ -189,8 +167,9 @@ class E2DViewFileGenerator extends FileGenerator
             }
 
             $actionBarText = str_replace('//ACTION_BAR_ACTIONS', $actionBarActionsText ?
-                PHP_EOL.implode(PHP_EOL, $actionBarActionsText).PHP_EOL.str_repeat("\x20", 4) : '', $actionBarText);
+                implode(PHP_EOL, $actionBarActionsText).PHP_EOL.str_repeat("\x20", 4) : '', $actionBarText);
         }
+
         return $actionBarText;
     }
 
@@ -206,8 +185,8 @@ class E2DViewFileGenerator extends FileGenerator
             $callbackLigne = " ligne_callback_cONTROLLER_vCallbackLigneListe";
         }
 
-        $tabletagSubTemplate = ($this->model->getConfig()->get('noCallbackListeElenent') ?? true) ?
-            'tabletag_nocallback' : 'tabletag';
+        $tabletagSubTemplate = ($this->model->getConfig()->get('avecCallbackListeElenent') ?? true) ?
+            'tabletag' : 'tabletag_nocallback';
         $tabletagText = str_replace('CALLBACKLIGNE', $callbackLigne, file_get_contents($this->getTrueTemplatePath($path->add($tabletagSubTemplate))));
 
         return $tabletagText;

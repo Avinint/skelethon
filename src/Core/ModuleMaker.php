@@ -136,7 +136,7 @@ abstract class ModuleMaker extends BaseMaker
             return mkdir($dir, 0777, $recursive) && is_dir($dir) && $this->msg($this->highlight('Création').' du répertoire: '.$dir, 'success');;
         }
 
-        $this->msg('Le répertoire: '.''.$this->highlight($dir). ' existe déja.', 'warning', false, $this->creationMode === 'generate');
+        $this->msg('Le répertoire: '.''.$this->highlight($dir). ' existe déja.', 'warning', false);
 
         return true;
     }

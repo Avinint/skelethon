@@ -1,5 +1,5 @@
-calque_consultation_TABLE:
-    route: html_consultation_TABLE
+calque_consultation_mODEL:
+    route: html_consultation_mODEL
     priorite: 1
     ordre: 1
     callback: ''

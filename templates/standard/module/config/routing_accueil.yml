@@ -1,13 +1,13 @@
-html_accueil_TABLE:
-    reecriture: admin/mODULE/mODEL/accueil.html
+html_accueil_mODEL:
+    reecriture: admin/mODULE/mURL/accueil.html
     route:
         zone: admin
         module: mODULE
         controller: cONTROLLER
-        mode: accueil_TABLE
+        mode: accueil_mODEL
 
-json_recherche_TABLE:
-    reecriture: admin/mODULE/mODEL/recherche.json
+json_recherche_mODEL:
+    reecriture: admin/mODULE/mURL/recherche.json
     route:
         zone: admin
         module: mODULE

@@ -1,29 +1,29 @@
-html_accueil_TABLE:
-    reecriture: admin/mODULE/mODEL/accueil.html
+html_accueil_mODEL:
+    reecriture: admin/mODULE/mURL/accueil.html
     route:
         zone: admin
         module: mODULE
         controller: cONTROLLER
-        mode: accueil_TABLE
+        mode: accueil_mODEL
 
-json_recherche_TABLE:
-    reecriture: admin/mODULE/mODEL/recherche.json
+json_recherche_mODEL:
+    reecriture: admin/mODULE/mURL/recherche.json
     route:
         zone: admin
         module: mODULE
         controller: cONTROLLER
         action: recherche
 
-html_consultation_TABLE:
-    reecriture: admin/mODULE/mODEL/consultation.html
+html_consultation_mODEL:
+    reecriture: admin/mODULE/mURL/consultation.html
     route:
         zone: admin
         module: mODULE
         controller: cONTROLLER
-        mode: consultation_TABLE
+        mode: consultation_mODEL
 
-json_dynamisation_consultation_TABLE:
-    reecriture: admin/mODULE/mODEL/\d+/dynamisation-consultation.json
+json_dynamisation_consultation_mODEL:
+    reecriture: admin/mODULE/mURL/\d+/dynamisation-consultation.json
     route:
         zone: admin
         module: mODULE
@@ -32,16 +32,16 @@ json_dynamisation_consultation_TABLE:
         variables:
             - nIdElement
 
-html_edition_TABLE:
-    reecriture: admin/mODULE/mODEL/edition.html
+html_edition_mODEL:
+    reecriture: admin/mODULE/mURL/edition.html
     route:
         zone: admin
         module: mODULE
         controller: cONTROLLER
-        mode: edition_TABLE
+        mode: edition_mODEL
 
-json_dynamisation_edition_TABLE:
-    reecriture: admin/mODULE/mODEL/\d+/edition.json
+json_dynamisation_edition_mODEL:
+    reecriture: admin/mODULE/mURL/\d+/edition.json
     route:
         zone: admin
         module: mODULE
@@ -50,18 +50,18 @@ json_dynamisation_edition_TABLE:
         variables:
             - nIdElement
 
-json_enregistre_edition_TABLE:
-    reecriture: admin/mODULE/mODEL/\d+/enregistre-edition.json
+json_enregistre_edition_mODEL:
+    reecriture: admin/mODULE/mURL/\d+/enregistre-edition.json
     route:
-        zone: admin
+        zone: adminf
         module: mODULE
         controller: cONTROLLER
         action: enregistrement
         variables:
             - nIdElement
 
-json_suppression_TABLE:
-    reecriture: admin/mODULE/mODEL/\d+/suppression.json
+json_suppression_mODEL:
+    reecriture: admin/mODULE/mURL/\d+/suppression.json
     route:
         zone: admin
         module: mODULE
@@ -69,3 +69,11 @@ json_suppression_TABLE:
         action: suppression
         variables:
             - nIdElement
+
+xlsx_export_mODEL:
+    reecriture: admin/mODULE/mURL/export.xlsx
+    route:
+        zone: admin
+        module: mODULE
+        controller: cONTROLLER
+        action: export_mODEL

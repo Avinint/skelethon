@@ -54,10 +54,6 @@ class FilePath extends PathNode
         return strpos($this->extension, 'php') !== false ? 'php' :  $this->extension;
     }
 
-    public function exists()
-    {
-        return file_exists($this->getPath());
-    }
 
     public function getName()
     {
@@ -96,5 +92,8 @@ class FilePath extends PathNode
         $this->baseFile = $baseFile;
     }
 
-
+    public function exists()
+    {
+        return file_exists($this->getFullPath());
+    }
 }

@@ -2,7 +2,7 @@
 
 namespace Core;
 
-use Core\FieldType\FieldType;
+use E2D\FieldType\FieldType;
 
 abstract class ModelMaker extends BaseMaker
 {
@@ -13,6 +13,7 @@ abstract class ModelMaker extends BaseMaker
      * @var DatabaseAccess
      */
     protected $databaseAccess;
+    protected $app;
     private $actions;
     protected string $module;
     private $table = [];
@@ -75,6 +76,7 @@ abstract class ModelMaker extends BaseMaker
     {
         $this->fields = [];
         $this->alias =  $this->generateAlias($this->tableName);
+
         foreach ($this->table as $field => $data) {
             if ('PRI' === $data->Key) {
                 $this->primaryKey = $data->Field;
@@ -87,6 +89,7 @@ abstract class ModelMaker extends BaseMaker
             $this->addModalTitle($data);
         }
         $this->config->get('champs') ?? $this->askFieldsPerView();
+
         $this->askModifySpecificData();
     }
 
@@ -105,18 +108,18 @@ abstract class ModelMaker extends BaseMaker
             $params['step'] = $data->step;
         }
 
-        $this->fields[$data->Field] = new $this->fieldClass(
-            $data->sType,
-            $data->sChamp,
-            $data->Field,
-            $data->Default,
-            $this->alias,
-            $this->app,
-            $params
-        );
+        if (!$this->app->has('champs') || $this->has($data->Field)) {
 
-        if ($this->config->has('champs', $this->name)) {
-            $this->fields[$data->Field]->setViews($this->config->get('champs')[$data->Field]);
+            $this->fields[$data->Field] = new $this->fieldClass(
+                $data->sType,
+                $data->sChamp,
+                $data->Field,
+                $data->Default,
+                $this->alias,
+                $this->app,
+                $params
+            );
+            $this->fields[$data->Field]->setViews($this->app->get('champs')[$data->Field]);
         }
 
     }
@@ -130,13 +133,14 @@ abstract class ModelMaker extends BaseMaker
         if ($this->config->has('actions')) {
             $actions = $this->config->get('actions');
         } else {
-            $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? (' . implode(', ', array_map([$this, 'highlight'], $this->actionsDisponibles, array_fill(0, 4, 'info'))) . ')', ['o', 'n']);
+            $actionsDisponibles = $this->getActionsDisponibles();
+            $reponse1 = $this->prompt('Voulez vous sélectionner toutes les actions disponibles? (' . implode(', ', array_map([$this, 'highlight'], $actionsDisponibles, array_fill(0, count($actionsDisponibles), 'info'))) . ')', ['o', 'n']);
 
             if ('o' === $reponse1) {
-                $actions = $this->actionsDisponibles;
+                $actions = $actionsDisponibles;
             } else {
                 $actions = [];
-                foreach ($this->actionsDisponibles as $action) {
+                foreach ($actionsDisponibles as $action) {
                     do {
                         $reponse2 = strtoupper(readline($this->msg('Voulez vous sélectionner l\'action "' . $action . '" ? [O/N]')));
                     } while (!in_array($reponse2, ['N', 'O']));
@@ -179,9 +183,33 @@ abstract class ModelMaker extends BaseMaker
         return $this->actions;
     }
 
+    /**
+     * Pour déterminer si un champ est présent dans la liste des champs du model en config
+     * @param $champ
+     * @return bool
+     */
+    public function has($champ) : bool
+    {
+        return $this->app->has('champs') && array_contains($champ, array_keys($this->app->get('champs')));
+    }
+
+    public function getActionsDisponibles()
+    {
+        return $this->actionsDisponibles;
+    }
+
     public function hasAction($action) : bool
     {
         return isset($this->actions[$action]);
+    }
+
+    public function removeAction($action) : void
+    {
+        if ($this->hasAction($action)) {
+            unset($this->actions[$action]);
+            $this->app->set('actions', array_keys($this->actions), $this->getName());
+        }
+        $this->msg("Action $action supprimée", 'error');
     }
 
     public function hasActions(array $actions) : bool
@@ -316,6 +344,7 @@ abstract class ModelMaker extends BaseMaker
     {
         $this->askTableName();
         $table = $this->databaseAccess->getTable($this->tableName);
+
         if (null === $table) {
             $this->msg('Erreur: Il faut créer la table \'' . $this->name . '\' avant de générer le code', 'error');
             $this->config->set('tableName', null, $this->name);
@@ -329,7 +358,7 @@ abstract class ModelMaker extends BaseMaker
 
     public function getTitre() : string
     {
-        return 'Mes '.$this->labelize($this->name).'s';
+        return 'Les '.$this->labelize($this->name).'s';
     }
 
     /**
@@ -427,8 +456,7 @@ abstract class ModelMaker extends BaseMaker
     public function askFieldsPerView()
     {
         $listeChamps = [];
-        $reponseFiltrageChamps = $this->prompt('Voulez vous sélectionner quels champs seront utilisés dans chaque vue ?',  ['o', 'n']) === 'o';
-        $this->msg("Le questionnaire vous permettra également de renseigner quels champs sont liés à une action spéciale");
+        $reponseFiltrageChamps = $this->prompt('Voulez vous sélectionner quels champs seront utilisés dans chaque vue ou action ?',  ['o', 'n']) === 'o';
         if ($reponseFiltrageChamps) {
             foreach ($this->fields as $field) {
                 $views = $field->askViews(array_keys($this->actions));

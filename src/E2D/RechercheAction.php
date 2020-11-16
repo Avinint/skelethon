@@ -16,7 +16,7 @@ class RechercheAction extends Action
      */
     public function generateRoutingFile(FilePath $path) : string
     {
-        if (strpos($path, 'blocs')) {
+        if ($path->getName() === 'blocs') {
             return '';
         }
 
@@ -28,10 +28,10 @@ class RechercheAction extends Action
      * @param string $templatePerActionPath
      * @return FilePath
      */
-    protected function getJavaScriptMethodPerActionHook(bool $usesRechercheNoCallback, FilePath $path) : FilePath
+    protected function getJavaScriptMethodPerActionHook(bool $usesCallbackListeElement, FilePath $path) : FilePath
     {
-        if ($usesRechercheNoCallback) {
-            $path = $this->getTrueTemplatePath($path->add('nocallback'));
+        if ($usesCallbackListeElement) {
+            $path = $this->getTrueTemplatePath($path->add('callbackListeElement'));
         }
 
         return $path;

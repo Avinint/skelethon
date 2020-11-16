@@ -1,50 +1,57 @@
-btn_dynamisation_recherche_TABLE:
+btn_dynamisation_recherche_mODEL:
     action:
         module: mODULE
-        route: json_dynamisation_recherche_TABLE
+        route: json_dynamisation_recherche_mODEL
         type: load_data
     callback:
         module: cONTROLLER
         fonction: vDynamisationFormulaireRechercheMODEL
         alerte: non
 
-btn_ouverture_consultation_TABLE:
+btn_ouverture_consultation_mODEL:
     action:
         module: mODULE
-        route: json_dynamisation_consultation_TABLE
+        route: json_dynamisation_consultation_mODEL
         type: load_data
     callback:
         module: cONTROLLER
         fonction: vDynamisationConsultationMODELJSON
         alerte: non
 
-btn_ouverture_edition_TABLE:
+btn_ouverture_edition_mODEL:
     action:
         module: mODULE
-        route: json_dynamisation_edition_TABLE
+        route: json_dynamisation_edition_mODEL
         type: load_data
     callback:
         module: cONTROLLER
         fonction: vDynamisationEditionMODELJSON
         alerte: non
 
-btn_enregistre_edition_TABLE:
+btn_enregistre_edition_mODEL:
     action:
         module: mODULE
-        route: json_enregitre_edition_TABLE
+        route: json_enregitre_edition_mODEL
         type: save_data
-        save_formulaire: formulaire_edition_TABLE
+        save_formulaire: formulaire_edition_mODEL
     callback:
         module: cONTROLLER
         fonction: vFermeEditionRefreshListe
         alerte: non
 
-btn_suppression_TABLE:
+btn_suppression_mODEL:
     action:
         module: mODULE
-        route: json_suppression_TABLE
+        route: json_suppression_mODEL
         type: save_data
     callback:
         module: cONTROLLER
         fonction: vRefreshListe
         alerte: non
+
+btn_export_mODEL:
+    action:
+        module:             mODULE
+        route:              xlsx_export_mODEL
+        type:               download_csv
+        save_formulaire:    formulaire_recherche_mODEL

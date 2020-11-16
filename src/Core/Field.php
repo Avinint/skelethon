@@ -2,7 +2,7 @@
 
 namespace Core;
 
-use Core\FieldType\FieldType;
+use E2D\FieldType\FieldType;
 
 abstract class Field extends CommandLineToolShelf
 {
@@ -195,10 +195,12 @@ abstract class Field extends CommandLineToolShelf
      */
     public function is($type)
     {
-        if (is_array($type))
+        if (is_array($type)) {
             return array_contains($this->type->getName(), $type);
-        else
-            return $this->type->getName() ===  $type;
+        }
+        else {
+            return $this->type->getName() === $type;
+        }
     }
 
     /**
