@@ -51,9 +51,7 @@ class E2DControllerFileGenerator extends FileGenerator
         $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath($path->add($rechercheActionInitPathHandle)));
 
         if (file_exists($path = $this->getTrueTemplatePath($path))) {
-
             $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
-
             $exceptions = [];
             $defaults = [];
             $allEnumEditLines = [];
@@ -61,42 +59,22 @@ class E2DControllerFileGenerator extends FileGenerator
             $exceptionText = '';
 
             $fields = $this->model->getFields('edition');
+            if ($this->app->get('legacy') ?? false) {
 
-            $fieldsNotNullableText = '';
-            $fieldsNotNullable = [];
-            $fieldsNullableText = '';
-            $fieldsNullable = [];
+                $fieldsText = $this->genererChampsEnregistrementLegacy($fields, $path);
+            } else {
+                $fieldsText = $this->genererChampsEnregistrement($fields, $path);
+            }
 
-            /**
-             * @var E2DField $field
-             */
             foreach ($fields as $field) {
-                $fieldTemplatePath = $this->getTrueTemplatePath($path->add('edition')->add('champs'));
-
-                $fieldText = $this->getChampsPourEnregistrement($field, $fieldTemplatePath);
-                if ($field->isNullable() === true) {
-                    $fieldsNullable[] = $fieldText.PHP_EOL;
-                } else {
-                    $fieldsNotNullable[] = $fieldText;
-                }
-
                 if ($field->is('enum') || $field->is('parametre')) {
                     if ($field->getDefaultValue()) {
-                        $defaults[] = $field->getType()->getValeurParDefautChampPourDynamisationEditionController($field, $fieldTemplatePath);
+                        $defaults[] = $field->getType()->getValeurParDefautChampPourDynamisationEditionController($field, $path);
                     }
 
-                    $allEnumEditLines[] = $field->getType()->getChampsPourDynamisationEdition($field, $fieldTemplatePath);
-                    $allEnumSearchLines[] = $field->getType()->getChampsPourDynamisationRecherche($field, $fieldTemplatePath);
+                    $allEnumEditLines[] = $field->getType()->getChampsPourDynamisationEdition($field, $path);
+                    $allEnumSearchLines[] = $field->getType()->getChampsPourDynamisationRecherche($field, $path);
                 }
-            }
-
-            if (!empty($fieldsNullable)) {
-                $fieldsNullableText = PHP_EOL.str_repeat("\x20", 8).'$aChampsNull = [];'.
-                    PHP_EOL.str_repeat("\x20", 8).implode(PHP_EOL.str_repeat("\x20", 8), $fieldsNullable).PHP_EOL;
-            }
-
-            if (!empty($fieldsNotNullable)) {
-                $fieldsNotNullableText = PHP_EOL.str_repeat("\x20", 12).implode(PHP_EOL.str_repeat("\x20", 12), $fieldsNotNullable).PHP_EOL.str_repeat("\x20", 8);
             }
 
             $parametreInitLine = str_repeat("\x20", 8) . "\$oParametre = \$this->oNew('Parametre');";
@@ -107,8 +85,8 @@ class E2DControllerFileGenerator extends FileGenerator
             if ($this->model->getFields('edition', 'parametre')) {
                 array_unshift($allEnumEditLines, $parametreInitLine);
             }
-            $enumEditText = implode(PHP_EOL, $allEnumEditLines);
 
+            $enumEditText = implode(PHP_EOL, $allEnumEditLines);
             $enumSearchText = implode(PHP_EOL, $allEnumSearchLines);
 
 //            if ($exceptions) {
@@ -120,8 +98,8 @@ class E2DControllerFileGenerator extends FileGenerator
 //                $exceptionText .= implode(',', $exceptionArr).']';
 //            }
 
-            $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', '//CHAMPSNOTNULL', '//CHAMPSNULL', 'IDFIELD'],
-            [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsNotNullableText, $fieldsNullableText, $this->model->getIdField()], $methodText);
+            $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', '//CHAMPS', 'IDFIELD'],
+            [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsText, $this->model->getIdField()], $methodText);
 
             $text .= file_get_contents($path);
             if ($this->app->get('usesPagination') ?? true)  {
@@ -131,6 +109,7 @@ class E2DControllerFileGenerator extends FileGenerator
             }
             $concurrentText = $this->model->usesMultiCalques ? file_get_contents($this->getTrueTemplatePath($path->add('multi'))): '';
             $label = $this->labelize($this->model->getName());
+
             $text = str_replace(['//PAGINATION', 'MODULE', 'CONTROLLER', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD', 'LABEL', 'TABLE'],
                 [$paginationText, $this->pascalCaseModuleName, $this->controllerName, $this->model->getClassName(),
                     $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText, $label, $this->model->getTableName()], $text);
@@ -140,86 +119,119 @@ class E2DControllerFileGenerator extends FileGenerator
     }
 
     /**
-     * @param $field
-     * @param array $exceptions
-     * @param array $defaults
-     * @return array
-     */
-//    protected function handleControllerBooleanField($field, array &$exceptions, array &$defaults, $fieldTemplatePath)
-//    {
-//        $exceptions['aBooleens'][] = $field->getFormattedName();
-//        $defaultValue = $field->getDefaultValue() ?? 'nc';
-//        $defaultLines = file($this->getTrueTemplatePath($fieldTemplatePath->add('defaut')));
-//        $defaults[] = str_replace(['FIELD', 'VALUE'], [$field->getName(), $defaultValue], $defaultLines[0]);
-//    }
-
-    /** TODO extract
-     * @param E2DField $field
-     * @param array $exceptions
-     * @param array $defaults
+     * @param array $fields
      * @param FilePath $path
-     * @param array $allEnumEditLines
-     * @param array $allEnumSearchLines
      * @return string
      */
-    private function getChampsPourEnregistrement(E2DField $field, FilePath $fieldTemplatePath): string
+    private function genererChampsEnregistrement(array $fields, FilePath $path) : string
     {
-        $templateRequiredFields = $field->getType()->getTemplateChampObligatoire($fieldTemplatePath);
-        $templateNullableFields = $field->getType()->getTemplateChampNullable($fieldTemplatePath);
-        $fieldsText = $this->buildControllerField($field, $templateRequiredFields, $templateNullableFields);
+        $fieldsNotNullableText = '';
+        $fieldsNullableText    = '';
+        $fieldsNotNullable     = [];
+        $fieldsNullable        = [];
 
-        return $fieldsText;
+
+        [$fieldsNullable, $fieldsNotNullable] = $this->ajouterChampEnregistrement($fields, $path, $fieldsNullable, $fieldsNotNullable);
+
+        if (!empty($fieldsNullable)) {
+            $fieldsNullableText = PHP_EOL . str_repeat("\x20", 8) . '$aChampsNull = [];' .
+                PHP_EOL . str_repeat("\x20", 8) . implode(PHP_EOL . str_repeat("\x20", 8), $fieldsNullable) . PHP_EOL;
+        }
+
+        if (!empty($fieldsNotNullable)) {
+            $fieldsNotNullableText = PHP_EOL . str_repeat("\x20", 12) . implode(PHP_EOL . str_repeat("\x20", 12), $fieldsNotNullable) . PHP_EOL . str_repeat("\x20", 8);
+        }
+
+        $templateListeChamps = file_get_contents($this->getTrueTemplatePath($path->add('enregistrement_champs')));
+        if (!isset($templateListeChamps)) {
+            throw new \Exception('Template inexistant');
+        }
+
+        return str_replace(['//CHAMPSNOTNULL', '//CHAMPSNULL'], [$fieldsNotNullableText, $fieldsNullableText], $templateListeChamps);
     }
 
     /**
-     * @param $enumPath
-     * @param E2DField $field
-     * @param array $allEnumEditLines
-     * @param array $allEnumSearchLines
-     * @param array $enumDefaults
-     * @return array
+     * @param array $fields
+     * @param FilePath $path
+     * @param array $fieldsNullable
+     * @param array $fieldsNotNullable
+     * @return array[]
      */
-//    protected function handleControllerEnumField($enumPath, E2DField $field, array &$allEnumEditLines, array &$allEnumSearchLines, array &$enumDefaults)
-//    {
-//        $enumLines = $enumSearchLines = file($enumPath);
-//        $enumEditionLines = $enumLines[0];
-//        $default = $field->getDefaultValue() ?? '';
-//
-//        // TODO finit d'intégrer les differences pour les champs parametres
-//        if ($this->model->usesSelect2) {
-//            if ($default) {
-//                $enumSearchLines = array_slice($enumLines, 0, 3);
-//                $enumDefault = $enumLines[3];
-//            } else {
-//                $enumSearchLines = array_slice($enumLines, 0, 1);
-//            }
-//        } else {
-//            if ($default) {
-//                $enumSearchLines = $enumLines;
-//                $enumDefault = $enumLines[2];
-//            } else {
-//                $enumSearchLines = [$enumLines[0]];
-//            }
-//        }
-//
-//        $searches = ['NAME', 'mODULE', 'TABLE', 'COLUMN', 'DEFAULT', 'TYPE'];
-//        $parametre = $field->is('parametre') ? $field->getParametre('type') : '';
-//        $replacements = [$field->getName(), $this->moduleName, $this->model->getName(), $field->getColumn(), $default, $parametre];
-//
-////        if ($field->is('parametre')) {
-////            $searches[] = 'TYPE';
-////            $replacements[] = $field->getParametre('type');
-////        }
-//
-//        $allEnumEditLines[] = str_replace($searches, $replacements, $enumEditionLines);
-//        $allEnumSearchLines[] = str_replace($searches, $replacements, implode('', $enumSearchLines));
-//
-//
-//        if ($default) {
-//            $enumDefaults[] = str_replace($searches, $replacements, $enumDefault);
-//        }
-//
-//    }
+    private function ajouterChampEnregistrement(array $fields, FilePath $path, array $fieldsNullable, array $fieldsNotNullable) : array
+    {
+        $index = 1;
+        foreach ($fields as $field) {
+            $fieldTemplatePath      = $this->getTrueTemplatePath($path->add('edition')->add('champs'));
+            $templateRequiredFields = $field->getType()->getTemplateChampObligatoire($fieldTemplatePath);
+            $templateNullableFields = $field->getType()->getTemplateChampNullable($fieldTemplatePath);
+
+            $indent = str_repeat("\x20", 8);
+            if ($field->isNullable()) {
+                $fieldsNullable[] = str_replace(['VALUE', 'COLUMN', 'NAME', PHP_EOL],
+                        [$templateRequiredFields[$index], $field->getColumn(), $field->getName(), PHP_EOL . $indent], $templateNullableFields) . PHP_EOL;
+            } else {
+                $fieldsNotNullable[] = str_replace(['VALUE', 'COLUMN', 'NAME'], [$templateRequiredFields[$index], $field->getColumn(), $field->getName()], $templateRequiredFields[0]);
+            }
+        }
+
+        return [$fieldsNullable, $fieldsNotNullable];
+    }
+
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+
+    /**
+     * @param array $fields
+     * @param FilePath $path
+     * @return string
+     */
+    private function genererChampsEnregistrementLegacy(array $fields, FilePath $path) : string
+    {
+        $fieldsNotNullableText = '';
+        $fieldsNullableText    = '';
+        $fieldsNotNullable     = [];
+        $fieldsNullable        = [];
+
+        /**
+         * @var E2DField $field
+         */
+        [$fieldsNullable, $fieldsNotNullable] = $this->ajouterChampEnregistrementLegacy($fields, $path, $fieldsNullable, $fieldsNotNullable);
+
+        if (!empty($fieldsNullable)) {
+            $fieldsNullableText = PHP_EOL . str_repeat("\x20", 8) . implode(PHP_EOL . str_repeat("\x20", 8), $fieldsNullable) . PHP_EOL;
+        }
+
+        if (!empty($fieldsNotNullable)) {
+            $fieldsNotNullableText = PHP_EOL . str_repeat("\x20", 8) . implode(PHP_EOL . str_repeat("\x20", 8), $fieldsNotNullable) . PHP_EOL . str_repeat("\x20", 8);
+        }
+
+        return $fieldsNotNullableText . $fieldsNullableText;
+    }
+
+    /**
+     * @param array $fields
+     * @param FilePath $path
+     * @param array $fieldsNullable
+     * @param array $fieldsNotNullable
+     * @return array[]
+     */
+    private function ajouterChampEnregistrementLegacy(array $fields, FilePath $path, array $fieldsNullable, array $fieldsNotNullable) : array
+    {
+        $index = 0;
+        foreach ($fields as $field) {
+            $fieldTemplatePath      = $this->getTrueTemplatePath($path->add('edition')->add('champs'));
+            $templateRequiredFields = $field->getType()->getTemplateChampObligatoireLegacy($fieldTemplatePath);
+            $templateNullableFields = $field->getType()->getTemplateChampNullableLegacy($fieldTemplatePath);
+
+            $indent = str_repeat("\x20", 8);
+            if ($field->isNullable()) {
+                $fieldsNullable[] = str_replace(['VALUE', 'COLUMN', 'NAME', PHP_EOL],
+                    [$templateRequiredFields[$index], $field->getColumn(), $field->getName(), PHP_EOL . $indent], $templateNullableFields);
+            } else {
+                $fieldsNotNullable[] = str_replace(['VALUE', 'COLUMN', 'NAME'], [$templateRequiredFields[$index], $field->getColumn(), $field->getName()], $templateRequiredFields[0]);
+            }
+        }
+        return [$fieldsNullable, $fieldsNotNullable];
+    }
 
     /**
      * @param $path
@@ -242,23 +254,4 @@ class E2DControllerFileGenerator extends FileGenerator
         return $text;
     }
 
-    /**
-     * @param $field
-     * @param string $template
-     * @param string $templateNullableFields
-     * @param string $fieldsText
-     * @return string
-     */
-    private function buildControllerField($field, array $template, string $templateNullableFields): string
-    {
-        $indent = str_repeat("\x20", 8);
-        if ($field->isNullable()) {
-            $fieldsText = str_replace(['VALUE', 'COLUMN', 'NAME', PHP_EOL],
-                [$template[1], $field->getColumn(), $field->getName(), PHP_EOL.$indent], $templateNullableFields);
-        } else {
-            $fieldsText = str_replace(['VALUE', 'COLUMN', 'NAME'], [$template[1], $field->getColumn(), $field->getName()], $template[0]);
-        }
-
-        return $fieldsText;
-    }
 }

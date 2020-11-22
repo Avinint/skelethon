@@ -160,9 +160,9 @@ abstract class FieldType
         return [$template[0], $template[1]];
     }
 
-    public function getTemplateChampNullable(FilePath $fieldTemplatePath)
+    public function getTemplateChampNullable(FilePath $templatePath)
     {
-        $nullableFieldTemplatePath = $this->app->getTrueTemplatePath($fieldTemplatePath->add('nullable'));
+        $nullableFieldTemplatePath = $this->app->getTrueTemplatePath($templatePath->add('nullable'));
 
         return file_get_contents($nullableFieldTemplatePath);
     }
@@ -189,5 +189,29 @@ abstract class FieldType
     protected function getCheminTemplateVueRecherche($path)
     {
         return $this->app->getTrueTemplatePath($path->add('string'));
+    }
+
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+
+    /**
+     * Référence template : templates/standard/module/controllers/CONTROLLERAdminAction_edition_champs_legacy.class.php
+     * @param FilePath $templatePath
+     * @return array
+     */
+    public function getTemplateChampObligatoireLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return [$template[0]];
+    }
+
+    /**
+     * Référence template : templates/standard/module/controllers/CONTROLLERAdminAction_edition_champs_legacy.class.php
+     * @param FilePath $templatePath
+     * @return array
+     */
+    public function getTemplateChampNullableLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return $template[4];
     }
 }

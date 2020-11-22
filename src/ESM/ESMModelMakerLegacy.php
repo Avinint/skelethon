@@ -6,7 +6,7 @@ class ESMModelMakerLegacy extends ESMModelMaker
 {
     public function getEditFields() :string
     {
-        return implode(','.PHP_EOL, array_map(function($field) { return str_repeat("\x20", 12) .$field->getUpdateField();}, $this->getUpdateFields()));
+        return implode(','.PHP_EOL, array_map(function($field) { return str_repeat("\x20", 12) .$field->getUpdateFieldLegacy();}, $this->getUpdateFields()));
     }
 
     /**

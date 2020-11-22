@@ -132,6 +132,15 @@ class App
        $this->getConfig()->set($property, $value, $model, $setForAll);
     }
 
+    public function setTemplate(string $template, string $portee = '')
+    {
+        if ($portee === 'model') {
+            $this->getConfig()->setTemplate($template, $this->getModelName());
+        } else {
+            $this->getConfig()->setTemplate( $template, $portee);
+        }
+    }
+
     public function getTemplate()
     {
         return $this->getFileManager()->getTemplate();
@@ -154,7 +163,7 @@ class App
 
     public function getModelName()
     {
-        return $this->getModelMaker()->getName();
+        return $this->getConfig()->getCurrentModel();
     }
 
 

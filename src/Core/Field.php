@@ -147,7 +147,7 @@ abstract class Field extends CommandLineToolShelf
      */
     public function isDate()
     {
-        return array_contains($this->type, array('date', 'datetime', 'time'));
+        return $this->is(['date', 'datetime', 'time']);
     }
 
     /**
@@ -155,7 +155,7 @@ abstract class Field extends CommandLineToolShelf
      */
     public function isTime()
     {
-        return array_contains($this->type, array('datetime', 'time'));
+        return $this->is(['datetime', 'time']);
     }
 
     /**

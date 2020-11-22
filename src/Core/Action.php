@@ -4,7 +4,7 @@
 namespace Core;
 
 
-abstract class Action extends BaseMaker
+class Action extends BaseMaker
 {
     protected string $name;
     protected App $app;
@@ -99,7 +99,7 @@ abstract class Action extends BaseMaker
         return $path;
     }
 
-    public function getNoRechercheText(string $path)
+    public function getNoRechercheText(FilePath $path)
     {
         return   file_get_contents($this->getTrueTemplatePath($path->add('noRecherche')));
     }

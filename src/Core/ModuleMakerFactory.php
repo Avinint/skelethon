@@ -37,7 +37,7 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
         $app = new App();
         $app->setConfig($config);
         $app->setFileManager($this->templateNodeClass);
-        $app->getFileManager()->setTemplate($config->get('template', $modelName) ?? $config->askTemplate(), $this->templateNodeClass);
+        $app->getFileManager()->setTemplate($config->get('template') ?? $config->askTemplate(), $this->templateNodeClass);
 
 
         $config->setFileManager($app->getFileManager());
@@ -118,14 +118,15 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
      * @return mixed
      */
     public function createModel($moduleName, $modelName, $creationMode, App $app)
-    {;
-
-        if ($app->getConfig()->askLegacy($modelName)) {
-            $modelMakerLegacy = $this->modelMaker. 'Legacy';
-            $model = new $modelMakerLegacy($this->fieldClass, $moduleName, $modelName . 'Legacy', $creationMode, $app);
-        } else {
-            $model = new $this->modelMaker($this->fieldClass, $moduleName, $modelName, $creationMode, $app);
-        }
+    {
+        $app->getConfig()->askLegacy($modelName);
+//        if () {
+//            $modelMakerLegacy = $this->modelMaker. 'Legacy';
+//            var_dump($modelMakerLegacy);
+//            $model = new $modelMakerLegacy($this->fieldClass, $moduleName, $modelName, $creationMode, $app);
+//        } else {
+        $model = new $this->modelMaker($this->fieldClass, $moduleName, $modelName, $creationMode, $app);
+//        }
 
         return $model;
     }

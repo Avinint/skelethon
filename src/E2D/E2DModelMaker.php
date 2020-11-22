@@ -540,4 +540,24 @@ class E2DModelMaker extends ModelMaker
         return $this->askBool('avecRessourceExport', 'Voulez-vous utiliser la ressource export? (permet à l\'utilisateur de personnaliser les exports dans l\'application)');
     }
 
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+    ///
+    public function getEditFields() :string
+    {
+        return implode(','.PHP_EOL, array_map(function($field) { return str_repeat("\x20", 12) .$field->getUpdateFieldLegacy();}, $this->getUpdateFields()));
+    }
+
+    /**
+     * Pour générer le bInsert
+     */
+    public function getInsertColumns()
+    {
+       return implode(','.PHP_EOL, array_map(function(E2DField $field) { return str_repeat("\x20", 16) .$field->getColumn();}, $this->getInsertFields()));
+    }
+
+    public function getInsertValues()
+    {
+        return implode(','.PHP_EOL, array_map(function(E2DField $field) {return str_repeat("\x20", 16) .$field->getInsertValueLegacy();}, $this->getInsertFields()));
+    }
+
 }

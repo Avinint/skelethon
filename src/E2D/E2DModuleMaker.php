@@ -36,6 +36,10 @@ class E2DModuleMaker extends ModuleMaker
         $this->initializePaths();
         $this->addMenu();
         $this->addSecurity();
+        if ($this->app->get('sans_generation') ?? false) {
+            $this->msg('Génération des fichiers désactivées, affichage du code seulement', 'error');
+            exit();
+        }
     }
 
     protected function initializeFileGenerators()
@@ -219,11 +223,12 @@ class E2DModuleMaker extends ModuleMaker
 
         if (!file_exists($this->securityPath)) {
             // TODO comportement configurable
-            return;
+            if ($this->app->get('updateSecurity') === 'generate')
+                return;
         }
 
         $security = new E2DSecurityFileGenerator($this->app);
-        if ($this->app->get('updateSecurity') === 'generate') {
+        if ($this->app->get('updateSecurity') === 'generate' && !$this->app->get('onlyPrint')) {
             $security->generate($this->securityPath);
         } elseif ($this->app->get('updateSecurity') === 'print') {
             $security->print($this->securityPath);

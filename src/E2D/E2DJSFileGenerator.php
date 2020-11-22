@@ -57,7 +57,8 @@ class E2DJSFileGenerator extends FileGenerator
 
             /* Gén code si pas d'action recherche */
             if (!$this->model->hasAction('recherche')) {
-                $noRechercheText = $this->model->getActions()['recherche']->getNoRechercheText();
+                $actions = $this->model->getActions();
+                $noRechercheText = array_shift($actions)->getNoRechercheText($path);
                 $actionMethodText = $noRechercheText.$actionMethodText;
             }
 
@@ -67,22 +68,26 @@ class E2DJSFileGenerator extends FileGenerator
             /* Ajout code select2 */
             if ($this->model->usesSelect2) {
 
-                $select2DefautTemplate = file($this->getTrueTemplatePath($path->get('recherche')->add('select2')));
-                $select2RechercheTemplate = array_shift($select2DefautTemplate);
-                $select2EditTemplate = file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('select2')));
+                if ($this->model->hasAction('recherche')) {
+                    $select2DefautTemplate    = file($this->getTrueTemplatePath($path->get('recherche')->add('select2')));
+                    $select2RechercheTemplate = array_shift($select2DefautTemplate);
+                    $searchFields = $this->model->getFields('recherche', ['enum', 'parametre']);
 
-                $editionFields = $this->model->getFields('edition', ['enum', 'parametre']);
-                $searchFields = $this->model->getFields('recherche', ['enum', 'parametre']);
+                    foreach ($searchFields as $field) {
+                        $select2SearchText .= str_replace(['NAME'], [$field->getName()], $select2RechercheTemplate);
+                    }
 
-                foreach ($editionFields as $field) {
-                    $select2EditText .= str_replace(['NAME'], [$field->getName()], $select2EditTemplate).PHP_EOL;
+                    $select2SearchText .= implode('', $select2DefautTemplate).PHP_EOL;
                 }
 
-                foreach ($searchFields as $field) {
-                    $select2SearchText .= str_replace(['NAME'], [$field->getName()], $select2RechercheTemplate);
+                if ($this->model->hasAction('edition')) {
+                    $select2EditTemplate = file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('select2')));
+                    $editionFields       = $this->model->getFields('edition', ['enum', 'parametre']);
+                    foreach ($editionFields as $field) {
+                        $select2EditText .= str_replace(['NAME'], [$field->getName()], $select2EditTemplate) . PHP_EOL;
+                    }
                 }
 
-                $select2SearchText .= implode('', $select2DefautTemplate).PHP_EOL;
             }
 
             $selectAjaxDefinitionText = '';

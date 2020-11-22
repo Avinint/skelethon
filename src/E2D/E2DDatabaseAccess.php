@@ -23,9 +23,9 @@ class E2DDatabaseAccess extends DatabaseAccess
         );
     }
 
-    public function getTable(string $tableName)
+    public function getTable(string $tableName, $legacyPrefixes = false)
     {
-        return $this->getTableList()[$tableName] ?? null;
+        return $this->getTableList($legacyPrefixes)[$tableName] ?? null;
     }
 
     /**
@@ -39,7 +39,12 @@ class E2DDatabaseAccess extends DatabaseAccess
         return $tables;
     }
 
-    public function getTableList()
+    public function getStringPrefix($legacyPrefixes)
+    {
+        return $legacyPrefixes ? 'sz' : 's';
+    }
+
+    public function getTableList($legacyPrefixes = false)
     {
         if (empty($this->tables)) {
 
@@ -88,14 +93,14 @@ class E2DDatabaseAccess extends DatabaseAccess
                         case 'text':
                         case 'mediumtext':
                         case 'longtext':
-                            $oChamp->sChamp = 's'.$sNom;
+                            $oChamp->sChamp = $this->getStringPrefix($legacyPrefixes).$sNom;
                             if ($sMaxLength != '') {
                                 $oChamp->maxLength = $this->getMaxLength($sMaxLength);
                             }
                             break;
 
                         case 'enum':
-                            $oChamp->sChamp = 's'.$sNom;
+                            $oChamp->sChamp = $this->getStringPrefix($legacyPrefixes).$sNom;
                             break;
                         case 'timestamp':
                             $oChamp->Default = '';

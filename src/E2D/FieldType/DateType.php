@@ -100,4 +100,18 @@ class DateType extends FieldType
     {
         return $this->app->getTrueTemplatePath($path->add('date'));
     }
+
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+
+    public function getTemplateChampObligatoireLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return [str_replace('FORMAT', $template[9], $template[2])];
+    }
+
+    public function getTemplateChampNullableLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return str_replace('FORMAT', $template[9], $template[7]);
+    }
 }

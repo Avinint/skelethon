@@ -190,4 +190,35 @@ class E2DField extends Field
             return $this->parametre->lignes;
     }
 
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+
+    public function getUpdateFieldLegacy()
+    {
+        if ($this->isDate() || $this->isTime()) {
+            return "$this->column ='. \$this->$this->name .'";
+        } elseif ($this->isInteger()) {
+            if ($this->isNullable()) {
+                return "$this->column = '.addslashes(\$this->$this->name ?? 'NULL').'";
+            }
+            return "$this->column = '.addslashes(\$this->$this->name).'";
+        }
+        return "$this->column = \''.addslashes(\$this->$this->name).'\'";
+    }
+
+
+
+    public function getInsertValueLegacy()
+    {
+        if ($this->isDate()) {
+            return "'. \$this->$this->name .'";
+
+        } elseif ($this->isInteger()) {
+            if ($this->isNullable()) {
+                return "'.addslashes(\$this->$this->name ?? 'NULL').'";
+            }
+            return "'.addslashes(\$this->$this->name).'";
+        }
+
+        return  "\''.addslashes(\$this->$this->name).'\'";
+    }
 }

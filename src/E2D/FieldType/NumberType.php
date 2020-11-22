@@ -43,4 +43,16 @@ class NumberType extends FieldType
     {
         return $this->app->getTrueTemplatePath($path->add('number'));
     }
+
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+
+    /**
+     * @param FilePath $templatePath
+     * @return array
+     */
+    public function getTemplateChampNullableLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return $template[5];
+    }
 }

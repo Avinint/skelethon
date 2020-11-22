@@ -1,0 +1,2 @@
+        $aChamps = [//CHAMPSNOTNULL];
+//CHAMPSNULL

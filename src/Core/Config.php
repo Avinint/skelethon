@@ -274,7 +274,11 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
     public function askTemplate()
     {
         $templates = array_map(function($tmpl) {$parts = explode(DS, $tmpl); return array_pop($parts); }, glob(dirname(dirname(__DIR__)) . DS . 'templates'.DS.'*', GLOB_ONLYDIR));
-        $res = $this->askConfig('template', $templates, 'askMultipleChoices', $this->type->getTemplate(), true);
+        $res = $this->askConfig('template', $templates, 'askMultipleChoices', $this->type->getTemplate());
+        if ($this->get('legacy')) {
+            $res = 'legacy_' . $res;
+        }
+
         return $res;
     }
 
@@ -388,7 +392,9 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
                 $this->set('template', $template, 'for_project', true);
             elseif ('application' === $portee)
                 $this->set('template', $template, '', true);
-            else $this->set('template', $template);
+            else {
+                $this->set('template', $template, $portee);
+            }
         } else {
             $this->set('template', $template);
         }

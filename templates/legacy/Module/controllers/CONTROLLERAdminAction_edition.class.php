@@ -40,10 +40,10 @@
         $oElement->IDFIELD = $nIdElement;
 //CHAMPS
         if ($nIdElement > 0) {
-            $aRetour['bSucces'] = $oElement->bUpdate($aChamps, $aChampsNull);
+            $aRetour['bSucces'] = $oElement->bUpdate();
             $aRetour['bModif'] = true;
         } else {
-            $aRetour['bSucces'] = $oElement->bInsert($aChamps, $aChampsNull);
+            $aRetour['bSucces'] = $oElement->bInsert();
         }
 
         if ($aRetour['bSucces'] === false) {

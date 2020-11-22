@@ -3,6 +3,7 @@
 namespace E2D\FieldType;
 
 use Core\Field;
+use Core\FilePath;
 
 class DateTimeType extends DateType
 {
@@ -33,6 +34,20 @@ class DateTimeType extends DateType
     {
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return [$template[0], $template[2].$template[4]];
+    }
+
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+
+    public function getTemplateChampObligatoireLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return [str_replace('FORMAT', $template[10], $template[2])];
+    }
+
+    public function getTemplateChampNullableLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return str_replace('FORMAT', $template[10], $template[7]);
     }
 
 }

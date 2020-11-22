@@ -113,8 +113,11 @@ abstract class CommandLineToolShelf
         } else {
             $result = false;
             while (!array_contains($result, $validValues)) {
-                if (!empty($defaultValue) && empty($result)) {
-                    $result =  $defaultValue;
+                if (!empty($defaultValue)) {
+                    $result = readline($this->msg($msg, '',  $validValues));
+                    if (empty($result)) {
+                        $result = $defaultValue;
+                    }
                 } else {
                     $tempResult = readline($this->msg($msg, '',  $validValues));
                     $result = $keepCase ? $result : strtolower($tempResult);
@@ -144,6 +147,7 @@ abstract class CommandLineToolShelf
 
         $promptMessage = 'Choisir un/e ' . $key . ' dans la liste suivante'. $texteReference.' :' . PHP_EOL . $this->displayList($choices, 'info') . $msgDefault;
         $selection = $this->prompt($promptMessage, $allowedValues, $defaultValue);
+
         if ($defaultValue !== false && $selection === '') {
             $selection = $defaultValue;
         }

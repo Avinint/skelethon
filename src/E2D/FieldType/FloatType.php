@@ -3,6 +3,7 @@
 namespace E2D\FieldType;
 
 use Core\Field;
+use Core\FilePath;
 
 class FloatType extends NumberType
 {
@@ -26,4 +27,25 @@ class FloatType extends NumberType
         return [$template[0], $template[6]];
     }
 
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+
+    /**
+     * @param FilePath $templatePath
+     * @return array
+     */
+    public function getTemplateChampObligatoireLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return [$template[1]];
+    }
+
+    /**
+     * @param FilePath $templatePath
+     * @return array
+     */
+    public function getTemplateChampNullableLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return $template[5];
+    }
 }

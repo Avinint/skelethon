@@ -9,7 +9,8 @@ class BoolType extends FieldType
 {
     public function getEditionView(FilePath $path)
     {
-        $suffixe = $this->app->usesSwitches ? 'bool_switch' : 'bool_radio';
+        $suffixe = $this->app->get('usesSwitches') ? 'bool_switch' : 'bool_radio';
+        var_dump($path->add($suffixe).'');
         $templatePath = $this->app->getTrueTemplatePath($path->add($suffixe));
 
         return file_get_contents($templatePath);
@@ -71,4 +72,15 @@ class BoolType extends FieldType
         return $this->app->getTrueTemplatePath($path->add($suffixe));
     }
 
+    //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
+
+    /**
+     * @param FilePath $templatePath
+     * @return array
+     */
+    public function getTemplateChampNullableLegacy(FilePath $templatePath)
+    {
+        $template = file($templatePath, FILE_IGNORE_NEW_LINES);
+        return $template[5];
+    }
 }

@@ -343,7 +343,7 @@ abstract class ModelMaker extends BaseMaker
     public function setDbTable(): void
     {
         $this->askTableName();
-        $table = $this->databaseAccess->getTable($this->tableName);
+        $table = $this->databaseAccess->getTable($this->tableName, $this->app->get('legacyPrefixes') ?? false);
 
         if (null === $table) {
             $this->msg('Erreur: Il faut créer la table \'' . $this->name . '\' avant de générer le code', 'error');

@@ -8,7 +8,7 @@ namespace ESM;
  */
 class ESMFieldLegacy extends ESMField
 {
-    public function getUpdateField()
+    public function getUpdateFieldLegacy()
     {
         if ($this->isDate() || $this->isTime()) {
             return "$this->column ='. \$this->$this->name .'";
@@ -23,7 +23,7 @@ class ESMFieldLegacy extends ESMField
 
 
 
-    public function getInsertValue()
+    public function getInsertValueLegacy()
     {
         if ($this->isDate()) {
             return "'. \$this->$this->name .'";

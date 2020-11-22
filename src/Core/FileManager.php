@@ -27,10 +27,17 @@ class FileManager
      */
     public function setTemplate(string $templates)
     {
-        $this->templates = explode("_", trim($templates.'_standard', "_"));
+        if (!$this->app->has('template')) {
+            $this->app->setTemplate($templates, 'model');
+        } elseif (strpos($templates, 'legacy_') !== false && !$this->app->get('legacy')) {
+            $templates = str_replace('legacy_', '', $templates);
+            $this->app->setTemplate($templates, 'model');
+        } elseif ($this->app->get('legacy') && strpos($templates, 'legacy_')  === false ) {
+            $this->app->setTemplate('legacy_'.$templates, 'model');
+        }
 
-        if (!$this->app->has('template'))
-            $this->app->getConfig()->setTemplate($templates);
+        $this->templates = explode("_", trim($templates.'_standard', '_'));
+        var_dump($this->templates);
     }
 
     public function createFile($path, $text = '', $write = false)

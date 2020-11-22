@@ -28,6 +28,7 @@ class E2DModelFileGenerator extends FileGenerator
         }
 
         $joinTemplate = file($this->getTrueTemplatePath($templatePath->add('joins')));
+
         $text = str_replace([
             '//METHODS', 'MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', '//MAPPINGCHAMPS','//TITRELIBELLE', 'CHAMPS_SELECT', 'LEFTJOINS', '//RECHERCHE', '//VALIDATION'
         ],[
@@ -41,7 +42,8 @@ class E2DModelFileGenerator extends FileGenerator
             $this->model->getSqlSelectFields($this->getTrueTemplatePath($templatePath->add('selectFields'))),
             $this->model->getJoins($joinTemplate),
             $this->model->getSearchCriteria($this->getTrueTemplatePath($templatePath->add('searchCriterion'))),
-            $this->model->getValidationCriteria($this->getTrueTemplatePath($templatePath->add('validationCriterion')))], $text);
+            $this->model->getValidationCriteria($this->getTrueTemplatePath($templatePath->add('validationCriterion')))
+        ], $text);
 
         return $text;
     }
@@ -49,8 +51,15 @@ class E2DModelFileGenerator extends FileGenerator
     public function getMethods($path)
     {
         $methodText = [];
-        if ($this->app->get('displayModelSqlMethods') ?? false) {
-            $methodText[] = file_get_contents($this->getTrueTemplatePath($path->add('methods')));
+        if ($this->app->get('displayModelSqlMethods') || $this->app->get('legacy')) {
+            $text = file_get_contents($this->getTrueTemplatePath($path->add('methods')));
+
+            if ($this->app->get('legacy')) {
+                $text = str_replace(['EDITCHAMPS', 'INSERTCOLUMNS', 'INSERTVALUES'],
+                    [$this->model->getEditFields(), $this->model->getInsertColumns(), $this->model->getInsertValues()],$text);
+            }
+
+            $methodText[] = $text;
         }
 
         if ($this->model->hasAction('export') && !$this->app->get('avecRessourceExport'))
