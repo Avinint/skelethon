@@ -216,7 +216,7 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
             return $this->getValueFromModelConfig($field, $model) ?? null;
         }
 
-        return $this->getValueFromModelConfig($field) ?? $this->getValueFromModuleConfig($field) ?? $this->data[$this->subDir][$field] ?? $this->data[$field] ?? null;;
+        return $this->getValueFromModelConfig($field) ?? $this->getValueFromModuleConfig($field) ?? $this->data[$this->subDir][$field] ?? $this->data[$field] ?? null;
     }
 
     /**
@@ -246,9 +246,9 @@ class Config extends CommandLineToolShelf implements ArrayAccess, Countable
         return null;
     }
 
-    public function has(string $field)
+    public function has(string $field, $model = null)
     {
-        return $this->get($field) !== null;
+        return $this->get($field, $model) !== null;
     }
 
     /**

@@ -10,7 +10,6 @@ class BoolType extends FieldType
     public function getEditionView(FilePath $path)
     {
         $suffixe = $this->app->get('usesSwitches') ? 'bool_switch' : 'bool_radio';
-        var_dump($path->add($suffixe).'');
         $templatePath = $this->app->getTrueTemplatePath($path->add($suffixe));
 
         return file_get_contents($templatePath);
@@ -67,7 +66,7 @@ class BoolType extends FieldType
      */
     protected function getCheminTemplateVueRecherche($path)
     {
-        $suffixe = $this->app->usesSwitches ? 'bool_switch' : 'bool_radio';
+        $suffixe = $this->app->get('usesSwitches') ? 'bool_switch' : 'bool_radio';
 
         return $this->app->getTrueTemplatePath($path->add($suffixe));
     }

@@ -29,6 +29,7 @@ class PathNode extends CommandLineToolShelf
     public function setFallbackTemplate(string $template)
     {
         if (isset($this->templateNode)) {
+
             $this->templateNode->setFallback($template);
         }
 

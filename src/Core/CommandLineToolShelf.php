@@ -135,7 +135,7 @@ abstract class CommandLineToolShelf
      * @param array $choices
      * @return bool|string
      */
-    protected function askMultipleChoices(string $key, array $choices, $defaultValue = false, $reference  = '', $freeChoice = false)
+    protected function askMultipleChoices(string $key, array $choices, $defaultValue = false, $reference = '', $freeChoice = false)
     {
         $msgDefault = $defaultValue !== false ?
             ($defaultValue !== '' ?

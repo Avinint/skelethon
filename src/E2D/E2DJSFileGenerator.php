@@ -105,11 +105,12 @@ class E2DJSFileGenerator extends FileGenerator
             $personalizedButtons = file_get_contents($this->getTrueTemplatePath($path->add($bHasConsultation ? 'consultationButton' : 'noConsultationButtons')));
 
             $champs = $this->app->get('champsTinyMCE') ?: [];
+
             foreach ($champs as $champ) {
-                $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('appelTinyMCE'))));
+                $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('appelTinyMCE'))));
             }
 
-            $tinyMCEDef = $this->app->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path->get('edition')->add('definitionTinyMCE'))) : '';
+            $tinyMCEDef = $this->app->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('definitionTinyMCE'))) : '';
 
 
 

@@ -1,0 +1,29 @@
+config:
+    - conf.yml
+    - routing.yml
+    - actions.yml
+    - blocs.yml
+application:
+    - CONTROLLERAdminAction.php
+    - CONTROLLERAdminHTML.php
+infrastructure:
+    - MODELRepository.php
+domain:
+    - MODEL.php
+JS:
+    - CONTROLLER.js
+    - CONTROLLERAdmin.js
+models:
+    - MODELModel.php
+templates:
+    defaut:
+        themes:
+            defaut:
+                css:
+                    mODEL.css
+vues:
+    accueil_mODEL.html
+    liste_mODEL.html
+    consultation_mODEL.html
+    edition_mODEL.html
+    recherche_mODEL.html

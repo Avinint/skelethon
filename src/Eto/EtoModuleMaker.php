@@ -24,4 +24,13 @@ class EtoModuleMaker extends E2DModuleMaker
             str_replace(['mODULE', 'mODEL', 'LABEL'],  [$this->name, $this->model->getName(),
                 $this->labelize($this->model->getName().'s')], $menuText) . PHP_EOL.PHP_EOL;
     }
+
+    protected function initializeFileGenerators()
+    {
+        $this->modelFileGenerator      = new EtoModelFileGenerator($this->app);
+        $this->controllerFileGenerator = new EtoControllerFileGenerator($this->app);
+        $this->jsFileGenerator         = new EtoJSFileGenerator($this->app);
+        $this->configFileGenerator     = new EtoConfigFileGenerator($this->app);
+        $this->viewFileGenerator       = new EtoViewFileGenerator($this->app);
+    }
 }

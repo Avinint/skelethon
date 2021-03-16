@@ -83,7 +83,7 @@ class E2DModelMaker extends ModelMaker
     /**
      * Questions sur details spécifiques au type de projet généré nécessaire à la génération, posées dans le constructeur.
      */
-    protected function askSpecifics() : void
+    protected function askSpecificsPreData() : void
     {
 //        if ($this->hasAction('export')) {
 //
@@ -179,7 +179,7 @@ class E2DModelMaker extends ModelMaker
     /**
      *  Commee askSpécifics mais requiert que tous les champs du modèle soit générés, questions posées à la fin de la génération
      */
-    protected function askModifySpecificData()
+    protected function askSpecificsPostData()
     {
         $this->usesTinyMCE = $this->config->get('champsTinyMCE') ?? $this->askChampsTinyMCE();
         $this->askAddManyToOneField();
@@ -193,6 +193,8 @@ class E2DModelMaker extends ModelMaker
                 $this->insertExportData();
             }
         }
+
+        $this->champsOneToMany = $this->config->get('oneToManyFields') ?? $this->askOneToManyFields();
 
         $this->avecChampsParametres = $this->askChampsParametres();
     }
@@ -257,7 +259,11 @@ class E2DModelMaker extends ModelMaker
      */
     protected function generateAlias(string $alias) : string
     {
-        if ($this->config->has('prefix')) {
+        if ($this->app->has('alias', $this->name)) {
+            return $this->app->get('alias', $this->name);
+        }
+
+        if ($this->config->get('prefix') ?? false) {
             if (strpos($alias, $this->config->get('prefix')) === 0) {
                 $alias = str_replace($this->config->get('prefix') . '_', '', $alias);
             }
@@ -356,10 +362,10 @@ class E2DModelMaker extends ModelMaker
             $this->convertirChampsEnParametres();
         }
 
-        if ($this->config->has('avecChampsParametres')) {
-            $presenceModuleParametre = count(glob(getcwd() . '/modules/parametre')) > 0;
-            $this->addModuleParametreIfMissing($presenceModuleParametre);
-        }
+//        if ($this->config->has('avecChampsParametres')) {
+//            $presenceModuleParametre = count(glob(getcwd() . '/modules/parametre')) > 0;
+//            $this->addModuleParametreIfMissing($presenceModuleParametre);
+//        }
 
         return $reponse1;
     }
@@ -396,7 +402,7 @@ class E2DModelMaker extends ModelMaker
         foreach ($champs as $champ) {
 
             $colonne      = $champ->getColumn();
-            $nomParametre = $this->name . '_' . $colonne;
+            $nomParametre = $this->app->get('champsParametreMatch')[$colonne] ?? $this->name . '_' . $colonne;
             $resultat     = $this->getChampsParametresPotentiels($nomParametre);
 
             if (!empty($resultat)) {
@@ -558,6 +564,25 @@ class E2DModelMaker extends ModelMaker
     public function getInsertValues()
     {
         return implode(','.PHP_EOL, array_map(function(E2DField $field) {return str_repeat("\x20", 16) .$field->getInsertValueLegacy();}, $this->getInsertFields()));
+    }
+
+    private function askOneToManyFields()
+    {
+        $this->withOneToManyFields =  $this->app->get('>withOneToManyFields') ?? $this->askBool('withOneToManyFields', 'Voulez vous ajouter des listes dynamiques dans les formulaires? (champs One To Many)');
+
+        if ($this->withOneToManyFields) {
+            $choix = '';
+            while($choix === '') {
+                $filtre            = readline($this->msg('Entrer du texte vous souhaitez filtrer la liste de tables pour affiche rseulement les tables contenant ce texte, (ex: salle affichera salle_creneau, salle_reservation'));
+                $tablesDisponibles = $this->databaseAccess->getSimilarTableList($filtre);
+                if ($this->app->get('enlever_many2one_des_one2many') ?? true) {
+                    $tablesManyToOne   = array_values(array_flip(array_flip(array_map(function ($manyToOne) { return $manyToOne['table']; }, $this->app->get('manyToOne')))));
+                    $tablesDisponibles = array_diff($tablesDisponibles, $tablesManyToOne);
+                }
+
+                $choix = $this->askMultipleChoices('table', $tablesDisponibles);
+            }
+        }
     }
 
 }

@@ -1,7 +1,8 @@
 <?php
 
-
 namespace Core;
+
+use Spyc;
 
 class FileManager
 {
@@ -37,11 +38,14 @@ class FileManager
         }
 
         $this->templates = explode("_", trim($templates.'_standard', '_'));
-        var_dump($this->templates);
     }
 
     public function createFile($path, $text = '', $write = false)
     {
+        if ($this->app->get('printOnly')) {
+            echo $text;
+            return;
+        }
         $errorMessage = [];
         $mode = $write ? 'w' : 'a';
         $file = fopen($path, $mode);
@@ -82,11 +86,13 @@ class FileManager
     function findRightTemplatePath(FilePath $templatePath) : ?FilePath
     {
         if (!file_exists($templatePath)) {
+
             $nextTemplate = next($this->templates);
             if ($nextTemplate === false) {
                 return null;
             }
             $templatePath->setFallbackTemplate($nextTemplate);
+
             return $this->findRightTemplatePath($templatePath);
         }
 
@@ -114,7 +120,7 @@ class FileManager
         $this->ensureDirectoryExists(dirname($this->app->getConfig()->getPath('for_project')));
 
         if (!file_exists($this->app->getConfig()->getPath('for_project'))) {
-            $this->fileManager->createFile($this->app->getConfig()->getPath('for_project', Spyc::YAMLDump([], 4, 40, true), true));
+            $this->createFile($this->app->getConfig()->getPath('for_project', Spyc::YAMLDump([], 4, 40, true), true));
         }
 
     }
@@ -174,3 +180,5 @@ class FileManager
         }
     }
 }
+
+

@@ -5,7 +5,7 @@ namespace Core;
 
 class ProjectType
 {
-    const TEMPLATES = ['eto' => 'etotem', 'esm' => 'esm', 'e2d' => 'standard'];
+    const TEMPLATES = ['eto' => 'etotem', 'esm' => 'esm', 'e2d' => 'standard', 'ddd' => 'ddd'];
 
     private string $type;
     private string $configName;

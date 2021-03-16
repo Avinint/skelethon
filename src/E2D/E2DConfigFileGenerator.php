@@ -117,11 +117,12 @@ class E2DConfigFileGenerator extends FileGenerator
             if (file_exists($templatePerActionPath)) {
                 $template = file_get_contents($templatePerActionPath) . $actionObject->makeMultiModalBlock($templatePath, $templatePerActionPath);
 
-                $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'TABLE', 'cONTROLLER', 'MODEL'],
+                $newConfig = Spyc::YAMLLoadString(str_replace(['mODULE', 'mODEL', 'cONTROLLER', 'MODEL'],
                     [$this->moduleName, $this->model->getName(), $this->snakize($this->controllerName), ''], $template));
                 $config = array_replace_recursive($config, $newConfig);
             }
         }
+
         return $config;
     }
 

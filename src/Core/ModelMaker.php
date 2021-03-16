@@ -49,7 +49,7 @@ abstract class ModelMaker extends BaseMaker
 
         $this->actions = $this->askActions();
 
-        $this->askSpecifics();
+        $this->askSpecificsPreData();
     }
 
     private function askTableName()
@@ -90,7 +90,7 @@ abstract class ModelMaker extends BaseMaker
         }
         $this->config->get('champs') ?? $this->askFieldsPerView();
 
-        $this->askModifySpecificData();
+        $this->askSpecificsPostData();
     }
 
     private function addField($data)
@@ -119,7 +119,9 @@ abstract class ModelMaker extends BaseMaker
                 $this->app,
                 $params
             );
-            $this->fields[$data->Field]->setViews($this->app->get('champs')[$data->Field]);
+            if ($this->app->has('champs')) {
+                $this->fields[$data->Field]->setViews($this->app->get('champs')[$data->Field]);
+            }
         }
 
     }
@@ -364,11 +366,11 @@ abstract class ModelMaker extends BaseMaker
     /**
      * Ask specific questions
      */
-    abstract protected function askSpecifics(): void;
+    abstract protected function askSpecificsPreData(): void;
     // pose des questions spécifiques au projet
 
 
-    abstract protected function askModifySpecificData();
+    abstract protected function askSpecificsPostData();
 
     /**
      * @return DatabaseAccess
@@ -406,7 +408,11 @@ abstract class ModelMaker extends BaseMaker
 
     protected function generateAlias(string $alias): string
     {
-       return strtoupper(substr(str_replace('_', '', $this->table), 0, 3));
+        if ($this->app->has('alias', $this->name)) {
+            return $this->app->get('alias', $this->name);
+        }
+
+        return strtoupper(substr(str_replace('_', '', $this->table), 0, 3));
     }
 
     private function askPrefix()
@@ -458,8 +464,10 @@ abstract class ModelMaker extends BaseMaker
         $listeChamps = [];
         $reponseFiltrageChamps = $this->prompt('Voulez vous sélectionner quels champs seront utilisés dans chaque vue ou action ?',  ['o', 'n']) === 'o';
         if ($reponseFiltrageChamps) {
+            $allViews = array_filter(array_keys($this->actions), function($action) {return $action !== 'suppression';});
+
             foreach ($this->fields as $field) {
-                $views = $field->askViews(array_keys($this->actions));
+                $views = $field->askViews($allViews);
                 if (isset($views))
                     $listeChamps[$field->getColumn()] = $views;
             }

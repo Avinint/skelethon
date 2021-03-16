@@ -8,7 +8,7 @@ require __DIR__.DS.'lib'.DS.'Spyc'.DS.'Spyc.php';
 spl_autoload_register('autoloader');
 [$type, $arguments] = getArguments($argv);
 
-$allowed_types = ['e2d', 'esm', 'eto'];
+$allowed_types = ['e2d', 'esm', 'eto', 'ddd'];
 
 if (!array_contains($type, $allowed_types)) {
     throw new InvalidArgumentException('type d\'application incorrect');

@@ -32,7 +32,7 @@ class E2DDatabaseAccess extends DatabaseAccess
      * @param $tableName
      * @return array
      */
-    public function getSimilarTableList($tableName)
+    public function getSimilarTableList($tableName = '')
     {
         $sRequete = 'SHOW tables FROM `' . $this->getDBName(). '` LIKE \'%'.$tableName.'%\'';
         $tables = array_map(function ($row) use ($tableName) {return $row->{'Tables_in_'.$this->getDBName(). ' (%'.$tableName.'%)'};}, $this->query($sRequete));
@@ -57,7 +57,8 @@ class E2DDatabaseAccess extends DatabaseAccess
                 $sNomTable = $oTable->$sCle;
                 $this->tables[$sNomTable] = array();
 
-                $sRequete = "SHOW columns FROM ".$sNomTable;
+                $sRequete = "SHOW columns FROM `".$sNomTable.'`';
+
                 $aResultats = $this->query($sRequete);
 
                 foreach ($aResultats as $oChamp) {

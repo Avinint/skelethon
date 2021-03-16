@@ -3,6 +3,11 @@
 namespace ESM;
 
 use Core\FileManager;
+use E2D\E2DConfigFileGenerator;
+use E2D\E2DControllerFileGenerator;
+use E2D\E2DJSFileGenerator;
+use E2D\E2DModelFileGenerator;
+use E2D\E2DViewFileGenerator;
 use \Spyc;
 use E2D\E2DModuleMaker;
 
@@ -31,6 +36,15 @@ class ESMModuleMaker extends E2DModuleMaker
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);
             $this->app->getFileManager()->createFile($this->menuPath, trim($menu, PHP_EOL), true);
         }
+    }
+
+    protected function initializeFileGenerators()
+    {
+        $this->modelFileGenerator      = new ESMModelFileGenerator($this->app);
+        $this->controllerFileGenerator = new ESMControllerFileGenerator($this->app);
+        $this->jsFileGenerator         = new ESMJSFileGenerator($this->app);
+        $this->configFileGenerator     = new ESMConfigFileGenerator($this->app);
+        $this->viewFileGenerator       = new ESMViewFileGenerator($this->app);
     }
 
 }

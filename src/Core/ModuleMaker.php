@@ -10,6 +10,7 @@ abstract class ModuleMaker extends BaseMaker
     protected $model;
     protected $namespaceName;
     protected Config $config;
+    protected $structure;
     protected $specificField;
     protected $modulePath;
     protected FileManager $fileManager;
@@ -18,6 +19,7 @@ abstract class ModuleMaker extends BaseMaker
     public function __construct(string $name, App $app, $creationMode = 'generate')
     {
         $this->app = $app;
+        $this->fileManager = $app->getFileManager();
         $app->setModuleMaker($this);
 //        $this->setConfig($app->getConfig());
 
@@ -60,12 +62,14 @@ abstract class ModuleMaker extends BaseMaker
             return false;
         }
 
-        $moduleStructure = Spyc::YAMLLoad(dirname(dirname(__DIR__)) . DS. 'module.yml');
+        $this->structure = $this->getModuleStructure();
+
+        //$template = $this->app->getFileManager()->getTemplate();
 
         if (!array_contains($this->creationMode, ['generate', 'addModel'])) {
             return $this->executeSpecificModes();
         }
-        $success = $this->addSubDirectories($moduleStructure);
+        $success = $this->addSubDirectories($this->structure);
 
         $this->displayCompletionMessage($success);
 
@@ -80,6 +84,12 @@ abstract class ModuleMaker extends BaseMaker
     protected function initializeModule(): void
     {
         $this->model->setDatabaseConnection(new Database());
+    }
+
+    protected function getModuleStructure()
+    {
+        return Spyc::YAMLLoad($this->app->getFileManager()->getTemplatePath() . DS . 'standard' . DS. 'module.yml');
+        return Spyc::YAMLLoad($this->app->getFileManager()->getTemplatePath()->addChild($this->app->getTemplate())->addFile('module.yml'));
     }
 
     function askName() : string
@@ -128,7 +138,7 @@ abstract class ModuleMaker extends BaseMaker
      * @param bool $recursive
      * @return bool
      */
-    private function ensureDirExists(string $dir, bool $recursive = false, $prepend = true) : bool
+    protected function ensureDirExists(string $dir, bool $recursive = false, $prepend = true) : bool
     {
         $dir = ($prepend ? $this->modulePath : DS) . trim($dir, DS);
 
@@ -160,6 +170,11 @@ abstract class ModuleMaker extends BaseMaker
         }
 
         $text = $this->generateFileContent($templatePath, $path);
+
+//        var_dump($text);
+//        var_dump($path.'');
+//        var_dump("=========================================");
+//        die();
 
         return $this->saveFile($path, $text);
     }

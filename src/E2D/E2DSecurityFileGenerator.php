@@ -104,7 +104,7 @@ class E2DSecurityFileGenerator extends BaseMaker
                 return $this->urlize($action.  '-' . $this->controller);
             }, $actions));
 
-        $securityRules = array_merge($securityRulesAdmin, $newRules);
+        $securityRules = array_merge($securityRulesAdmin, $newRules ?? []);
 
         return [$securityDefinitions, $newRules];
     }

@@ -47,7 +47,7 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
         $app->getFileManager()->setTemplatePath($templatePath);
 
         $app->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
-        $this->initializeFileGenerators($app);
+        //$this->initializeFileGenerators($app);
         $this->generate($action, $moduleName, $modelName, $app, $config);
     }
 

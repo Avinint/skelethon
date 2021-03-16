@@ -42,8 +42,6 @@ class FilePath extends PathNode
         return $this->parent->getFile($this->name.'_'.$suffix, $this->extension);
     }
 
-
-
     public function getPath()
     {
         return $this->name . '.' . $this->extension;
@@ -53,7 +51,6 @@ class FilePath extends PathNode
     {
         return strpos($this->extension, 'php') !== false ? 'php' :  $this->extension;
     }
-
 
     public function getName()
     {

@@ -270,8 +270,8 @@ trait E2DManyToOneMaker
     {
         $fields = $this->getFieldsByType('foreignKey', ['recherche', 'edition']);
 
-        $selectAjaxCallSearchTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath->get('recherche')->add('selectAjaxCall')));
-        $selectAjaxCallEditTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath->get('edition')->add('selectAjaxCall')));
+        $selectAjaxCallSearchTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath->add('recherche')->add('selectAjaxCall')));
+        $selectAjaxCallEditTextTemp = PHP_EOL . file_get_contents($this->getTrueTemplatePath($templatePath->add('edition')->add('selectAjaxCall')));
         $selectAjaxDefinitionTemp = file_get_contents($this->getTrueTemplatePath($templatePath->add('selectAjaxDefinition')));
 
         foreach ($fields as $field) {

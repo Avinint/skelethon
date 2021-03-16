@@ -60,7 +60,7 @@ class E2DViewFileGenerator extends FileGenerator
             $fieldText[] = $field->getType()->getConsultationView($field, $fieldTemplate);
         }
 
-        $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->moduleName, implode(PHP_EOL, $fieldText)], $text);
+        $text = str_replace(['mODEL', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->moduleName, implode(PHP_EOL, $fieldText)], $text);
         return $text;
     }
 
@@ -80,7 +80,7 @@ class E2DViewFileGenerator extends FileGenerator
 
         $text = file_get_contents($this->getTrueTemplatePath($path));
         $text = $this->addModalTitle($text);
-        $text = str_replace(['TABLE', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->moduleName, implode(PHP_EOL, $fieldText)], $text);
+        $text = str_replace(['mODEL', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->moduleName, implode(PHP_EOL, $fieldText)], $text);
         return $text;
     }
 
@@ -102,7 +102,7 @@ class E2DViewFileGenerator extends FileGenerator
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($path));
-        $text = str_replace(['TABLE', 'FIELDS'], [$this->model->getName(), implode(PHP_EOL, $fieldText)], $text);
+        $text = str_replace(['mODEL', 'FIELDS'], [$this->model->getName(), implode(PHP_EOL, $fieldText)], $text);
         return $text;
     }
 
@@ -158,7 +158,7 @@ class E2DViewFileGenerator extends FileGenerator
             $actionBarText = file_get_contents($actionBarTemplatePath);
 
             $actionBarActionsText = [];
-            if ($this->model->hasAction('edition') || true) {
+            if ($this->model->hasAction('edition')) {
                 $actionBarActionsText[] = file_get_contents($this->getTrueTemplatePath($actionBarTemplatePath ->add('ajout')));
             }
 

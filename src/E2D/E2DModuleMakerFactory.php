@@ -4,7 +4,6 @@
 namespace E2D;
 
 
-use Core\App;
 use Core\ModuleMakerFactory;
 use Core\ProjectType;
 
@@ -20,14 +19,14 @@ class E2DModuleMakerFactory extends ModuleMakerFactory
         parent::__construct($type, $arguments, $appDir);
     }
 
-    public function initializeFileGenerators(App $app)
-    {
-        $app->modelFileGenerator       = E2DModelFileGenerator::class;
-        $app->controllerFileGenerator  = E2DControllerFileGenerator::class;
-        $app->viewFileGenerator        = E2DViewFileGenerator::class;
-        $app->jSFileGenerator          = E2DJSFileGenerator::class;
-        $app->configFileGenerator      = E2DConfigFileGenerator::class;
-    }
+//    public function initializeFileGenerators(App $app)
+//    {
+//        $app->modelFileGeneratorClass       = E2DModelFileGenerator::class;
+//        $app->controllerFileGeneratorClass  = E2DControllerFileGenerator::class;
+//        $app->viewFileGeneratorClass        = E2DViewFileGenerator::class;
+//        $app->jSFileGeneratorClass          = E2DJSFileGenerator::class;
+//        $app->configFileGeneratorClass      = E2DConfigFileGenerator::class;
+//    }
 
     protected function initializeComponents()
     {

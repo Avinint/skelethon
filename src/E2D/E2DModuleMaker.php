@@ -44,12 +44,11 @@ class E2DModuleMaker extends ModuleMaker
 
     protected function initializeFileGenerators()
     {
-
-        $this->modelFileGenerator      = new $this->app->modelFileGeneratorClass($this->app);
-        $this->controllerFileGenerator = new $this->app->controllerFileGeneratorClass($this->app);
-        $this->jsFileGenerator         = new $this->app->jSFileGeneratorClass($this->app);
-        $this->configFileGenerator     = new $this->app->configFileGeneratorClass($this->app);
-        $this->viewFileGenerator       = new $this->app->viewFileGeneratorClass($this->app);
+        $this->modelFileGenerator      = new E2DModelFileGenerator($this->app);
+        $this->controllerFileGenerator = new E2DControllerFileGenerator($this->app);
+        $this->jsFileGenerator         = new E2DJSFileGenerator($this->app);
+        $this->configFileGenerator     = new E2DConfigFileGenerator($this->app);
+        $this->viewFileGenerator       = new E2DViewFileGenerator($this->app);
     }
 
     protected function executeSpecificModes()
@@ -96,45 +95,73 @@ class E2DModuleMaker extends ModuleMaker
     {
         $text = '';
         if ($templatePath->getType() === 'yml') {
-            if ($this->creationMode === 'addModel' && file_exists($path)) {
-                $text = $this->configFileGenerator->modify($templatePath, $path);
-            } else {
-                $text = $this->configFileGenerator->generate($templatePath);
-            }
+            $text = $this->handleConfigFiles($templatePath, $path);
         } elseif ($templatePath->getType() === 'php') {
-            if (strpos($templatePath, 'Action.class.php')) {
-                $text = $this->controllerFileGenerator->generate($templatePath);
-            } elseif (strpos($templatePath, 'HTML.class.php')) {
-                $text = $this->controllerFileGenerator->generateHTMLController($templatePath);
-            } elseif (strpos($templatePath, 'MODEL.class')) {
-                $text = $this->modelFileGenerator->generate($templatePath);
-            }
+            $text = $this->generatePHPClass($templatePath);
         } elseif ($templatePath->getType() === 'js') {
-                if ($this->creationMode === 'addModel' && strpos($templatePath, 'CONTROLLER.js')) {
-                    [$filePath, $text] = $this->jsFileGenerator->modify($templatePath, $path);
-                    if (array_contains($text, ['error', 'warning'])) {
-                        [$message, $type] = [$filePath, $text];
-                    } else {
-                    [$message, $type] = $this->saveFile($filePath, $text);
-                }
-                $this->msg($message, $type);
-            }
-            $text = $this->jsFileGenerator->generate($templatePath);
+            $text = $this->handleJavaScriptFiles($templatePath, $path);
         } elseif ($templatePath->getType() === 'html') {
-
-            $templatePath = $this->getTrueTemplatePath($templatePath);
-            if (strpos($templatePath, 'accueil_mODEL.html')) {
-                $text = file_get_contents($this->getTrueTemplatePath($templatePath));
-            } elseif (strpos($templatePath, 'liste_mODEL.html')) {
-                $text = $this->viewFileGenerator->generate($templatePath);
-            } elseif (strpos($templatePath, 'consultation_mODEL.html')) {
-                $text = $this->viewFileGenerator->generateConsultationView($templatePath);
-            } elseif (strpos($templatePath, 'edition_mODEL.html')) {
-                $text = $this->viewFileGenerator->generateEditionView($templatePath);
-            } elseif (strpos($templatePath, 'recherche_mODEL.html')) {
-                $text = $this->viewFileGenerator->generateSearchView($templatePath);
-            }
+            $text = $this->generateView($templatePath);
         }
+
+        return $text;
+    }
+
+    protected function handleConfigFiles($templatePath, $path)
+    {
+        if ($this->creationMode === 'addModel' && file_exists($path)) {
+            $text = $this->configFileGenerator->modify($templatePath, $path);
+        } else {
+            $text = $this->configFileGenerator->generate($templatePath);
+        }
+
+        return $text;
+    }
+
+    protected function generatePHPClass(FilePath $templatePath)
+    {
+        if (strpos($templatePath, 'Action.class.php')) {
+            $text = $this->controllerFileGenerator->generate($templatePath);
+        } elseif (strpos($templatePath, 'HTML.class.php')) {
+            $text = $this->controllerFileGenerator->generateHTMLController($templatePath);
+        } elseif (strpos($templatePath, 'MODEL.class')) {
+            $text = $this->modelFileGenerator->generate($templatePath);
+        }
+
+        return $text;
+    }
+
+    protected function generateView(FilePath $templatePath)
+    {
+        $templatePath = $this->getTrueTemplatePath($templatePath);
+        if (strpos($templatePath, 'accueil_mODEL.html')) {
+            $text = file_get_contents($this->getTrueTemplatePath($templatePath));
+        } elseif (strpos($templatePath, 'liste_mODEL.html')) {
+            $text = $this->viewFileGenerator->generate($templatePath);
+        } elseif (strpos($templatePath, 'consultation_mODEL.html')) {
+            $text = $this->viewFileGenerator->generateConsultationView($templatePath);
+        } elseif (strpos($templatePath, 'edition_mODEL.html')) {
+            $text = $this->viewFileGenerator->generateEditionView($templatePath);
+        } elseif (strpos($templatePath, 'recherche_mODEL.html')) {
+            $text = $this->viewFileGenerator->generateSearchView($templatePath);
+        }
+
+        return $text;
+    }
+
+    protected function handleJavaScriptFiles($templatePath, $path)
+    {
+        if ($this->creationMode === 'addModel' && strpos($templatePath, 'CONTROLLER.js')) {
+            [$filePath, $text] = $this->jsFileGenerator->modify($templatePath, $path);
+            if (array_contains($text, ['error', 'warning'])) {
+                [$message, $type] = [$filePath, $text];
+            } else {
+                [$message, $type] = $this->saveFile($filePath, $text);
+            }
+            $this->msg($message, $type);
+        }
+
+        $text = $this->jsFileGenerator->generate($templatePath);
 
         return $text;
     }
@@ -173,7 +200,7 @@ class E2DModuleMaker extends ModuleMaker
 
             if (!isset($menu['admin'][$this->name]['html_accueil_'.$this->model->getName()])) {
                 $menu = Spyc::YAMLDump(array_merge_recursive($menu, $subMenu), false, 0, true);
-                $this->fileManager->createFile($this->menuPath, $menu, true);
+                $this->app->getFileManager()->createFile($this->menuPath, $menu, true);
             }
         } else {
             $menu = Spyc::YAMLDump($subMenu, false, 0, true);

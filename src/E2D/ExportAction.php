@@ -44,8 +44,6 @@ class ExportAction extends Action
                $this->model->removeAction('export');
            }
 
-        } else {
-            $this->msg("Ukulele", 'error');
         }
 
     }
