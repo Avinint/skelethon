@@ -14,6 +14,9 @@ class E2DSecurityFileGenerator extends BaseMaker
         $this->app = $app;
         $this->module = $app->getModuleMaker()->getName();
         $this->controller = $app->getModuleMaker()->getControllerName('snake_case');
+        $this->model = $app->getModuleMaker()->getModel();
+
+        parent::__construct();
     }
 
     /**
@@ -26,7 +29,7 @@ class E2DSecurityFileGenerator extends BaseMaker
             $moduleDefinition['mode'][$mode] = ['cle' => $this->urlize($mode), 'libelle' => $this->labelize($mode)];
         }
         foreach ($actions as $action) {
-            $uniqueAction = $this->urlize($action. '-' . $this->controller);
+            $uniqueAction = $this->urlize($action. '-' . $this->model->getName());
             $moduleDefinition['action'][$action] = ['cle' => $uniqueAction, 'libelle' => $this->labelize($uniqueAction)];
         }
 
@@ -83,8 +86,9 @@ class E2DSecurityFileGenerator extends BaseMaker
 
         $securityDefinitions = &$this->security['aRessources']['zone']['admin']['module'];
 
-
-        if (!isset($securityDefinitions[$this->module])) {
+        var_dump($path . '');
+        var_dump($securityDefinitions[$this->module]);
+        if (!($securityDefinitions[$this->module] ?? '')) {
             $securityDefinitions[$this->module] = ['controller' => []];
         }
 
@@ -94,6 +98,7 @@ class E2DSecurityFileGenerator extends BaseMaker
 
         [$modes, $actions] = $this->getModesAndActions();
 
+
         $securityDefinitions[$this->module]['controller'][$this->controller] = $this->generateSecurityDefinition($modes, $actions);
 
         $droitAdmin = $this->app->get('droit-admin') ?: 'admin';
@@ -101,10 +106,10 @@ class E2DSecurityFileGenerator extends BaseMaker
 
         $newRules = array_merge(array_map([$this, 'urlize'], $modes)
             , array_map(function ($action) {
-                return $this->urlize($action.  '-' . $this->controller);
+                return $this->urlize(   $action.  '-' . $this->model);
             }, $actions));
 
-        $securityRules = array_merge($securityRulesAdmin, $newRules ?? []);
+        $newRules = array_merge($securityRulesAdmin, $newRules ?? []);
 
         return [$securityDefinitions, $newRules];
     }

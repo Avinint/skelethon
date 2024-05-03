@@ -2,7 +2,6 @@
 
 define('ARRAY_ALL', false);
 define('ARRAY_ANY', true);
-const DS = DIRECTORY_SEPARATOR;
 
 function autoloader($class_name)
 {
@@ -69,4 +68,20 @@ function logo_border_line()
 function alphanum()
 {
    return (implode('', array_merge(range('a', 'z'),  range(0, 9), range('A', 'Z'))));
+}
+
+function yaml_load($chemin)
+{
+    return Spyc::YAMLLoad($chemin);
+}
+
+function yaml_dump($chemin)
+{
+    return Spyc::YAMLDump($chemin);
+}
+
+function dd()
+{
+    var_dump(...func_get_args());
+    die();
 }

@@ -37,4 +37,9 @@ class PrimaryKeyType extends EnumType
             [$field->getAlias(), $field->getColumn(), '=', $field->getName() . ''], $texteCritere);
 
     }
+
+    public function getClasseMapping() : string
+    {
+        return "ClePrimaire";
+    }
 }

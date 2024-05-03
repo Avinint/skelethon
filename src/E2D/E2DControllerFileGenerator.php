@@ -24,14 +24,16 @@ class E2DControllerFileGenerator extends FileGenerator
     
     public function generate(FilePath $path) : string
     {
-        $text = '';
         $methodText = '';
         $rechercheActionInitPathHandle = 'sansFormulaireRecherche';
+        $controllerPath = $this->getTrueTemplatePath($path);
+        $text = file_get_contents($controllerPath);
 
         $switchCaseList = [file_get_contents($this->getTrueTemplatePath($path->add('switchCase')->add('accueil')))];
 
         foreach ($this->model->getActions() as $actionName => $action) {
             $schemaMethodsPerActionPath = $this->getTrueTemplatePath($path->add($this->camelize($action))) ?? null;
+
             if (isset($schemaMethodsPerActionPath)) {
                 $methodText .= file_get_contents($schemaMethodsPerActionPath) . PHP_EOL;
             }
@@ -50,7 +52,7 @@ class E2DControllerFileGenerator extends FileGenerator
 
         $rechercheActionInitText = file_get_contents($this->getTrueTemplatePath($path->add($rechercheActionInitPathHandle)));
 
-        if (file_exists($path = $this->getTrueTemplatePath($path))) {
+        if (file_exists($path)) {
             $switchCaseText = PHP_EOL.implode(PHP_EOL, $switchCaseList);
             $exceptions = [];
             $defaults = [];
@@ -101,18 +103,18 @@ class E2DControllerFileGenerator extends FileGenerator
             $methodText = str_replace(['MODEL',  '//EDITSELECT', 'EXCEPTIONS', '//SEARCHSELECT', '//DEFAULT', '//CHAMPS', 'IDFIELD'],
             [$this->model->getClassName(), $enumEditText, $exceptionText, $enumSearchText, implode(PHP_EOL, $defaults), $fieldsText, $this->model->getIdField()], $methodText);
 
-            $text .= file_get_contents($path);
+//            $text .= file_get_contents($this->getTrueTemplatePath($path));
             if ($this->app->get('usesPagination') ?? true)  {
-                $paginationText = file_get_contents($path->add('avecPagination'));
+                $paginationText = file_get_contents($this->getTrueTemplatePath($path->add('avecPagination')));
             } else {
-                $paginationText = str_replace('PK', $this->model->getPrimaryKey(),file_get_contents($path->add('sansPagination')));
+                $paginationText = str_replace('PK', $this->model->getPrimaryKey(),file_get_contents($this->getTrueTemplatePath($path->add('sansPagination'))));
             }
             $concurrentText = $this->model->usesMultiCalques ? file_get_contents($this->getTrueTemplatePath($path->add('multi'))): '';
             $label = $this->labelize($this->model->getName());
 
-            $text = str_replace(['//PAGINATION', 'MODULE', 'CONTROLLER', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD', 'LABEL', 'TABLE'],
+            $text = str_replace(['//PAGINATION', 'MODULE', 'CONTROLLER', 'MODEL', '//CASE', '//MULTI', 'INIT;', '//METHOD', 'LABEL', 'TABLE', 'IDFIELD'],
                 [$paginationText, $this->pascalCaseModuleName, $this->controllerName, $this->model->getClassName(),
-                    $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText, $label, $this->model->getTableName()], $text);
+                    $switchCaseText, $concurrentText, $rechercheActionInitText, $methodText, $label, $this->model->getTableName(), $this->model->getIdField()], $text);
         }
 
         return $text;

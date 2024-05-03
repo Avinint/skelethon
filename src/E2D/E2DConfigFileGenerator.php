@@ -37,13 +37,16 @@ class E2DConfigFileGenerator extends FileGenerator
         $enumText = '';
         $exportText = '';
 
-        if ($path->getName() !== 'conf') {
-            $text = $this->generateRoutingConfigFiles($path);
+        if (($this->app->get('restful') ?? false) && $path->getName() === 'services') {
+            $text = $this->generateServiceFile();
+        } elseif ($path->getName() !== 'conf') {
+            $text = $this->generateRoutingConfigFiles($this->getTrueTemplatePath($path));
+
         } else {
             $modelName = $this->model->getClassName();
             $templatePath = $this->getTrueTemplatePath($path);
 
-            $text = file_get_contents($templatePath);
+            $text = file_get_contents($this->getTrueTemplatePath($path));
             $enumText = $this->addEnumsToConfig($templatePath);
             if ($this->model->hasAction('export')) {
                 $exportText = $this->generateChampsExportForConfig($templatePath);
@@ -70,8 +73,10 @@ class E2DConfigFileGenerator extends FileGenerator
     {
         $texts = [];
 
+
         foreach ($this->model->getActions() as $action)
         {
+
             /**
              * @var Action $action
              */
@@ -93,7 +98,9 @@ class E2DConfigFileGenerator extends FileGenerator
     {
         $config = Spyc::YAMLLoad($filePath);
 
-        if (strpos($templatePath, 'conf.yml') === false ) {
+        if (strpos($templatePath, 'services.yml')) {
+            $config = $this->modifyServiceFile();
+        } elseif (strpos($templatePath, 'conf.yml') === false ) {
             $config = $this->modifyRoutingConfigFiles($templatePath, $config);
         } else {
             $config = $this->modifyConfFile($templatePath, $config);
@@ -216,7 +223,6 @@ class E2DConfigFileGenerator extends FileGenerator
      */
     private function addMainModuleJSFileLinkToConfig(array $aVues, $exportText = ''): void
     {
-
         $baseJSFilePath = $this->moduleName . '/JS/' . $this->pascalCaseModuleName . '.js';
         array_unshift($aVues[$this->model->getName()]['admin']['formulaires']['edition_' . $this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
         array_unshift($aVues[$this->model->getName()]['admin']['simples']['accueil_' . $this->model->getName()]['ressources']['JS']['modules'], $baseJSFilePath);
@@ -233,6 +239,135 @@ class E2DConfigFileGenerator extends FileGenerator
         if (file_exists($templatePerActionPath)) {
             return $this->getConfigTemplateForAction($templatePerActionPath, $path, $this->name);
         }
+        
+        return [];
     }
 
+    /**
+     * Génère le fichier services.yml à partir des données du modèle à ajouter
+     * @return string
+     */
+    private function generateServiceFile()
+    {
+        $config = $this->getServices();
+
+        return Spyc::YAMLDump($config, false, 0, true);
+    }
+
+    /**
+     * Modifie le fichier services.yml à partir des données du modèle à ajouter et des données existantes
+     * @param $path
+     * @return void
+     */
+    private function modifyServiceFile($config)
+    {
+        $newConfig = $this->getServices();
+        return  array_merge_recursive($config, $newConfig);
+    }
+
+    /**
+     * collecte les éléments à ajouter aux services
+     * @return array|array[]
+     */
+    private function getServices(): array
+    {
+        $config = $this->getServicesBase();
+        $config = $this->getServiceRecherche($config);
+        $config = $this->addServiceConsultation($config);
+        $config = $this->addServicesEdition($config);
+        $config = $this->addServiceSuppression($config);
+
+        return $config;
+    }
+
+    /**
+     * Ajoute la structure de base du fichier et le service recherche, obligatoire
+     * @return array[]
+     */
+    private function getServicesBase(): array
+    {
+        $config = [
+            'aServices' => [
+                'Recherche' . $this->model->getClassName() => [
+                    'aMethodes' => []
+                ],
+                $this->model->getClassName()   => ['aMethodes' => [], 'aVariables' => $this->addVariables()]
+        ]];
+
+        return $config;
+    }
+
+    /**
+     * Ajoute le service dynamisation recherche si nécessaire
+     * @param array $config
+     * @return array
+     */
+    private function getServiceRecherche(array $config): array
+    {
+        if ($this->model->hasAction('recherche')) {
+            $config['aServices']['Recherche' . $this->model->getClassName()]['aMethodes']['Read'] = $this->createService('dynamisation_recherche');
+        }
+
+        $config['aServices']['Recherche' . $this->model->getClassName()]['aMethodes']['Create'] = $this->createService('recherche');
+
+        return $config;
+    }
+
+    /**
+     * @param array $config
+     * @return array
+     */
+    private function addServicesEdition(array $config): array
+    {
+        if ($this->model->hasAction('edition')) {
+            $config['aServices']['Formulaire' . $this->model->getClassName()] = [
+                'aMethodes' => ['Read' => $this->createService('dynamisation_edition')],
+                'aVariables' => $this->addVariables()
+            ];
+
+            $config['aServices'][$this->model->getClassName()]['aMethodes']['Create'] = $this->createService('creation');
+            $config['aServices'][$this->model->getClassName()]['aMethodes']['Update'] = $this->createService('modification');
+
+        }
+        return $config;
+    }
+
+    /**
+     * @param array $config
+     * @return array
+     */
+    private function addServiceSuppression(array $config): array
+    {
+        if ($this->model->hasAction('suppression')) {
+            $config['aServices'][$this->model->getClassName()]['aMethodes']['Delete'] = $this->createService('suppression');
+        }
+        return $config;
+    }
+
+    /**
+     * @param array $config
+     * @return array
+     */
+    private function addServiceConsultation(array $config): array
+    {
+        if ($this->model->hasAction('consultation')) {
+            $config['aServices'][$this->model->getClassName()]['aMethodes']['Read'] = $this->createService('dynamisation_consultation');
+        }
+        return $config;
+    }
+
+    protected function createService($sAction)
+    {
+        return [
+            'zone'   => 'admin',
+            'module' => $this->moduleName,
+            'controller' => $this->controllerName,
+            'action' => $sAction,
+        ];
+    }
+
+    protected function addVariables()
+    {
+        return [$this->model->getIdField() => ['szType' => 'int']];
+    }
 }

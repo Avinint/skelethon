@@ -13,7 +13,7 @@ use E2D\E2DModelMaker;
 use E2D\E2DModuleMaker;
 use E2D\E2DModuleMakerFactory;
 
-class ESMModuleMakerFactory extends E2DModuleMakerFactory
+class   ESMModuleMakerFactory extends E2DModuleMakerFactory
 {
 
     public function initializeFileGenerators(App $app)

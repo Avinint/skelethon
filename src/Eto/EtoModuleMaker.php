@@ -17,8 +17,10 @@ class EtoModuleMaker extends E2DModuleMaker
             return;
         }
 
-        $template = $this->app->getFileManager()->getTemplate();
-        $menuText = file_get_contents($this->getTrueTemplatePath($this->app->getFileManager()->getTemplatePath()->getChild($template)->addChild('vues')->addFile('menuitem', 'html')));
+//        $template = $this->app->getFileManager()->getTemplate();
+        $template = 'etotem';
+        $templatePath = $this->app->getFileManager()->getTemplatePath()->addChild($template)->addChild('module/vues')->addFile('menuitem', 'html');
+        $menuText = file_get_contents($this->getTrueTemplatePath($templatePath));
 
         echo PHP_EOL.$this->msg('Menu à recopier dans "/templates/admin-fullscreen/modele.html"') . PHP_EOL .
             str_replace(['mODULE', 'mODEL', 'LABEL'],  [$this->name, $this->model->getName(),

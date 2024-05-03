@@ -4,7 +4,7 @@ namespace Core;
 
 abstract class BaseMaker extends CommandLineToolShelf
 {
-
+    use TraitLoggable;
     protected Config $config;
     protected FileManager $fileManager;
 
@@ -49,5 +49,9 @@ abstract class BaseMaker extends CommandLineToolShelf
         return $this->app->getFileManager()->getTrueTemplatePath($templatePath, $replace, $search);
     }
 
+    public function __construct()
+    {
+        $this->logInTheShell("constructeur");
+    }
 
 }

@@ -6,9 +6,10 @@ class PathNode extends CommandLineToolShelf
 {
     protected string $name;
     protected string $path;
+    protected Path $root;
     protected ?TemplateNode $templateNode = null;
 
-    protected array $children;
+    protected array $children = [];
     protected ?PathNode $parent = null;
 
     public function __construct($path, $name = '')
@@ -62,6 +63,8 @@ class PathNode extends CommandLineToolShelf
         $childNode = new PathNode($childPath, $name);
         $this->children[$childNode->name] = $childNode;
 
+        $childNode->root = $this->root;
+
         $childNode->parent = $this;
         if (isset($this->templateNode)) {
             $childNode->setTemplateNode($this->templateNode);
@@ -79,6 +82,8 @@ class PathNode extends CommandLineToolShelf
     {
         $filePath = new FilePath($fileName, $extension);
         $this->children[$filePath->name] = $filePath;
+
+        $filePath->root = $this->root;
 
         $filePath->setParent($this);
         if (isset($this->templateNode)) {
@@ -165,6 +170,15 @@ class PathNode extends CommandLineToolShelf
         return $this->children;
     }
 
+    public function getFirstChild() : ?PathNode
+    {
+        if (empty($this->children)) {
+            return null;
+        }
+        $children = $this->children;
+        return reset($children);
+    }
+
     /**
      * @param PathNode|null $parent
      */
@@ -198,5 +212,10 @@ class PathNode extends CommandLineToolShelf
         }
 
         return $this;
+    }
+
+    public function isRoot()
+    {
+        return false;
     }
 }

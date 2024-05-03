@@ -33,6 +33,7 @@ trait E2DManyToOneMaker
                     $this->askConvertToManyToOneFields($potentialFields);
                 }
 
+
                 foreach ($foreignKeys as $column => $fieldData ) {
                     $this->getFieldByColumn($column)->changeToManyToOneField($fieldData);
                 }

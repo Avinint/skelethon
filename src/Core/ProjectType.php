@@ -5,7 +5,7 @@ namespace Core;
 
 class ProjectType
 {
-    const TEMPLATES = ['eto' => 'etotem', 'esm' => 'esm', 'e2d' => 'standard', 'ddd' => 'ddd'];
+    const FILENAME = 'config_type_template.yml';
 
     private string $type;
     private string $configName;
@@ -14,6 +14,10 @@ class ProjectType
     {
         $this->type = $type;
         $this->configName = $configName;
+
+        $configPath = dirname(__DIR__,  2). '/config/' . self::FILENAME;
+
+        $this->templates = yaml_load($configPath)['templates'];
     }
 
     /**
@@ -51,7 +55,7 @@ class ProjectType
 
     public function getTemplate()
     {
-        return self::TEMPLATES[$this->type];
+        return $this->templates;
     }
 
     public function setTemplate(string $template)

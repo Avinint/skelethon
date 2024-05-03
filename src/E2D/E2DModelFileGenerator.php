@@ -20,8 +20,31 @@ class E2DModelFileGenerator extends FileGenerator
         $this->moduleName = $app->getModuleMaker()->getName();
     }
 
+    public function generateMapping(FilePath $path, $table)
+    {
+        $templatePath = $this->getTrueTemplatePath($path);
+        if (isset($templatePath)) {
+            $text = file_get_contents($templatePath);
+        }
+
+
+        $text = str_replace([
+            'MODULE', 'MODEL', 'TABLE', 'ALIAS', 'PK', 'IDFIELD', 'CHAMPS', 'CLASSES'
+        ],[
+            $this->modulePascalCaseName,
+            $this->model->getClassName(),
+            $this->model->getTableName(),
+            $this->model->getAlias(),
+            $this->model->getPrimaryKey(), $this->model->getIdField(),
+            ...$this->model->getAttributes($this->getTrueTemplatePath($path->add('fieldMapping')), $table),
+        ], $text);
+
+        return $text;
+    }
+
     public function generate(FilePath $path) : string
     {
+
         $templatePath = $this->getTrueTemplatePath($path);
         if (isset($templatePath)) {
             $text = file_get_contents($templatePath);
@@ -38,7 +61,7 @@ class E2DModelFileGenerator extends FileGenerator
             $this->model->getTableName(),
             $this->model->getAlias(),
             $this->model->getPrimaryKey(), $this->model->getIdField(),
-            $this->model->getAttributes($this->getTrueTemplatePath($path->add('fieldMapping'))), $this->model->getModalTitle($templatePath),
+            $this->model->getAttributes($this->getTrueTemplatePath($path->add('fieldMapping'))), $this->model->getModalTitle(),
             $this->model->getSqlSelectFields($this->getTrueTemplatePath($templatePath->add('selectFields'))),
             $this->model->getJoins($joinTemplate),
             $this->model->getSearchCriteria($this->getTrueTemplatePath($templatePath->add('searchCriterion'))),

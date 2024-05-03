@@ -1,0 +1,9 @@
+btn_ouverture_consultation_mODEL:
+    action:
+        module: mODULE
+        route: service_mODULE_mODEL_read
+        type: load_data
+    callback:
+        module: cONTROLLER
+        fonction: vDynamisationConsultationMODELJSON
+        alerte: non

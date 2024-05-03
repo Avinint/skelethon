@@ -48,4 +48,10 @@ class FloatType extends NumberType
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return $template[5];
     }
+
+    public function getClasseMapping() : string
+    {
+        return "Double";
+    }
+
 }

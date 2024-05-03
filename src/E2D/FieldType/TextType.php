@@ -14,4 +14,8 @@ class TextType extends FieldType
         return file_get_contents($this->app->getTrueTemplatePath($path->add('text')));
     }
 
+    public function getClasseMapping() : string
+    {
+        return "Texte";
+    }
 }

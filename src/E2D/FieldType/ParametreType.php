@@ -81,4 +81,9 @@ class ParametreType extends EnumType
         return str_replace(['NAME', 'mODULE', 'MODEL', 'COLUMN', 'DEFAULT'],
             [$field->getName(), $this->app->getModuleName(), $this->app->getModelMaker()->getClassName(), $field->getColumn(), $field->getDefaultValue()],$enumDefault);
     }
+
+    public function getClasseMapping() : string
+    {
+        return "Parametre";
+    }
 }

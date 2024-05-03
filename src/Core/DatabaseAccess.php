@@ -126,7 +126,6 @@ abstract class DatabaseAccess implements DatabaseAccessInterface
 
     public function getMaxLength($maxLength)
     {
-
         if (preg_match('/,/', $maxLength)) {
             $aLength = explode(',', $maxLength);
             $maxLength = 1;

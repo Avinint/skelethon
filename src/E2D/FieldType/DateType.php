@@ -114,4 +114,10 @@ class DateType extends FieldType
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return str_replace('FORMAT', $template[9], $template[7]);
     }
+
+    public function getClasseMapping() : string
+    {
+        return "Date";
+    }
+
 }

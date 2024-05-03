@@ -1,0 +1,7 @@
+RESSOURCE:
+    aMethodes:
+        METHODE:
+            zone: admin
+            module: mODULE
+            controller: cONTROLLER
+            action: ACTION

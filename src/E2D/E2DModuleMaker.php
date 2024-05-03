@@ -6,7 +6,6 @@ use Core\FileGenerator;
 use Core\FilePath;
 use Core\Path;
 use Core\PathNode;
-use Core\TemplateNode;
 use PhpOffice\Common\File;
 use \Spyc;
 use Core\ModuleMaker;
@@ -94,6 +93,10 @@ class E2DModuleMaker extends ModuleMaker
     protected function generateFileContent(FilePath $templatePath, FilePath $path) : string
     {
         $text = '';
+
+//        var_dump($templatePath->getType());
+//        var_dump($templatePath->getName());
+
         if ($templatePath->getType() === 'yml') {
             $text = $this->handleConfigFiles($templatePath, $path);
         } elseif ($templatePath->getType() === 'php') {
@@ -103,6 +106,7 @@ class E2DModuleMaker extends ModuleMaker
         } elseif ($templatePath->getType() === 'html') {
             $text = $this->generateView($templatePath);
         }
+//        var_dump($text);
 
         return $text;
     }
@@ -120,11 +124,13 @@ class E2DModuleMaker extends ModuleMaker
 
     protected function generatePHPClass(FilePath $templatePath)
     {
-        if (strpos($templatePath, 'Action.class.php')) {
+        if (strpos($templatePath, 'Action.')) {
             $text = $this->controllerFileGenerator->generate($templatePath);
-        } elseif (strpos($templatePath, 'HTML.class.php')) {
+        } elseif (strpos($templatePath, 'HTML.')) {
             $text = $this->controllerFileGenerator->generateHTMLController($templatePath);
-        } elseif (strpos($templatePath, 'MODEL.class')) {
+        } elseif ('MODELMapping' === $templatePath->getName()) {
+            $text = $this->modelFileGenerator->generateMapping($templatePath, $this->model->getTableName());
+        } elseif ('MODEL' === $templatePath->getName()) {
             $text = $this->modelFileGenerator->generate($templatePath);
         }
 
@@ -133,17 +139,16 @@ class E2DModuleMaker extends ModuleMaker
 
     protected function generateView(FilePath $templatePath)
     {
-        $templatePath = $this->getTrueTemplatePath($templatePath);
         if (strpos($templatePath, 'accueil_mODEL.html')) {
-            $text = file_get_contents($this->getTrueTemplatePath($templatePath));
+            $text = file_get_contents($this->getTrueTemplatePath($this->getTrueTemplatePath($templatePath)));
         } elseif (strpos($templatePath, 'liste_mODEL.html')) {
-            $text = $this->viewFileGenerator->generate($templatePath);
+            $text = $this->viewFileGenerator->generate($this->getTrueTemplatePath($templatePath));
         } elseif (strpos($templatePath, 'consultation_mODEL.html')) {
-            $text = $this->viewFileGenerator->generateConsultationView($templatePath);
+            $text = $this->viewFileGenerator->generateConsultationView($this->getTrueTemplatePath($templatePath));
         } elseif (strpos($templatePath, 'edition_mODEL.html')) {
-            $text = $this->viewFileGenerator->generateEditionView($templatePath);
+            $text = $this->viewFileGenerator->generateEditionView($this->getTrueTemplatePath($templatePath));
         } elseif (strpos($templatePath, 'recherche_mODEL.html')) {
-            $text = $this->viewFileGenerator->generateSearchView($templatePath);
+            $text = $this->viewFileGenerator->generateSearchView($this->getTrueTemplatePath($templatePath));
         }
 
         return $text;
@@ -261,7 +266,7 @@ class E2DModuleMaker extends ModuleMaker
             $security->print($this->securityPath);
         }
 
-        $this->app->set('updateSecurity', false, $this->model->getName());
+        //$this->app->set('updateSecurity', false, $this->model->getName());
     }
 
     protected function initializePaths($otherModuleName = null)

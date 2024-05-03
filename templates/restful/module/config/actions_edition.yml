@@ -1,0 +1,31 @@
+btn_ouverture_edition_mODEL:
+    action:
+        module: mODULE
+        route: service_mODULE_formulairemODEL_read
+        type: load_data
+    callback:
+        module: cONTROLLER
+        fonction: vDynamisationEditionMODELJSON
+        alerte: non
+
+btn_creation_mODEL:
+    action:
+        module: mODULE
+        route: service_mODULE_mODEL_create
+        type: save_data
+        save_formulaire: formulaire_edition_mODEL
+    callback:
+        module: cONTROLLER
+        fonction: vFermeEditionEtRefreshListe
+        alerte: non
+
+btn_modification_mODEL:
+    action:
+        module: mODULE
+        route: service_mODULE_mODEL_update
+        type: save_data
+        save_formulaire: formulaire_edition_mODEL
+    callback:
+        module: cONTROLLER
+        fonction: vFermeEditionEtRefreshListe
+        alerte: non

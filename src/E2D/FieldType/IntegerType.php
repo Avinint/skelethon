@@ -7,4 +7,5 @@ use Core\Field;
 class IntegerType extends NumberType
 {
 
+
 }

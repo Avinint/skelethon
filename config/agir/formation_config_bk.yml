@@ -1,0 +1,237 @@
+models:
+    categorie_formation:
+        legacy: false
+        prefix: ""
+        tableName: categorie_formation
+        actions:
+            - accueil
+            - recherche
+            - edition
+            - suppression
+        usesMulti: false
+        usesSelect2: true
+        usesSwitches: true
+        avecCallbackListeElenent: false
+        usesCallbackListeLigne: true
+        usesPagination: true
+        champs:
+            id_categorie_formation: []
+            categorie:
+                - liste
+                - recherche
+                - edition
+            libelle:
+                - liste
+                - recherche
+                - edition
+            couleur:
+                - edition
+        champsTinyMCE: false
+        withOneToManyFields: false
+        avecChampsParametres: true
+        champsParametres:
+            categorie:
+                categorie_formation:
+                    formation_generale: Formation générale
+                    formation_france: Formation France
+        updateSecurity: false
+        updateMenu: true
+    catalogue_formation:
+        legacy: false
+        prefix: ""
+        tableName: catalogue_formation
+        actions:
+            - accueil
+            - recherche
+            - edition
+            - suppression
+        usesMulti: false
+        usesSelect2: true
+        usesSwitches: true
+        avecCallbackListeElenent: false
+        usesCallbackListeLigne: true
+        usesPagination: true
+        champs:
+            id_formation: []
+            id_categorie:
+                - liste
+                - recherche
+                - edition
+            nom:
+                - liste
+                - recherche
+                - edition
+            code:
+                - liste
+                - recherche
+                - edition
+            statut:
+                - liste
+                - recherche
+                - edition
+            responsables:
+                - liste
+                - recherche
+                - edition
+            contenu:
+                - edition
+            public_concerne:
+                - liste
+                - recherche
+                - edition
+            objectifs:
+                - edition
+            nombre_participants:
+                - edition
+            duree_jours:
+                - edition
+            nb_sessions_par_an:
+                - edition
+            lieu:
+                - recherche
+                - edition
+            organisation:
+                - edition
+            dispositif_prise_en_charge:
+                - edition
+            url_questionnaire:
+                - edition
+        champsTinyMCE: false
+        hasManyToOneRelation: true
+        manyToOne:
+            id_categorie:
+                table: categorie_formation
+                pk: id_categorie_formation
+                label: libelle
+                alias: CAF
+                labelAlias: sLibelleCategorie
+                id: nIdCategorie
+        avecChampsParametres: false
+        updateMenu: false
+        updateSecurity: false
+    plan_formation:
+        legacy: false
+        prefix: ""
+        tableName: plan_formation
+        actions:
+            - accueil
+            - recherche
+            - edition
+            - suppression
+        usesMulti: false
+        usesSelect2: true
+        usesSwitches: true
+        avecCallbackListeElenent: false
+        usesCallbackListeLigne: true
+        usesPagination: true
+        champs:
+            id_plan_formation: []
+            id_catalogue_formation:
+                - liste
+                - recherche
+                - edition
+            annee:
+                - liste
+                - recherche
+                - edition
+            id_responsable:
+                - liste
+                - recherche
+                - edition
+            nb_sessions_previsionnelles:
+                - edition
+            total_participants:
+                - edition
+            cout_standard:
+                - liste
+                - edition
+            financement_estime:
+                - liste
+                - edition
+            statut:
+                - liste
+                - recherche
+                - edition
+        champsTinyMCE: false
+        hasManyToOneRelation: true
+        manyToOne:
+            id_catalogue_formation:
+                table: catalogue_formation
+                pk: id_formation
+                label: nom
+                alias: CAF
+                labelAlias: sCatalogueFormation
+                id: nIdCatalogueFormation
+            id_responsable:
+                table: responsables
+                pk: Num
+                label: id_responsable
+                alias: RES
+                labelAlias: sResponsable
+                id: nIdResponsable
+        avecChampsParametres: true
+        champsParametres: false
+        updateSecurity: false
+    session_formation:
+        prefix: ""
+        tableName: session_formation
+        actions:
+            - accueil
+            - recherche
+            - edition
+            - suppression
+        usesMulti: false
+        usesSelect2: true
+        usesSwitches: true
+        avecCallbackListeElenent: true
+        usesCallbackListeLigne: true
+        usesPagination: true
+        champs:
+            id_session_formation: []
+            id_catalogue_formation:
+                - liste
+                - recherche
+                - edition
+            commentaire:
+                - edition
+            date:
+                - liste
+                - recherche
+                - edition
+            duree:
+                - liste
+                - recherche
+                - edition
+            lieu_effectif:
+                - liste
+                - recherche
+                - edition
+            id_responsable:
+                - liste
+                - recherche
+                - edition
+            organisateur:
+                - liste
+                - recherche
+                - edition
+            contact:
+                - liste
+                - recherche
+                - edition
+            nb_inscriptions_max:
+                - liste
+                - recherche
+                - edition
+            statut:
+                - liste
+                - recherche
+                - edition
+            type:
+                - liste
+                - recherche
+                - edition
+            url_questionnaire:
+                - liste
+                - recherche
+                - edition
+

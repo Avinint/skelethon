@@ -18,6 +18,7 @@ abstract class ModuleMaker extends BaseMaker
 
     public function __construct(string $name, App $app, $creationMode = 'generate')
     {
+
         $this->app = $app;
         $this->fileManager = $app->getFileManager();
         $app->setModuleMaker($this);
@@ -88,8 +89,9 @@ abstract class ModuleMaker extends BaseMaker
 
     protected function getModuleStructure()
     {
-        return Spyc::YAMLLoad($this->app->getFileManager()->getTemplatePath() . DS . 'standard' . DS. 'module.yml');
-        return Spyc::YAMLLoad($this->app->getFileManager()->getTemplatePath()->addChild($this->app->getTemplate())->addFile('module.yml'));
+        return Spyc::YAMLLoad(
+            $this->getTrueTemplatePath($this->app->getFileManager()->getTemplatePath()->addChild($this->app->getTemplate())->addFile('module.yml'))
+        );
     }
 
     function askName() : string
@@ -110,7 +112,7 @@ abstract class ModuleMaker extends BaseMaker
                 // crée fichier
 
                 $projectFilePath = $this->modulePath->addChild(trim($pathToFile, DS), basename($pathToFile))->addFile($value);
-                $fileTemplatePath = $this->templatePath->getChild($this->app->getTemplate())->addChild(trim($pathToFile, DS), basename($pathToFile))->addFile($value);
+                $fileTemplatePath = $this->templatePath->getFirstChild()->addChild('module')->addChild(trim($pathToFile, DS), basename($pathToFile))->addFile($value);
 
                 [$message, $type] = $this->ensureFileExists(
                     $projectFilePath,
@@ -161,20 +163,17 @@ abstract class ModuleMaker extends BaseMaker
     {
         $path = $this->getTrueFilePath($path);
 
-       if (! $this->model->hasAction('consultation') &&  strpos($templatePath, 'consultation_TABLE') !== false) {
-           return ['Pas de vue créé pour la consultation', 'important'];
-       }
+        foreach (['consultation' , 'edition'] as $action) {
+            if (! $this->model->hasAction($action) &&  $templatePath->getType() === 'html' && strpos($templatePath, $action) !== false) {
+                return ["Pas de vue $action créée", 'important'];
+            }
+        }
 
         if ($this->fileShouldNotBeCreated($path)) {
             return ['Le fichier ' . $this->highlight($path, 'info') . ' existe déja', 'warning'];
         }
 
-        $text = $this->generateFileContent($templatePath, $path);
-
-//        var_dump($text);
-//        var_dump($path.'');
-//        var_dump("=========================================");
-//        die();
+        $text   = $this->generateFileContent($templatePath, $path);
 
         return $this->saveFile($path, $text);
     }
@@ -231,7 +230,7 @@ abstract class ModuleMaker extends BaseMaker
         return 'generate' !== $this->creationMode;
     }
 
-    private function getModelName()
+    private function setModelName()
     {
         $model = readline($this->msg('Veuillez renseigner le nom du modèle :'.
             PHP_EOL.'Si vous envoyez un nom de modèle vide, le nom du modèle sera le nom du module ['.$this->name.']'));
@@ -240,6 +239,12 @@ abstract class ModuleMaker extends BaseMaker
         }
 
         return $model;
+    }
+
+
+    public function getModel() : ModelMaker
+    {
+        return $this->model;
     }
 
     public function getName()

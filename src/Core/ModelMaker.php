@@ -36,7 +36,6 @@ abstract class ModelMaker extends BaseMaker
         $this->app = $app;
         $app->setModeleMaker($this);
         $this->setConfig($app->getConfig());
-
         $this->databaseAccess = $app->getDatabaseAccess();
 
         static::$verbose = $this->config->get('verbose') ?? true;
@@ -44,15 +43,26 @@ abstract class ModelMaker extends BaseMaker
         $this->fieldClass = $fieldClass;
         $this->module = Field::$module = $module;
 
-        $this->setClassName($this->name);
         $this->setDbTable();
+        $this->setClassName($this->name);
 
         $this->actions = $this->askActions();
 
         $this->askSpecificsPreData();
     }
 
-    private function askTableName()
+    // modifie certains champs en fonction des choix de l'utilisateur aprèz intiialisation
+    private function setClassName(string $name)
+    {
+        if ($prefix = $this->config->get('prefix') ?? '') {
+            $name = str_replace_first($prefix . '_', '', $name);
+            $name = str_replace_first($prefix, '', $name);
+        }
+
+        $this->className = $this->pascalize($name);
+    }
+
+    protected function askTableName()
     {
         if ($this->config->has('tableName')) {
             $this->tableName = $this->config->get('tableName');
@@ -72,7 +82,7 @@ abstract class ModelMaker extends BaseMaker
         $this->tableName = $tableName;
     }
 
-    public function generate()
+    public function recupereDonnees()
     {
         $this->fields = [];
         $this->alias =  $this->generateAlias($this->tableName);
@@ -219,9 +229,9 @@ abstract class ModelMaker extends BaseMaker
         return array_contains_array($actions, $this->actions,  ARRAY_ANY);
     }
 
-    public function getAttributes($template, $view = '') :string
+    public function getAttributes($template, $table = '')
     {
-        return implode(PHP_EOL, array_map(function (Field $field)  use ($template) {return $field->getFieldMapping($template);}, $this->getFields('base')));
+        return implode(PHP_EOL, array_map(function (Field $field)  use ($template, $table) {return $field->getFieldMapping($template, $table);}, $this->getFields('all')));
     }
 
     /**
@@ -345,8 +355,8 @@ abstract class ModelMaker extends BaseMaker
     public function setDbTable(): void
     {
         $this->askTableName();
-        $table = $this->databaseAccess->getTable($this->tableName, $this->app->get('legacyPrefixes') ?? false);
 
+        $table = $this->databaseAccess->getTable($this->tableName, $this->app->get('legacyPrefixes') ?? false);
         if (null === $table) {
             $this->msg('Erreur: Il faut créer la table \'' . $this->name . '\' avant de générer le code', 'error');
             $this->config->set('tableName', null, $this->name);
@@ -388,16 +398,6 @@ abstract class ModelMaker extends BaseMaker
         $this->databaseAccess = $databaseAccess;
     }
 
-    // modifie certains champs en fonction des choix de l'utilisateur aprèz intiialisation
-    private function setClassName(string $name)
-    {
-        if ($prefix = $this->config->get('prefix') ?? '') {
-            $name = str_replace_first($prefix, '', $name);
-        }
-
-        $this->className = $this->pascalize($name);
-    }
-
     /**
      * @return string
      */
@@ -415,7 +415,7 @@ abstract class ModelMaker extends BaseMaker
         return strtoupper(substr(str_replace('_', '', $this->table), 0, 3));
     }
 
-    private function askPrefix()
+    protected function askPrefix()
     {
         $prefix = readline($this->msg('Renseigner le prefix du projet ou laisser vide'));
 
@@ -483,10 +483,14 @@ abstract class ModelMaker extends BaseMaker
     /**
      * @return string
      */
-    public function getModule() : string
+    public function getModule(): string
     {
         return $this->module;
     }
 
 
+    public function __toString(): string
+    {
+        return $this->name;
+    }
 }

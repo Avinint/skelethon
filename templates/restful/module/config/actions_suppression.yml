@@ -1,0 +1,9 @@
+btn_suppression_mODEL:
+    action:
+        module: mODULE
+        route: service_mODULE_mODEL_delete
+        type: save_data
+    callback:
+        module: cONTROLLER
+        fonction: vFermeConsultationEtRefreshListe
+        alerte: non

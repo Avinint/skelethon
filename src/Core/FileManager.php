@@ -37,7 +37,10 @@ class FileManager
             $this->app->setTemplate('legacy_'.$templates, 'model');
         }
 
-        $this->templates = explode("_", trim($templates.'_standard', '_'));
+        $this->templates = explode("_", trim($templates, '_'));
+        if ($this->templates !== ['standard']) {
+            $this->templates[] = 'standard';
+        }
     }
 
     public function createFile($path, $text = '', $write = false)
@@ -68,12 +71,7 @@ class FileManager
      */
     public function getTrueTemplatePath(FilePath $templatePath)
     {
-        $templatePath->setFallbackTemplate(reset($this->templates));
-
-        $templatePath = $this->findRightTemplatePath($templatePath);
-
-
-        return $templatePath;
+        return clone $templatePath->getRightPath();
     }
 
     /**
@@ -86,7 +84,6 @@ class FileManager
     function findRightTemplatePath(FilePath $templatePath) : ?FilePath
     {
         if (!file_exists($templatePath)) {
-
             $nextTemplate = next($this->templates);
             if ($nextTemplate === false) {
                 return null;
@@ -146,12 +143,16 @@ class FileManager
      * Chemin des templates dans l'application
      * @param Path $path
      */
-    public function setTemplatePath(Path $path) : void
+    public function setTemplatePath(TemplatePath $path) : void
     {
         $this->templatePath = $path;
-        $this->templatePath->addChildTemplateNode(
-            new $this->templateNodeClass($this->templates, $this->templates[0])
-        );
+//        foreach ($this->templates as $template) {
+//            $this->altPaths[$template] = $this->templatePath->addChild($template);
+//        }
+
+//        $this->templatePath->addChildTemplateNode(
+//            new $this->templateNodeClass($this->templates, $this->templates[0])
+//        );
     }
 
     public function setProjectPath(Path $path) : void

@@ -128,7 +128,7 @@ class E2DField extends Field
         return ($this->isNumber() ? ' align-right' : ($this->isDateOrEnum() ? ' align-center'  : ''));
     }
 
-    public function getFieldMapping($templatePath)
+    public function getFieldMapping($templatePath, $table = '')
     {
         return str_replace(['COLUMN', 'NAME'], [$this->column, $this->name], file_get_contents($templatePath));
     }

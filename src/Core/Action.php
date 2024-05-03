@@ -31,8 +31,6 @@ class Action extends BaseMaker
             return '';
         }
 
-
-
         $templatePerActionPath = $this->getTrueTemplatePath($path->add($this->name));
         if (isset($templatePerActionPath)) {
             return $this->getConfigTemplateForAction($templatePerActionPath, $path, $this->name);
@@ -50,6 +48,10 @@ class Action extends BaseMaker
      */
     private function getConfigTemplateForAction(FilePath $templatePerActionPath, FilePath $path, string $action): string
     {
+        if ($this->name === 'accueil') {
+            return '';
+        }
+
         return file_get_contents($templatePerActionPath) .
             $this->makeMultiModalBlock($path, $templatePerActionPath);
     }
@@ -80,10 +82,10 @@ class Action extends BaseMaker
     {
         $templatePerActionPath = $this->getTrueTemplatePath($path->add($this->camelize($this->name)));
 
-        if (isset($templatePerActionPath)) {
+        if (isset($templatePerActionPath) && $this->name !== 'accueil') {
             $templatePerActionPath = $this->getJavaScriptMethodPerActionHook($usesCallbackListeElement, $templatePerActionPath);
 
-            return file_get_contents($templatePerActionPath);
+            return file_get_contents($this->getTrueTemplatePath($templatePerActionPath));
         }
 
         return '';

@@ -50,4 +50,9 @@ class DateTimeType extends DateType
         return str_replace('FORMAT', $template[10], $template[7]);
     }
 
+    public function getClasseMapping() : string
+    {
+        return "DateTime";
+    }
+
 }

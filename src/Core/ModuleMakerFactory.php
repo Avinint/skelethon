@@ -36,19 +36,13 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
 
         $app = new App();
         $app->setConfig($config);
-        $app->setFileManager($this->templateNodeClass);
-        $app->getFileManager()->setTemplate($config->get('template') ?? $config->askTemplate(), $this->templateNodeClass);
-
-
-        $config->setFileManager($app->getFileManager());
-        $app->setProjectPath();
-
-        $templatePath = new Path($appDir.'/templates', 'templatePath');
-        $app->getFileManager()->setTemplatePath($templatePath);
+        $this->initialisePaths($app, $appDir);
 
         $app->setDatabaseAccess($this->databaseAccess::getDatabaseParams());
         //$this->initializeFileGenerators($app);
-        $this->generate($action, $moduleName, $modelName, $app, $config);
+        $this->generate($action, $moduleName, $modelName, $app);
+
+
     }
 
     private function askName($name = '', $moduleName)
@@ -69,12 +63,13 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
      * @param App $app
      * @param Config $config
      */
-    protected function generate(string $action, $moduleName, string $modelName, App $app, Config $config) : void
+    protected function generate(string $action, $moduleName, string $modelName, App $app) : void
     {
         switch ($action) {
             case 'module':
                 $model = $this->createModel($moduleName, $modelName, 'generate', $app);
-                $model->generate();
+
+                $model->recupereDonnees();
                 $maker = new $this->moduleMaker($moduleName, $app, 'generate', [
                     'menuPath' => 'config/menu.yml',
                 ]);
@@ -83,7 +78,7 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
                 break;
             case 'modele':
                 $model = $this->createModel($moduleName, $modelName, 'addModel', $app);
-                $model->generate();
+                $model->recupereDonnees();
                 $maker = new $this->moduleMaker($moduleName, $app, 'addModel', [
 
                     'menuPath' => 'config/menu.yml',
@@ -115,18 +110,11 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
      * @param $modelName
      * @param $creationMode
      * @param App $app
-     * @return mixed
+     * @return ModelMaker
      */
-    public function createModel($moduleName, $modelName, $creationMode, App $app)
+    public function createModel($moduleName, $modelName, $creationMode, App $app) : ModelMaker
     {
-        $app->getConfig()->askLegacy($modelName);
-//        if () {
-//            $modelMakerLegacy = $this->modelMaker. 'Legacy';
-//            var_dump($modelMakerLegacy);
-//            $model = new $modelMakerLegacy($this->fieldClass, $moduleName, $modelName, $creationMode, $app);
-//        } else {
         $model = new $this->modelMaker($this->fieldClass, $moduleName, $modelName, $creationMode, $app);
-//        }
 
         return $model;
     }
@@ -151,5 +139,20 @@ abstract class ModuleMakerFactory extends CommandLineToolShelf
     ');
 
         die();
+    }
+
+    /**
+     * @param App $app
+     * @param $appDir
+     * @return void
+     */
+    private function initialisePaths(App $app, $appDir): void
+    {
+        $app->setFileManager($this->templateNodeClass);
+        $app->getFileManager()->setTemplate($app->get('template') ?? $app->getConfig()->askTemplate());
+        $app->setProjectPath();
+
+        $templatePath = new TemplatePath($appDir . '/templates', $app->getFileManager()->getTemplates());
+        $app->getFileManager()->setTemplatePath($templatePath);
     }
 }

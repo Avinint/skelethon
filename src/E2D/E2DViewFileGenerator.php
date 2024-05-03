@@ -75,12 +75,12 @@ class E2DViewFileGenerator extends FileGenerator
             $fieldTemplate = $field->getType()->getEditionView($path);
             $fieldText[] = str_replace(['LABEL', 'FIELD', 'TYPE', 'NAME', 'COLUMN', 'STEP'],
                 [$field->getLabel(), $field->getFormattedName(), $field->getType(), $field->getName(), $field->getColumn(),
-                    $field->getStep()], $fieldTemplate);
+                 $field->getStep()], $fieldTemplate);
         }
 
         $text = file_get_contents($this->getTrueTemplatePath($path));
         $text = $this->addModalTitle($text);
-        $text = str_replace(['mODEL', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->moduleName, implode(PHP_EOL, $fieldText)], $text);
+        $text = str_replace(['mODEL', 'MODEL', 'mODULE', 'FIELDS'], [$this->model->getName(), $this->model->getClassname(), $this->moduleName, implode(PHP_EOL, $fieldText)], $text);
         return $text;
     }
 

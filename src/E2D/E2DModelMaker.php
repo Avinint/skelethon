@@ -15,7 +15,6 @@ class E2DModelMaker extends ModelMaker
     public function __construct($fieldClass, string $module, $name, $creationMode = 'generate', $app)
     {
         parent::__construct($fieldClass, $module, $name, $creationMode, $app);
-
     }
 
     protected function addSpecificActions()
@@ -183,7 +182,6 @@ class E2DModelMaker extends ModelMaker
     {
         $this->usesTinyMCE = $this->config->get('champsTinyMCE') ?? $this->askChampsTinyMCE();
         $this->askAddManyToOneField();
-
         if ($this->hasAction('export') && !$this->app->has('avecRessourceExport') ) {
             $this->askAvecRessourceExport();
         }
@@ -194,7 +192,7 @@ class E2DModelMaker extends ModelMaker
             }
         }
 
-        $this->champsOneToMany = $this->config->get('oneToManyFields') ?? $this->askOneToManyFields();
+        // INUTILISE $this->champsOneToMany = $this->config->get('oneToManyFields') ?? $this->askOneToManyFields();
 
         $this->avecChampsParametres = $this->askChampsParametres();
     }
@@ -357,7 +355,7 @@ class E2DModelMaker extends ModelMaker
             return $this->initialiserParametresDepuisConfig();
         }
 
-        $reponse1 = $this->askBool('avecChampsParametres', 'Voulez vous transformer certains champs en paramètre?');
+        $reponse1 = $this->askBool('avecChampsParametres', 'Voulez vous transformer certains champs en paramètres ?');
         if ($reponse1) {
             $this->convertirChampsEnParametres();
         }
@@ -382,6 +380,8 @@ class E2DModelMaker extends ModelMaker
             $type      = key($parametre);
             $parametre = $parametre[$type];
             $lignes    = [];
+
+
             foreach ($parametre as $code => $valeur) {
                 $lignes[] = ['code' => $code, 'valeur' => $valeur];
             }

@@ -1,0 +1,6 @@
+btn_export_mODEL:
+    action:
+        module:             mODULE
+        route:              xlsx_export_mODEL
+        type:               download_csv
+        save_formulaire:    formulaire_recherche_mODEL

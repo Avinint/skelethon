@@ -101,4 +101,10 @@ class EnumType extends FieldType
         return $this->app->getTrueTemplatePath($path->add('enum')->add($this->enumType));
     }
 
+    public function getClasseMapping() : string
+    {
+        return "Char";
+    }
+
+
 }

@@ -17,6 +17,7 @@ abstract class FieldType
 {
     private static $registeredTypes = [];
     protected $name;
+    protected $mappingType = '';
     protected App $app;
 
     const BOOL = ['bool'];
@@ -167,8 +168,9 @@ abstract class FieldType
         return file_get_contents($nullableFieldTemplatePath);
     }
 
-    public function getValeurParDefautChampPourDynamisationEditionController(Field $field,  FilePath $fieldTemplatePath) : string
+    function getValeurParDefautChampPourDynamisationEditionController(Field $field,  FilePath $fieldTemplatePath) : string
     {
+        return '';
     }
 
     /**
@@ -190,6 +192,8 @@ abstract class FieldType
     {
         return $this->app->getTrueTemplatePath($path->add('string'));
     }
+
+    abstract public function getClasseMapping() : string;
 
     //////// LEGACY !!!!!!!!!!!!!!!!!!!!!!!
 
@@ -214,4 +218,6 @@ abstract class FieldType
         $template = file($templatePath, FILE_IGNORE_NEW_LINES);
         return $template[4];
     }
+
+
 }

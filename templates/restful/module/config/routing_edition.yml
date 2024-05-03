@@ -1,0 +1,7 @@
+html_edition_mODEL:
+    reecriture: admin/mODULE/mURL/edition.html
+    route:
+        zone: admin
+        module: mODULE
+        controller: cONTROLLER
+        mode: edition_mODEL

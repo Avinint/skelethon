@@ -25,8 +25,6 @@ abstract class Field extends CommandLineToolShelf
     protected $manyToOne;
     protected $step;
 
-    public $isPrimaryKey;
-
     /**
      * Field constructor.
      * @param $type
@@ -250,7 +248,7 @@ abstract class Field extends CommandLineToolShelf
     public function hasView($view)
     {
         return isset($this->views) && ($this->views === []
-                || ('base' === $view && array_contains_array(self::FIELD_VIEWS,  $this->views, true))
+                || ('all' === $view && array_contains_array(self::FIELD_VIEWS,  $this->views, true))
                 || (is_array($view) && array_contains_array($view, $this->views, true))
                 || ( array_contains($view, $this->views)));
     }

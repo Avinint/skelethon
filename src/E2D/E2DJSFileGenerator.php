@@ -42,12 +42,13 @@ class E2DJSFileGenerator extends FileGenerator
 
         $actionMethodText = [];
         $usesCallbackListeElement = $this->app->get('avecCallbackListeElenent') ?? true;
-        foreach ($this->model->getActions() as $action) {
-            $actionMethodText[] = $action->getJavaScriptMethods($path, $usesCallbackListeElement);
-        }
-        $actionMethodText = implode('', $actionMethodText);
 
         if ($path->getName() === 'CONTROLLERAdmin') {
+
+            foreach ($this->model->getActions() as $action) {
+                $actionMethodText[] = $action->getJavaScriptMethods($path, $usesCallbackListeElement);
+            }
+            $actionMethodText = implode('', $actionMethodText);
 
             /* Gén code fermeture calque */
             $closeConsultationModal = '';
@@ -110,13 +111,13 @@ class E2DJSFileGenerator extends FileGenerator
                 $tinyMCE .= str_replace('NAME', $champ, file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('appelTinyMCE'))));
             }
 
-            $tinyMCEDef = $this->app->has('champsTinyMCE')  ? file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('definitionTinyMCE'))) : '';
+            $tinyMCEDef = !empty($this->app->get('champsTinyMCE')) ? file_get_contents($this->getTrueTemplatePath($path->add('edition')->add('definitionTinyMCE'))) : '';
 
 
 
-            $text = str_replace([ '/*CALLBACKLIGNELISTE*/', '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE',
+            $text = str_replace([ '/*CALLBACKLIGNELISTE*/', '/*PERSONALIZEBUTTONS*/', '/*MULTIJS*/', '/*ACTION*/',  'CLOSECONSULTATIONMODAL', 'mODULE', 'IDFIELD',
                 'CONTROLLER', 'TITRE', '/*MULTI*/', 'TABLE', 'SELECT2EDIT' , 'TINYMCEDEF', 'TINYMCE', 'SELECT2'],
-                [$callbackLigneListeText, $personalizedButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->controllerName,
+                [$callbackLigneListeText, $personalizedButtons, '', $actionMethodText, $closeConsultationModal, $this->moduleName, $this->model->getIdField(), $this->controllerName,
                     $this->model->getTitre(), $multiText, $this->model->getName(), $select2EditText, $tinyMCEDef, $tinyMCE, $select2SearchText], $text);
 
         } else {

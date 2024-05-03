@@ -6,7 +6,7 @@ use Core\DatabaseAccess;
 
 class E2DDatabaseAccess extends DatabaseAccess
 {
-    private $tables = [];
+    protected $tables = [];
 
     public static function getDatabaseParams()
     {
@@ -16,7 +16,7 @@ class E2DDatabaseAccess extends DatabaseAccess
             eval($text);
         }
         return new static(
-            'localhost',
+            $GLOBALS['aParamsBdd']['hote'] ?? 'localhost',
             $GLOBALS['aParamsBdd']['utilisateur'],
             $GLOBALS['aParamsBdd']['mot_de_passe'],
             $GLOBALS['aParamsBdd']['base']
@@ -25,7 +25,7 @@ class E2DDatabaseAccess extends DatabaseAccess
 
     public function getTable(string $tableName, $legacyPrefixes = false)
     {
-        return $this->getTableList($legacyPrefixes)[$tableName] ?? null;
+        return $this->getTableList($legacyPrefixes, $tableName)[$tableName] ?? null;
     }
 
     /**
@@ -44,7 +44,7 @@ class E2DDatabaseAccess extends DatabaseAccess
         return $legacyPrefixes ? 'sz' : 's';
     }
 
-    public function getTableList($legacyPrefixes = false)
+    public function getTableList($legacyPrefixes = false, $tableName = '')
     {
         if (empty($this->tables)) {
 
@@ -83,6 +83,7 @@ class E2DDatabaseAccess extends DatabaseAccess
                             }
                             break;
                         case 'int':
+                        case 'bigint':
                         case 'smallint':
                             $oChamp->sChamp = 'n'.$sNom;
                             if ($sMaxLength != '') {

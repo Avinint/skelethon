@@ -42,8 +42,6 @@ class ConfigTest extends \Mockery\Adapter\Phpunit\MockeryTestCase
         $this->config->setCurrentModel('prof');
 
         $this->config->set('actions', ['accueil', 'recherche', 'edition', 'suppression'], 'prof');
-
-        var_dump($this->config->get('actions'));
     }
 }
 

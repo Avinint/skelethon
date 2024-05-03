@@ -1,0 +1,7 @@
+html_consultation_mODEL:
+    reecriture: admin/mODULE/mURL/consultation.html
+    route:
+        zone: admin
+        module: mODULE
+        controller: cONTROLLER
+        mode: consultation_mODEL

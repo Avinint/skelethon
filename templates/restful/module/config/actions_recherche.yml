@@ -1,0 +1,9 @@
+btn_dynamisation_recherche_mODEL:
+    action:
+        module: mODULE
+        route: service_mODULE_recherchemODEL_read
+        type: load_data
+    callback:
+        module: cONTROLLER
+        fonction: vDynamisationFormulaireRecherche
+        alerte: non

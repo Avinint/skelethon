@@ -50,4 +50,9 @@ class TimeType extends DateType
 
         return $template[8];
     }
+
+    public function getClasseMapping() : string
+    {
+        return "Time";
+    }
 }

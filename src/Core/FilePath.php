@@ -26,7 +26,6 @@ class FilePath extends PathNode
      */
     public function add(string $suffix)
     {
-
         $file = $this->parent->addFile($this->name.'_'.$suffix, $this->extension);
         $file->setBaseFile($this);
         return $file;
@@ -44,6 +43,9 @@ class FilePath extends PathNode
 
     public function getPath()
     {
+        if ($this->getType() === 'php') {
+            return $this->name . '.php';
+        }
         return $this->name . '.' . $this->extension;
     }
 
@@ -92,5 +94,49 @@ class FilePath extends PathNode
     public function exists()
     {
         return file_exists($this->getFullPath());
+    }
+
+    public function getRightPath()
+    {
+
+        if ($this->root instanceof TemplatePath) {
+            reset($this->root->templates);
+
+            if (strpos($this->getFullPath(), 'standard/module')) {
+
+                $currentPath  = $this->root->getChild(current($this->root->templates));
+                $nextPath    = $this->root->getChild(reset($this->root->templates));
+
+                foreach ($currentPath->getchildren() as $child) {
+                    break;
+                }
+
+                $child->setParent($nextPath);
+            }
+
+            while (!file_exists($this->getFullPath()) && array_search(current($this->root->templates), $this->root->templates) < count($this->root->templates) - 1) {
+                $currentPath = $this->root->getChild(current($this->root->templates));
+
+                $nextPath    = $this->root->getChild(next($this->root->templates));
+                if (current($this->root->templates) !== false) {
+
+                    foreach ($currentPath->getchildren() as $child) {
+                       break;
+                    }
+                    //$child = $currentPath->getFirstChild();
+                    $child->setParent($nextPath);
+                } else {
+
+                  reset($this->root->templates);
+
+
+                }
+
+            }
+
+            return $this;
+       }
+
+        return $this;
     }
 }
